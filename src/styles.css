@@ -339,3 +339,21 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .seg { display: flex; background: var(--bg2); border-radius: 6px; padding: 2px; }
 .seg button { flex: 1; padding: 5px 0; border-radius: 4px; font-weight: 600; font-size: 11px; color: var(--fg2); }
 .seg button.active { background: var(--bg); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+/* ---------- collaboration ---------- */
+.collab-bar { display: flex; align-items: center; gap: 6px; margin-right: 4px; }
+.live-dot { width: 8px; height: 8px; border-radius: 4px; background: #777; display: inline-block; flex-shrink: 0; }
+.live-dot.live { background: #14ae5c; box-shadow: 0 0 0 3px rgba(20,174,92,.25); }
+.live-dot.connecting, .live-dot.reconnecting { background: #ffb224; }
+.live-dot.error { background: #e5484d; }
+.avatars { display: flex; }
+.avatar { width: 26px; height: 26px; border-radius: 13px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 11px; border: 2px solid #2c2c34; margin-left: -6px; }
+.avatar:first-child { margin-left: 0; }
+.avatar.following { box-shadow: 0 0 0 2px #fff; }
+.avatar.more { background: #45454f; }
+.share-btn { background: var(--accent) !important; color: #fff !important; }
+.canvas svg.peers { pointer-events: none; }
+.share-modal { width: min(640px, 94vw); }
+.tabs.inline { border: 0; padding: 0; }
+.ai-connect h4 { margin: 16px 0 4px; }
+.ai-connect code, .share-modal code { background: var(--bg2); padding: 1px 5px; border-radius: 4px; font-size: 11px; }

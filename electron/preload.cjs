@@ -14,6 +14,7 @@ const subscribe = (channel) => (cb) => {
 
 contextBridge.exposeInMainWorld('vecturaDesktop', {
   isDesktop: true,
+  serverUrl: () => ipcRenderer.invoke('server-url'),
   platform: process.platform,
   openFile: () => ipcRenderer.invoke('open-file'),
   readFile: (p) => ipcRenderer.invoke('read-file', p),

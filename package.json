@@ -9,10 +9,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev:server": "tsx watch server/index.ts --data ./.vectura-data",
+    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build && npm run build:server",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=server-dist/server.cjs --external:bufferutil --external:utf-8-validate --log-level=warning && esbuild server/app.ts --bundle --platform=node --target=node20 --format=cjs --outfile=server-dist/app.cjs --external:bufferutil --external:utf-8-validate --log-level=warning",
+    "start": "node server-dist/server.cjs --static dist",
+    "mcp:stdio": "node server-dist/server.cjs --stdio",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
-    "electron:dev": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e/run.cjs",
+    "electron:dev": "npm run build:server && concurrently -k \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
     "electron:build": "npm run build && electron-builder --win --x64",
     "electron:dir": "npm run build && electron-builder --dir"
   },
@@ -25,6 +31,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "server-dist/**/*",
       "package.json"
     ],
     "fileAssociations": [
@@ -85,5 +92,8 @@
     "vite": "^5.4.10",
     "vitest": "^2.1.9",
     "wait-on": "^8.0.1"
+  },
+  "bin": {
+    "vectura-server": "server-dist/server.cjs"
   }
 }

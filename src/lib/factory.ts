@@ -121,7 +121,9 @@ export function createNode(type: NodeType, props: Partial<SceneNode> = {}): Scen
       base.text = defaultText();
       break;
   }
-  return { ...base, ...props };
+  // ignore explicitly-undefined props so they never wipe defaults (e.g. name)
+  const clean = Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)) as Partial<SceneNode>;
+  return { ...base, ...clean };
 }
 
 export function emptyDocument(name = 'Untitled'): DocumentData {

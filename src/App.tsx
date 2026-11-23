@@ -10,6 +10,9 @@ import { Home } from './Home';
 import { VariablesModal } from './panels/Variables';
 import { FigmaImportDialog } from './panels/FigmaImport';
 import { ExportDialog } from './panels/ExportDialog';
+import { ShareDialog } from './collab/CollabUI';
+import { goLive, leaveLive } from './collab/client';
+import { serverBase } from './collab/config';
 import { useShortcuts } from './useShortcuts';
 import { actions, saveToLibrary } from './actions';
 import { desktop, parseDocument } from './lib/platform';
@@ -51,6 +54,38 @@ export function App() {
       window.removeEventListener('vectura:open-editor', e);
     };
   }, []);
+
+  // join a shared file from a link (?room=…)
+  useEffect(() => {
+    const room = new URLSearchParams(location.search).get('room');
+    if (room && /^[a-zA-Z0-9_-]{1,64}$/.test(room)) {
+      setView('editor');
+      goLive({ room, seed: false });
+    }
+  }, []);
+
+  // auto-connect the open file to a reachable Vectura server (collaboration + AI connector)
+  const fileId = useEditor((s) => s.fileId);
+  useEffect(() => {
+    if (view !== 'editor') {
+      leaveLive();
+      return;
+    }
+    let auto = true;
+    try {
+      auto = localStorage.getItem('vectura:autolive') !== 'off';
+    } catch {
+      /* ignore */
+    }
+    if (!auto) return;
+    let cancelled = false;
+    serverBase().then((b) => {
+      if (b && !cancelled) goLive();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [view, fileId]);
 
   // window title
   useEffect(() => {
@@ -129,6 +164,7 @@ export function App() {
       <VariablesModal />
       <FigmaImportDialog />
       <ExportDialog />
+      <ShareDialog />
       <Toast />
     </div>
   );

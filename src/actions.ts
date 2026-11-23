@@ -184,6 +184,8 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   addPage: { label: 'New page', run: () => S().addPage() },
   saveVersion: { label: 'Save version to history…', shortcut: 'Ctrl+Alt+H', run: () => { const n = prompt('Version name', new Date().toLocaleString()); if (n !== null) S().saveVersion(n); } },
   variables: { label: 'Variables…', shortcut: 'Ctrl+Alt+V', run: () => { window.dispatchEvent(new Event('vectura:variables')); } },
+  share: { label: 'Share / collaborate…', run: () => { window.dispatchEvent(new Event('vectura:share')); } },
+  connectAI: { label: 'Connect Claude / ChatGPT (MCP)…', run: () => { window.dispatchEvent(new CustomEvent('vectura:share', { detail: { tab: 'ai' } })); } },
   shortcuts: { label: 'Keyboard shortcuts', shortcut: 'Ctrl+Shift+?', run: () => { window.dispatchEvent(new Event('vectura:shortcuts')); } },
   home: { label: 'Back to files', run: async () => { await saveToLibrary(); window.dispatchEvent(new Event('vectura:home')); } },
   newFromTemplate: { label: 'Duplicate file', run: () => { S().set({ fileId: uid(), filePath: null }); S().mutate((d) => (d.name = d.name + ' copy'), false); } },

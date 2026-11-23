@@ -3,7 +3,7 @@ import { useEditor } from '../store/store';
 import { actions } from '../actions';
 import { Icon, type IconName } from './icons';
 import type { Tool } from '../types';
-import { isDesktop } from '../lib/platform';
+import { CollabBar } from '../collab/CollabUI';
 
 const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'figmaImport', 'export', 'exportHtml', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
@@ -11,6 +11,7 @@ const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'View', items: ['zoomIn', 'zoomOut', 'zoom100', 'zoomFit', 'zoomSel', '-', 'toggleGrid', 'toggleRulers', 'toggleOutlines', 'toggleUI', '-', 'variables'] },
   { title: 'Object', items: ['group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock'] },
   { title: 'Arrange', items: ['alignLeft', 'alignHCenter', 'alignRight', 'alignTop', 'alignVCenter', 'alignBottom', '-', 'distributeH', 'distributeV', 'tidy'] },
+  { title: 'Share', items: ['share', 'connectAI'] },
   { title: 'Help', items: ['shortcuts'] },
 ];
 
@@ -158,8 +159,9 @@ export function Toolbar({ theme, setTheme }: { theme: string; setTheme: (t: stri
         <button className="tool" title="Present (Ctrl+Alt+Enter)" onClick={() => st.set({ presenting: true })}>
           <Icon name="play" />
         </button>
-        <button className="btn primary" onClick={() => actions.save.run()} title="Save (Ctrl+S)">
-          {isDesktop ? 'Save' : 'Save'}
+        <CollabBar />
+        <button className="tool" onClick={() => actions.save.run()} title="Save (Ctrl+S)">
+          <Icon name="download" />
         </button>
         <ZoomMenu />
       </div>

@@ -12,6 +12,8 @@ import { Overlay } from './Overlay';
 import { TextEditor } from './TextEditor';
 import { Rulers } from './Rulers';
 import { CommentPins } from './CommentPins';
+import { PeerCursors } from '../collab/CollabUI';
+import { collabCursor } from '../collab/client';
 
 type Drag =
   | { kind: 'pan'; sx: number; sy: number; px: number; py: number }
@@ -339,6 +341,7 @@ export function Canvas() {
     const s = useEditor.getState();
     const w = toWorld(e.clientX, e.clientY);
     setCursorW(w);
+    collabCursor(w);
     if (!drag) {
       if (s.tool === 'move' && !space) {
         const path = hitPath(s.doc.nodes, s.page().children, w.x, w.y, 2 / s.zoom);
@@ -916,7 +919,10 @@ export function Canvas() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerLeave={() => setCursorW(null)}
+      onPointerLeave={() => {
+        setCursorW(null);
+        collabCursor(null);
+      }}
       onDoubleClick={onDoubleClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
@@ -939,6 +945,7 @@ export function Canvas() {
           {drag?.kind === 'pencil' && <polyline points={drag.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#000" strokeWidth={2 / zoom} />}
         </g>
       </svg>
+      <PeerCursors />
       <Overlay protoDrag={protoDrag} penId={penRef.current} cursor={cursorW} />
       {st.editingTextId && <TextEditor id={st.editingTextId} onDone={(id) => autoSizeText(id)} />}
       {st.showRulers && <Rulers />}

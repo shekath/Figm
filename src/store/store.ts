@@ -1079,6 +1079,8 @@ let clipboardMemory: string | null = null;
 /* ---------- local change feed for collaboration ---------- */
 
 let remoteDoc: DocumentData | null = null;
+/** Mark a document as coming from the server so it is not echoed back as a local patch. */
+export const markRemote = (doc: DocumentData) => (remoteDoc = doc);
 type Listener = (patch: DocPatch) => void;
 const listeners = new Set<Listener>();
 /** Subscribe to local document changes as patches (remote patches are excluded). */

@@ -55,6 +55,17 @@ export function applyPatch(doc: DocumentData, patch: DocPatch): DocumentData {
   return out;
 }
 
+/** Apply a patch to a mutable document (e.g. an immer draft). */
+export function applyPatchInPlace(doc: DocumentData, patch: DocPatch) {
+  if (patch.nodes)
+    for (const [k, v] of Object.entries(patch.nodes)) {
+      if (v === null) delete doc.nodes[k];
+      else doc.nodes[k] = v;
+    }
+  if (patch.pages) doc.pages = patch.pages;
+  if (patch.meta) Object.assign(doc, patch.meta);
+}
+
 export function mergePatches(a: DocPatch | null, b: DocPatch | null): DocPatch | null {
   if (!a) return b;
   if (!b) return a;

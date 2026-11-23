@@ -20,11 +20,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Type-check + build web app and server
+        run: npm run build
+      - name: Unit tests
+        run: npm test
+      - name: Install Playwright (e2e only, not a project dependency)
+        run: |
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: End-to-end tests (UI, real-time collaboration, MCP over HTTP + stdio)
+        run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         with:
           name: vectura-web
-          path: dist
+          path: |
+            dist
+            server-dist
 
   windows:
     runs-on: windows-latest

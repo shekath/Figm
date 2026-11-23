@@ -7,6 +7,30 @@ const isDev = !!process.env.VITE_DEV_SERVER_URL;
 let win = null;
 let pendingOpen = null;
 let allowClose = false;
+let serverUrl = null;
+let embedded = null;
+
+/** Start (or reuse) the local Vectura server: collaboration + MCP connector for AI assistants. */
+async function startEmbeddedServer() {
+  const port = Number(process.env.VECTURA_PORT || 4317);
+  try {
+    const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(800) });
+    if (r.ok && (await r.json()).app === 'vectura') {
+      serverUrl = `http://127.0.0.1:${port}`;
+      return;
+    }
+  } catch {
+    /* not running */
+  }
+  const { startServer } = require(path.join(__dirname, '..', 'server-dist', 'app.cjs'));
+  const opts = { host: '127.0.0.1', dataDir: path.join(app.getPath('userData'), 'server'), staticDir: path.join(__dirname, '..', 'dist'), log: (m) => console.log(m) };
+  try {
+    embedded = await startServer({ ...opts, port });
+  } catch {
+    embedded = await startServer({ ...opts, port: 0 }); // port taken by something else
+  }
+  serverUrl = embedded.url;
+}
 
 /** Only .vectura / .json files may be read through the bridge. */
 const allowedDoc = (p) => typeof p === 'string' && /\.(vectura|json)$/i.test(p);
@@ -141,7 +165,12 @@ function buildMenu() {
     },
     {
       label: '&Help',
-      submenu: [item('Keyboard Shortcuts', 'shortcuts'), { label: 'About Vectura', click: () => dialog.showMessageBox(win, { message: `Vectura ${app.getVersion()}`, detail: 'Open-source vector design and prototyping tool.' }) }],
+      submenu: [
+        item('Share / Collaborate…', 'share'),
+        item('Connect Claude / ChatGPT (MCP)…', 'connectAI'),
+        { type: 'separator' },
+        item('Keyboard Shortcuts', 'shortcuts'), { label: 'About Vectura', click: () => dialog.showMessageBox(win, { message: `Vectura ${app.getVersion()}`, detail: `Open-source vector design and prototyping tool.\n\nLocal server: ${serverUrl ?? 'not running'}\nMCP endpoint: ${serverUrl ? serverUrl + '/mcp' : '—'}` }) },
+      ],
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -196,6 +225,8 @@ ipcMain.on('set-title', (_e, title, dirty) => {
   }
 });
 
+ipcMain.handle('server-url', () => serverUrl);
+
 ipcMain.on('close-ok', () => {
   allowClose = true;
   if (win) win.close();
@@ -215,8 +246,9 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     pendingOpen = fileFromArgv(process.argv);
+    await startEmbeddedServer().catch((e) => console.error('[vectura] embedded server failed:', e));
     buildMenu();
     createWindow();
     app.on('activate', () => BrowserWindow.getAllWindows().length === 0 && createWindow());
@@ -226,6 +258,10 @@ if (!app.requestSingleInstanceLock()) {
     e.preventDefault();
     if (win) win.webContents.send('open-path', p);
     else pendingOpen = p;
+  });
+
+  app.on('before-quit', () => {
+    if (embedded) embedded.close();
   });
 
   app.on('window-all-closed', () => {
