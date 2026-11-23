@@ -108,7 +108,7 @@ const CTX: { id: string; icon: IconName; when: (n: number, types: string[]) => b
 export function ContextBar() {
   const st = useEditor();
   const sel = st.selectedNodes();
-  if (!sel.length || st.mode !== 'design' || st.editingTextId || st.editingPathId || st.presenting) return null;
+  if (!sel.length || (st.mode !== 'design' && st.mode !== 'draw') || st.editingTextId || st.editingPathId || st.presenting) return null;
   const b = unionRects(sel.map(visualBounds));
   if (!b) return null;
   const types = sel.map((n) => n.type);

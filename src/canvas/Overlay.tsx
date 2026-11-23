@@ -70,7 +70,7 @@ export function Overlay({ protoDrag, penId, cursor }: { protoDrag: { fromId: str
       </g>,
     );
   }
-  if (sel.length && mode === 'design' && !st.editingTextId && !editingPathId && !sel.some((n) => n.locked)) {
+  if (sel.length && (mode === 'design' || mode === 'draw') && !st.editingTextId && !editingPathId && !sel.some((n) => n.locked)) {
     const box = single ?? { x: bounds!.x, y: bounds!.y, w: bounds!.w, h: bounds!.h, rotation: 0 };
     const rot = single?.rotation ?? 0;
     const cx = box.x + box.w / 2,
@@ -176,7 +176,9 @@ export function Overlay({ protoDrag, penId, cursor }: { protoDrag: { fromId: str
         pts.push(<line key={`l${i}${part}`} x1={s.x} y1={s.y} x2={cs.x} y2={cs.y} stroke={ACCENT} strokeWidth={1} />);
         pts.push(<circle key={`c${i}${part}`} data-point={i} data-part={part} cx={cs.x} cy={cs.y} r={3.5} fill={ACCENT} style={{ cursor: 'move' }} />);
       }
-      pts.push(<rect key={`p${i}`} data-point={i} data-part="p" x={s.x - 4} y={s.y - 4} width={8} height={8} fill="#fff" stroke={ACCENT} style={{ cursor: 'move' }} />);
+      const on = editingPathId && st.selectedPoints.includes(i);
+      const cur = st.pathTool === 'erase' ? 'not-allowed' : st.pathTool === 'cut' ? 'crosshair' : 'move';
+      pts.push(<rect key={`p${i}`} data-point={i} data-part="p" x={s.x - 4} y={s.y - 4} width={8} height={8} rx={on ? 4 : 1} fill={on ? ACCENT : '#fff'} stroke={ACCENT} style={{ cursor: cur }} />);
     });
     if (penId && cursor && editN.points.length) {
       const last = editN.points[editN.points.length - 1];

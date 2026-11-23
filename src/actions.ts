@@ -146,6 +146,7 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   group: { label: 'Group selection', shortcut: 'Ctrl+G', run: () => S().group() },
   ungroup: { label: 'Ungroup', shortcut: 'Ctrl+Shift+G', run: () => S().ungroup() },
   frameSelection: { label: 'Frame selection', shortcut: 'Ctrl+Alt+G', run: () => S().frameSelection() },
+  modeDraw: { label: 'Draw mode (pen, brush, pencil)', shortcut: 'Shift+B', run: () => S().set({ mode: S().mode === 'draw' ? 'design' : 'draw', tool: S().mode === 'draw' ? 'move' : 'brush', motionPlaying: false }) },
   modeDesign: { label: 'Design mode', shortcut: 'Shift+W', run: () => S().set({ mode: 'design', motionPlaying: false }) },
   modePrototype: { label: 'Prototype mode', shortcut: 'Shift+E', run: () => S().set({ mode: S().mode === 'prototype' ? 'design' : 'prototype', motionPlaying: false }) },
   modeMotion: { label: 'Motion mode (keyframe animation)', shortcut: 'Shift+M', run: () => S().set({ mode: S().mode === 'motion' ? 'design' : 'motion', motionPlaying: false, tool: 'move' }) },
@@ -200,6 +201,7 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
 };
 
 export const toolKeys: Record<string, Tool> = {
+  b: 'brush',
   v: 'move',
   k: 'scale',
   f: 'frame',

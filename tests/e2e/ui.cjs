@@ -93,6 +93,19 @@ const assert = (c, m) => {
   assert(stops.length === 2 && stops[0] !== stops[1] && parseInt(stops[1].slice(1, 3), 16) < 16 && parseInt(stops[0].slice(1, 3), 16) > 150, `gradient stop colours are independent (${stops.join(', ')})`);
   await p.keyboard.press('Escape');
 
+  // draw mode: brush stroke becomes a filled shape; sizing menu adds a min width
+  await p.click('.mode-btn[title^="Draw"]');
+  await p.click('.draw-tool[title^="Brush"]');
+  await p.mouse.move(420, 520); await p.mouse.down();
+  for (let i = 0; i <= 12; i++) await p.mouse.move(420 + i * 10, 520 + Math.sin(i / 2) * 20);
+  await p.mouse.up();
+  assert(await p.evaluate(() => { const s = window.figmy.store.getState(); const n = s.doc.nodes[s.selection[0]]; return n?.name === 'Brush' && n.closed && n.fillRule === 'nonzero' && n.fills.length === 1; }), 'brush stroke creates a filled shape');
+  await p.keyboard.press('Escape');
+  await p.click('.mode-btn[title^="Design"]');
+  await p.click('.size-field .size-mode >> nth=0');
+  await p.click('.sizing-menu >> text=Add min width');
+  assert(await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]].minW > 0; }), 'sizing menu adds a min width');
+
   // motion mode: drag at the playhead records a position keyframe; presets add tracks
   await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
   await p.click('.mode-btn[title^="Motion"]');

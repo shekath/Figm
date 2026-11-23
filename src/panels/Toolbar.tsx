@@ -5,6 +5,7 @@ import { Icon, type IconName } from './icons';
 import type { Mode, Tool } from '../types';
 import { CollabBar } from '../collab/CollabUI';
 import { AccountBadge } from '../auth/LoginUI';
+import { DrawBar, DrawToolButtons, PathEditBar } from './DrawTools';
 
 const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'figmaImport', 'export', 'exportHtml', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
@@ -30,7 +31,7 @@ const TOOLS: { group: { tool: Tool; icon: IconName; label: string; key: string }
       { tool: 'image', icon: 'image', label: 'Place image', key: 'Ctrl+Shift+K' },
     ],
   },
-  { group: [{ tool: 'pen', icon: 'pen', label: 'Pen', key: 'P' }, { tool: 'pencil', icon: 'pencil', label: 'Pencil', key: 'Shift+P' }] },
+  { group: [{ tool: 'pen', icon: 'pen', label: 'Pen', key: 'P' }, { tool: 'pencil', icon: 'pencil', label: 'Pencil', key: 'Shift+P' }, { tool: 'brush', icon: 'brush', label: 'Brush', key: 'B' }] },
   { group: [{ tool: 'text', icon: 'text', label: 'Text', key: 'T' }, { tool: 'text-path', icon: 'textPath', label: 'Text on path', key: '' }] },
   { group: [{ tool: 'comment', icon: 'comment', label: 'Comment', key: 'C' }] },
 ];
@@ -187,6 +188,7 @@ export function ToolDock() {
     return () => window.removeEventListener('pointerdown', close);
   }, []);
   const modes: { mode: Mode; icon: IconName; label: string; key: string }[] = [
+    { mode: 'draw', icon: 'drawMode', label: 'Draw', key: 'Shift+B' },
     { mode: 'design', icon: 'designMode', label: 'Design', key: 'Shift+W' },
     { mode: 'prototype', icon: 'link', label: 'Prototype', key: 'Shift+E' },
     { mode: 'motion', icon: 'motion', label: 'Motion — keyframe animation', key: 'Shift+M' },
@@ -194,8 +196,12 @@ export function ToolDock() {
   ];
   const setMode = (mode: Mode) => st.set({ mode, tool: 'move', motionPlaying: false, editingPathId: null });
   return (
-    <div className="tool-dock" ref={ref} onPointerDown={(e) => e.stopPropagation()}>
+    <>
+    <DrawBar />
+    <PathEditBar />
+    <div className={`tool-dock ${st.mode === 'draw' ? 'draw' : ''}`} ref={ref} onPointerDown={(e) => e.stopPropagation()}>
         {st.mode !== 'dev' && TOOLS.map((g, gi) => {
+            if (st.mode === 'draw' && g.group.some((t) => t.tool === 'pen')) return <DrawToolButtons key={gi} />;
             const current = g.group.find((t) => t.tool === st.tool) ?? g.group.find((t) => t.tool === lastInGroup[gi]) ?? g.group[0];
             const active = g.group.some((t) => t.tool === st.tool);
             return (
@@ -241,5 +247,6 @@ export function ToolDock() {
         ))}
       </div>
     </div>
+    </>
   );
 }

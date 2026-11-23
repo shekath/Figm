@@ -1,3 +1,4 @@
+import { deletePoints } from './lib/pathEdit';
 import { useEffect } from 'react';
 import { useEditor } from './store/store';
 import { actions, toolKeys } from './actions';
@@ -70,8 +71,18 @@ export function useShortcuts(enabled: boolean) {
         s.moveBy(s.selection, dx, dy);
         return;
       }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && s.editingPathId && s.selectedPoints.length) {
+        e.preventDefault();
+        const id = s.editingPathId;
+        let gone = false;
+        s.mutate((d) => { if (d.nodes[id] && !deletePoints(d.nodes[id], s.selectedPoints)) gone = true; });
+        s.set({ selectedPoints: [] });
+        if (gone) { s.set({ editingPathId: null, selection: [id] }); s.deleteSelection(); }
+        return;
+      }
       if (e.key === 'Escape') {
-        if (s.editingPathId) return s.set({ editingPathId: null });
+        if (s.editingPathId && s.selectedPoints.length) return s.set({ selectedPoints: [] });
+        if (s.editingPathId) return s.set({ editingPathId: null, pathTool: 'move' });
         if (s.tool !== 'move') return s.set({ tool: 'move' });
         if (s.selection.length) {
           const parent = s.doc.nodes[s.selection[0]]?.parentId;

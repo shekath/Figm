@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { produce, setAutoFreeze, current, isDraft } from 'immer';
 import { applyPatch, diffDocs, repairDocument, type DocPatch } from '../lib/docops';
-import type { DocumentData, Mode, Page, SceneNode, Tool, AutoLayout, Comment } from '../types';
+import type { DocumentData, Mode, Page, SceneNode, Tool, AutoLayout, Comment, BrushStyle } from '../types';
 import { createNode, sampleDocument, uid } from '../lib/factory';
 import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, translateTree, resizeTree, scalePoints } from '../lib/layout';
 import { applyBoolean, type BooleanOp } from '../lib/boolean';
@@ -37,6 +37,12 @@ export interface EditorState {
   mode: Mode;
   /** Motion mode: playhead (ms), playback and auto-keying. */
   motionTime: number;
+  /** Draw mode tool settings (pen, pencil, brush). */
+  draw: DrawSettings;
+  /** Selected anchor indices while editing a vector path (lasso / multi-select). */
+  selectedPoints: number[];
+  /** Active sub-tool while editing a vector path. */
+  pathTool: 'move' | 'lasso' | 'paint' | 'bend' | 'cut' | 'erase';
   motionPlaying: boolean;
   autoKey: boolean;
   selectedKeys: { nodeId: string; prop: MotionProp; id: string }[];
@@ -105,6 +111,7 @@ export interface EditorState {
   setAutoLayout: (id: string, patch: Partial<AutoLayout>) => void;
   useAsMask: () => void;
   setMotion: (patch: Partial<DocMotion>) => void;
+  setDraw: <K extends keyof DrawSettings>(tool: K, patch: Partial<DrawSettings[K]>) => void;
   setKeyframe: (ids: string[], prop: MotionProp, value: MotionValue | ((n: SceneNode) => MotionValue), t?: number) => void;
   toggleKeyframe: (ids: string[], prop: MotionProp) => void;
   updateKeyframes: (keys: { nodeId: string; prop: MotionProp; id: string }[], patch: Partial<Keyframe> | ((k: Keyframe) => Partial<Keyframe>)) => void;
@@ -255,6 +262,20 @@ function orderedInTree(d: DocumentData, pageId: string, ids: string[]) {
 
 const initial = sampleDocument();
 
+export interface DrawSettings {
+  pen: { color: string; width: number };
+  pencil: { color: string; width: number };
+  brush: { color: string; size: number; style: BrushStyle };
+}
+const DEFAULT_DRAW: DrawSettings = { pen: { color: '#000000', width: 1 }, pencil: { color: '#000000', width: 2 }, brush: { color: '#000000', size: 16, style: 'taper' } };
+function loadDraw(): DrawSettings {
+  try {
+    const v = JSON.parse(localStorage.getItem('figmy:draw') ?? 'null');
+    if (v) return { pen: { ...DEFAULT_DRAW.pen, ...v.pen }, pencil: { ...DEFAULT_DRAW.pencil, ...v.pencil }, brush: { ...DEFAULT_DRAW.brush, ...v.brush } };
+  } catch { /* ignore */ }
+  return DEFAULT_DRAW;
+}
+
 export const useEditor = create<EditorState>((set, get) => ({
   doc: initial,
   fileId: uid(),
@@ -266,6 +287,9 @@ export const useEditor = create<EditorState>((set, get) => ({
   tool: 'move',
   mode: 'design',
   motionTime: 0,
+  draw: loadDraw(),
+  selectedPoints: [],
+  pathTool: 'move',
   motionPlaying: false,
   autoKey: true,
   selectedKeys: [],
@@ -784,6 +808,11 @@ export const useEditor = create<EditorState>((set, get) => ({
       relayoutAncestors(d.nodes, n.parentId);
     }),
 
+  setDraw: (tool, patch) => {
+    const draw = { ...get().draw, [tool]: { ...get().draw[tool], ...patch } };
+    set({ draw });
+    try { localStorage.setItem('figmy:draw', JSON.stringify(draw)); } catch { /* ignore */ }
+  },
   setMotion: (patch) => get().mutate((d) => { d.motion = { ...DEFAULT_MOTION, ...d.motion, ...patch }; }),
   setKeyframe: (ids, prop, value, t) =>
     get().mutate((d) => {

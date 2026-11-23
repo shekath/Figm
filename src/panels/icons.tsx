@@ -73,6 +73,8 @@ export const Icons = {
   search: I(<><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></>),
   settings: I(<><path d="M3 4.5h10M3 11.5h10" /><circle cx="6" cy="4.5" r="1.6" /><circle cx="10" cy="11.5" r="1.6" /></>),
   padSides: I(<><rect x="3" y="3" width="10" height="10" rx="1" /><path d="M3 6h10M3 10h10M6 3v10M10 3v10" opacity=".5" /></>),
+  brush: I(<><path d="M10.5 2.5l3 3-5 5-3-3z" /><path d="M5.5 8.5c-2 0-3 1.5-3 3.5 0 .8-.5 1.5-1 1.5 2 1 5 .5 5.5-2z" /></>),
+  drawMode: I(<path d="M2.5 11c2-5 3.5-7 5-7s-1 6 1 6 2.5-4 3.5-4-.5 4 1.5 4" />),
   designMode: I(<><rect x="2.5" y="2.5" width="11" height="11" rx="2" /><path d="M6 6.5l4.5 1.6-1.9.6-.6 1.9z" /></>),
   motion: I(<><path d="M8 2.5 13.5 8 8 13.5 2.5 8Z" /><path d="M8 5.5 10.5 8 8 10.5 5.5 8Z" /></>),
   textPath: I(<><path d="M4 3h8M8 3v7" /><path d="M2.5 13.5c3-2.4 8-2.4 11 0" /></>),

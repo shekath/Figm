@@ -34,7 +34,7 @@ export function RightPanel() {
       </div>
       )}
       <div className="panel-scroll">
-        {st.mode === 'design' && (st.tool === 'frame' ? <FramePresetPanel /> : sel.length ? <DesignProps sel={sel} /> : <PageProps />)}
+        {(st.mode === 'design' || st.mode === 'draw') && (st.tool === 'frame' ? <FramePresetPanel /> : sel.length ? <DesignProps sel={sel} /> : <PageProps />)}
         {st.mode === 'motion' && (sel.length ? <MotionProps sel={sel} /> : <MotionPageProps />)}
         {st.mode === 'prototype' && <PrototypeProps sel={sel} />}
         {st.mode === 'dev' && <DevProps sel={sel} />}
@@ -293,19 +293,48 @@ function sizingPatch(n: SceneNode, axis: Axis, mode: LayoutSizing): Partial<Scen
 }
 const canHug = (n: SceneNode) => !!n.autoLayout || !!n.text;
 
-/** W and H fields with inline Fixed / Hug / Fill sizing, as in Figma's Resizing row. */
+/** Figma-style resizing menu: Fixed / Hug / Fill plus min and max limits. */
+function SizingMenu({ n, axis, inAL, onPick, onClose }: { n: SceneNode; axis: Axis; inAL: boolean; onPick: (m: LayoutSizing | 'add-min' | 'add-max' | 'rm-min' | 'rm-max') => void; onClose: () => void }) {
+  const mode = sizingOf(n, axis);
+  const W = axis === 'h' ? 'width' : 'height';
+  const minKey = axis === 'h' ? 'minW' : 'minH', maxKey = axis === 'h' ? 'maxW' : 'maxH';
+  const Item = ({ id, icon, label, on, disabled }: { id: LayoutSizing | 'add-min' | 'add-max' | 'rm-min' | 'rm-max'; icon: string; label: string; on?: boolean; disabled?: boolean }) => (
+    <button disabled={disabled} className={on ? 'on' : ''} onClick={() => { onPick(id); onClose(); }}>
+      <span className="sm-check">{on ? '✓' : ''}</span>
+      <span className={`sm-ico ${axis === 'v' ? 'rot' : ''}`}>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+  return (
+    <div className="sizing-menu" onMouseLeave={onClose} onPointerDown={(e) => e.stopPropagation()}>
+      <Item id="fixed" icon="⊢⊣" label={`Fixed ${W} (${Math.round(axis === 'h' ? n.w : n.h)})`} on={mode === 'fixed'} />
+      {canHug(n) && <Item id="hug" icon="⇥⇤" label="Hug contents" on={mode === 'hug'} />}
+      {inAL && <Item id="fill" icon="⟷" label="Fill container" on={mode === 'fill'} />}
+      <hr />
+      {n[minKey] != null ? <Item id="rm-min" icon="→|←" label={`Remove min ${W}`} /> : <Item id="add-min" icon="→|←" label={`Add min ${W}…`} />}
+      {n[maxKey] != null ? <Item id="rm-max" icon="|↔|" label={`Remove max ${W}`} /> : <Item id="add-max" icon="|↔|" label={`Add max ${W}…`} />}
+    </div>
+  );
+}
+
+/** W and H fields with Figma's resizing menu (Fixed / Hug / Fill, min and max). */
 function SizeFields({ sel, parent, geo }: { sel: SceneNode[]; parent: SceneNode | null; geo: (k: 'w' | 'h', v: number, live?: boolean) => void }) {
   const st = useEditor();
+  const [menu, setMenu] = useState<Axis | null>(null);
   const n = sel[0];
   const single = sel.length === 1;
   const inAL = single && !!parent?.autoLayout && !n.layoutAbsolute;
-  const showSizing = single && (inAL || canHug(n));
-  const opts = (axis: Axis) => [
-    { value: 'fixed' as LayoutSizing, label: `Fixed ${axis === 'h' ? 'width' : 'height'}` },
-    ...(canHug(n) ? [{ value: 'hug' as LayoutSizing, label: 'Hug contents' }] : []),
-    ...(inAL ? [{ value: 'fill' as LayoutSizing, label: 'Fill container' }] : []),
-  ];
-  const set = (axis: Axis, mode: LayoutSizing) => st.updateNodes(sel.map((x) => x.id), (x) => sizingPatch(x, axis, mode));
+  const ids = sel.map((x) => x.id);
+  const pick = (axis: Axis, m: LayoutSizing | 'add-min' | 'add-max' | 'rm-min' | 'rm-max') => {
+    const minKey = axis === 'h' ? 'minW' : 'minH', maxKey = axis === 'h' ? 'maxW' : 'maxH';
+    const size = axis === 'h' ? n.w : n.h;
+    if (m === 'add-min') st.updateNodes(ids, { [minKey]: Math.round(size) });
+    else if (m === 'add-max') st.updateNodes(ids, { [maxKey]: Math.round(size) });
+    else if (m === 'rm-min') st.updateNodes(ids, { [minKey]: undefined });
+    else if (m === 'rm-max') st.updateNodes(ids, { [maxKey]: undefined });
+    else st.updateNodes(ids, (x) => sizingPatch(x, axis, m));
+  };
+  const limits = (['minW', 'maxW', 'minH', 'maxH'] as const).filter((k) => single && n[k] != null);
   return (
     <>
       <div className="grid2">
@@ -314,28 +343,26 @@ function SizeFields({ sel, parent, geo }: { sel: SceneNode[]; parent: SceneNode 
           return (
             <div key={axis} className={`size-field m-${mode}`}>
               <NumberField label={axis === 'h' ? 'W' : 'H'} {...mv(sel, (x) => (axis === 'h' ? x.w : x.h))} min={0} onCommitStart={st.checkpoint} onChange={(v, live) => geo(axis === 'h' ? 'w' : 'h', v, live)} />
-              {showSizing && (
-                <label className="size-mode" title={axis === 'h' ? 'Horizontal resizing' : 'Vertical resizing'}>
+              {single && (
+                <button className="size-mode" title={axis === 'h' ? 'Horizontal resizing' : 'Vertical resizing'} onClick={() => setMenu(menu === axis ? null : axis)}>
                   <span>{mode === 'fixed' ? '' : mode === 'hug' ? 'Hug' : 'Fill'}</span>
                   <span className="caret">⌄</span>
-                  <select value={mode} onChange={(e) => set(axis, e.target.value as LayoutSizing)} onKeyDown={(e) => e.stopPropagation()}>
-                    {opts(axis).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </label>
+                </button>
               )}
+              {menu === axis && <SizingMenu n={n} axis={axis} inAL={inAL} onPick={(m) => pick(axis, m)} onClose={() => setMenu(null)} />}
             </div>
           );
         })}
       </div>
-      {inAL && (
-        <details className="minmax">
-          <summary>Min / max size</summary>
-          <div className="grid2">
-            {(['minW', 'maxW', 'minH', 'maxH'] as const).map((k) => (
-              <NumberField key={k} label={k.replace('W', ' W').replace('H', ' H')} value={n[k] ?? 0} min={0} onChange={(v) => st.updateNodes(sel.map((x) => x.id), { [k]: v || undefined })} />
-            ))}
-          </div>
-        </details>
+      {limits.length > 0 && (
+        <div className="grid2 limits">
+          {limits.map((k) => (
+            <div key={k} className="size-field limit">
+              <NumberField label={{ minW: 'Min W', maxW: 'Max W', minH: 'Min H', maxH: 'Max H' }[k]} value={n[k] ?? 0} min={0} onChange={(v) => st.updateNodes(ids, { [k]: v })} />
+              <button className="size-mode" title="Remove" onClick={() => st.updateNodes(ids, { [k]: undefined })}>✕</button>
+            </div>
+          ))}
+        </div>
       )}
     </>
   );

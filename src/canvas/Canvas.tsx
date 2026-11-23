@@ -3,6 +3,8 @@ import { useEditor, setViewportSize, deepCopy, type Guide } from '../store/store
 import { RenderNode, shapePathD } from './render';
 import { useDisplayNodes } from './useDisplayNodes';
 import { currentValue, putKeyframe, type Vec } from '../lib/motion';
+import { brushOutline, type BrushPoint } from '../lib/brush';
+import { bendSegment, cutAt, deletePoints, nearestSegment, pointInPolygon } from '../lib/pathEdit';
 import { hitPath, pickFromPath } from './hit';
 import { createNode, solid } from '../lib/factory';
 import { normalizeRect, rotatePoint, simplify, unionRects, visualBounds, intersects, contains, type Rect } from '../lib/geometry';
@@ -31,6 +33,11 @@ type Drag =
   | { kind: 'proto'; fromId: string; x: number; y: number }
   | { kind: 'radius'; id: string; startR: number; wx: number; wy: number }
   | { kind: 'textbox'; wx: number; wy: number; parentId: string | null; r: Rect | null }
+  | { kind: 'brush'; pts: BrushPoint[] }
+  | { kind: 'lasso'; id: string; pts: { x: number; y: number }[]; additive: number[] }
+  | { kind: 'bend'; id: string; i: number; t: number }
+  | { kind: 'erase'; id: string }
+  | { kind: 'points'; id: string; idxs: number[]; wx: number; wy: number; orig: PathPoint[] }
   | { kind: 'axis'; axis: 'x' | 'y' | 'xy'; ids: string[]; wx: number; wy: number; start: Record<string, Vec> };
 
 const SNAP = 6;
@@ -190,9 +197,48 @@ export function Canvas() {
       const idx = Number(target.dataset.point);
       const part = (target.dataset.part ?? 'p') as 'p' | 'cin' | 'cout';
       const n = s.doc.nodes[s.editingPathId];
+      const pid = s.editingPathId;
+      if (part === 'p' && s.pathTool === 'erase') { erasePoint(pid, idx); setDrag({ kind: 'erase', id: pid }); return; }
+      if (part === 'p' && s.pathTool === 'cut') { cutPath(pid, idx); return; }
+      if (part === 'p') {
+        const sel = e.shiftKey ? (s.selectedPoints.includes(idx) ? s.selectedPoints.filter((i) => i !== idx) : [...s.selectedPoints, idx]) : s.selectedPoints.includes(idx) ? s.selectedPoints : [idx];
+        s.set({ selectedPoints: sel });
+        if (sel.length > 1 && sel.includes(idx)) {
+          s.checkpoint();
+          setDrag({ kind: 'points', id: pid, idxs: sel, wx: w.x, wy: w.y, orig: structuredClone(n.points!) });
+          return;
+        }
+      }
       s.checkpoint();
       setDrag({ kind: 'point', id: s.editingPathId, index: idx, part, wx: w.x, wy: w.y, orig: structuredClone(n.points![idx]) });
       return;
+    }
+    if (s.editingPathId && s.pathTool !== 'move' && s.doc.nodes[s.editingPathId]?.points) {
+      const pid = s.editingPathId;
+      const n = s.doc.nodes[pid];
+      const lx = w.x - n.x, ly = w.y - n.y;
+      if (s.pathTool === 'lasso') { setDrag({ kind: 'lasso', id: pid, pts: [w], additive: e.shiftKey ? s.selectedPoints : [] }); return; }
+      if (s.pathTool === 'erase') { s.checkpoint(); setDrag({ kind: 'erase', id: pid }); return; }
+      if (s.pathTool === 'paint') {
+        s.updateNodes([pid], (x) => (x.fills.some((f) => f.visible) ? { fills: [] } : { closed: true, fills: [solid(s.draw.pen.color)] }));
+        return;
+      }
+      if (s.pathTool === 'bend') {
+        const near = nearestSegment(n, lx, ly);
+        if (near && near.d * s.zoom < 14) { s.checkpoint(); setDrag({ kind: 'bend', id: pid, i: near.i, t: near.t }); }
+        return;
+      }
+      if (s.pathTool === 'cut') {
+        const near = nearestSegment(n, lx, ly);
+        if (near && near.d * s.zoom < 10) {
+          // insert an anchor on the segment, then cut there
+          s.mutate((d) => {
+            d.nodes[pid].points!.splice(near.i + 1, 0, { x: lx, y: ly });
+          });
+          cutPath(pid, near.i + 1);
+        }
+        return;
+      }
     }
     if (handle?.startsWith('axis-')) {
       const start: Record<string, Vec> = {};
@@ -257,8 +303,22 @@ export function Canvas() {
         return;
       }
       case 'pencil':
-        setDrag({ kind: 'pencil', pts: [w] });
+      case 'brush': {
+        if (e.ctrlKey || e.metaKey) {
+          // sample a stroke's properties into the tool settings
+          const path = hitPath(s.doc.nodes, s.page().children, w.x, w.y, 4 / s.zoom);
+          const hit = path.length ? s.doc.nodes[path[path.length - 1]] : null;
+          if (hit) {
+            if (hit.brush) s.setDraw('brush', { color: hit.fills[0]?.color ?? s.draw.brush.color, size: hit.brush.size, style: hit.brush.style });
+            else if (hit.strokes[0]) s.setDraw(s.tool === 'brush' ? 'brush' : 'pencil', s.tool === 'brush' ? { color: hit.strokes[0].color, size: Math.max(1, hit.strokes[0].width) } : { color: hit.strokes[0].color, width: hit.strokes[0].width });
+            s.notify('Sampled stroke properties');
+          }
+          return;
+        }
+        if (s.tool === 'brush') setDrag({ kind: 'brush', pts: [{ x: w.x, y: w.y, p: e.pressure || 0.5, t: e.timeStamp }] });
+        else setDrag({ kind: 'pencil', pts: [w] });
         return;
+      }
       case 'pen': {
         const nodes = s.doc.nodes;
         const cur = penRef.current ? nodes[penRef.current] : null;
@@ -283,6 +343,7 @@ export function Canvas() {
         }
         const parent = frameAt(w.x, w.y);
         const p = createNode('path', { x: w.x, y: w.y, w: 0, h: 0, points: [{ x: 0, y: 0 }], closed: false });
+        p.strokes = [{ ...p.strokes[0], color: s.draw.pen.color, width: s.draw.pen.width }];
         s.addNode(p, parent);
         penRef.current = p.id;
         s.set({ selection: [p.id] });
@@ -306,7 +367,7 @@ export function Canvas() {
     }
 
     // move tool
-    if (s.mode === 'prototype' || s.mode === 'design' || s.mode === 'dev' || s.mode === 'motion') {
+    {
       // frame title click
       if (target.dataset?.frameLabel) {
         const id = target.dataset.frameLabel;
@@ -340,6 +401,32 @@ export function Canvas() {
     }
   };
 
+  const erasePoint = (id: string, idx: number, record = true) => {
+    const st0 = useEditor.getState();
+    let removeNode = false;
+    st0.mutate((d) => { if (d.nodes[id] && !deletePoints(d.nodes[id], [idx])) removeNode = true; }, record);
+    st0.set({ selectedPoints: [] });
+    if (removeNode) { st0.set({ editingPathId: null, selection: [id] }); st0.deleteSelection(); }
+    else normalizePath(id);
+  };
+  const cutPath = (id: string, idx: number) => {
+    const st0 = useEditor.getState();
+    const n = st0.doc.nodes[id];
+    if (!n?.points) return;
+    let second: PathPoint[] | null = null;
+    st0.mutate((d) => { second = cutAt(d.nodes[id], idx); });
+    if (second) {
+      const pts = second as PathPoint[];
+      const piece = createNode('path', { name: n.name, x: n.x, y: n.y, w: n.w, h: n.h, points: pts, closed: false });
+      piece.strokes = structuredClone(n.strokes);
+      piece.fills = [];
+      st0.addNode(piece, n.parentId);
+      normalizePath(piece.id);
+    }
+    normalizePath(id);
+    st0.set({ selectedPoints: [], editingPathId: id, selection: [id] });
+    st0.notify(second ? 'Path split in two' : 'Path opened');
+  };
   const normalizePath = (id: string) => {
     // recompute bbox of path so x,y,w,h wraps the points
     useEditor.getState().mutate((d) => {
@@ -608,6 +695,38 @@ export function Canvas() {
         }, false);
         break;
       }
+      case 'brush':
+        drag.pts.push({ x: w.x, y: w.y, p: e.pressure || 0.5, t: e.timeStamp });
+        setDrag({ ...drag });
+        break;
+      case 'lasso':
+        drag.pts.push(w);
+        setDrag({ ...drag });
+        break;
+      case 'bend': {
+        const n = s.doc.nodes[drag.id];
+        s.mutate((d) => bendSegment(d.nodes[drag.id], drag.i, drag.t, w.x - n.x, w.y - n.y), false);
+        break;
+      }
+      case 'erase': {
+        const n = s.doc.nodes[drag.id];
+        if (!n?.points) break;
+        const hit = n.points.findIndex((p) => Math.hypot(p.x + n.x - w.x, p.y + n.y - w.y) * s.zoom < 8);
+        if (hit >= 0) erasePoint(drag.id, hit, false);
+        break;
+      }
+      case 'points': {
+        const dx = w.x - drag.wx, dy = w.y - drag.wy;
+        s.mutate((d) => {
+          const n = d.nodes[drag.id];
+          for (const i of drag.idxs) {
+            const o = drag.orig[i];
+            if (!o) continue;
+            n.points![i] = { x: o.x + dx, y: o.y + dy, cin: o.cin && { x: o.cin.x + dx, y: o.cin.y + dy }, cout: o.cout && { x: o.cout.x + dx, y: o.cout.y + dy } };
+          }
+        }, false);
+        break;
+      }
       case 'pencil':
         drag.pts.push(w);
         force((x) => x + 1);
@@ -799,6 +918,35 @@ export function Canvas() {
         useEditor.getState().set({ past: useEditor.getState().past.slice(0, -1) });
         break;
       }
+      case 'brush': {
+        const b = s.draw.brush;
+        const ring = brushOutline(drag.pts, b.size, b.style);
+        if (ring.length >= 3) {
+          const minX = Math.min(...ring.map((p) => p.x)), minY = Math.min(...ring.map((p) => p.y));
+          const maxX = Math.max(...ring.map((p) => p.x)), maxY = Math.max(...ring.map((p) => p.y));
+          const n = createNode('path', { name: 'Brush', x: minX, y: minY, w: Math.max(0.01, maxX - minX), h: Math.max(0.01, maxY - minY), points: ring.map((p) => ({ x: p.x - minX, y: p.y - minY })), closed: true });
+          n.fills = [solid(b.color)];
+          n.strokes = [];
+          n.fillRule = 'nonzero';
+          n.brush = { style: b.style, size: b.size };
+          s.addNode(n, frameAt(drag.pts[0].x, drag.pts[0].y));
+          s.set({ selection: [n.id] });
+        }
+        break;
+      }
+      case 'lasso': {
+        const n = s.doc.nodes[drag.id];
+        if (n?.points) {
+          const inside = n.points.map((p, i) => (pointInPolygon({ x: p.x + n.x, y: p.y + n.y }, drag.pts) ? i : -1)).filter((i) => i >= 0);
+          s.set({ selectedPoints: [...new Set([...drag.additive, ...inside])] });
+        }
+        break;
+      }
+      case 'bend':
+      case 'points':
+      case 'erase':
+        if (s.doc.nodes[drag.id]) normalizePath(drag.id);
+        break;
       case 'pencil': {
         const pts = simplify(drag.pts, 1 / s.zoom);
         if (pts.length >= 2) {
@@ -815,7 +963,7 @@ export function Canvas() {
             points: smoothPoints(pts.map((p) => ({ x: p.x - minX, y: p.y - minY }))),
             closed: false,
           });
-          n.strokes = [{ ...n.strokes[0], width: 2, cap: 'round', join: 'round' }];
+          n.strokes = [{ ...n.strokes[0], color: s.draw.pencil.color, width: s.draw.pencil.width, cap: 'round', join: 'round' }];
           s.addNode(n, frameAt(pts[0].x, pts[0].y));
           s.set({ selection: [n.id] });
         }
@@ -1025,7 +1173,9 @@ export function Canvas() {
           {page.children.map((id) => (
             <RenderNode key={id} id={id} ctx={{ nodes: displayNodes, outlines: st.showOutlines, hideIds: hidden }} />
           ))}
-          {drag?.kind === 'pencil' && <polyline points={drag.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#000" strokeWidth={2 / zoom} />}
+          {drag?.kind === 'pencil' && <polyline points={drag.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={st.draw.pencil.color} strokeWidth={st.draw.pencil.width} strokeLinecap="round" strokeLinejoin="round" />}
+          {drag?.kind === 'brush' && <polygon points={brushOutline(drag.pts, st.draw.brush.size, st.draw.brush.style).map((p) => `${p.x},${p.y}`).join(' ')} fill={st.draw.brush.color} fillRule="nonzero" />}
+          {drag?.kind === 'lasso' && <polygon points={drag.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(13,153,255,0.08)" stroke="#0d99ff" strokeWidth={1 / zoom} strokeDasharray={`${4 / zoom} ${3 / zoom}`} />}
         </g>
       </svg>
       <PeerCursors />

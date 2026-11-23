@@ -84,6 +84,7 @@ export interface AutoLayout {
   reverseZ?: boolean;
 }
 
+export type BrushStyle = 'round' | 'taper' | 'marker' | 'ink' | 'calligraphy' | 'pressure';
 export type LayoutSizing = 'fixed' | 'hug' | 'fill';
 
 export interface Constraints {
@@ -182,6 +183,10 @@ export interface SceneNode {
   layoutAbsolute?: boolean;
   /** Keyframe animation (Motion mode). */
   motion?: import('./lib/motion').NodeMotion;
+  /** Fill rule for vector geometry (brush strokes use nonzero so overlaps stay solid). */
+  fillRule?: 'nonzero' | 'evenodd';
+  /** Brush stroke settings the shape was drawn with. */
+  brush?: { style: BrushStyle; size: number };
   /** Text on path: SVG path data (in the text layer's own coordinates) the text flows along. */
   textPathD?: string;
   minW?: number;
@@ -340,10 +345,11 @@ export type Tool =
   | 'arrow'
   | 'pen'
   | 'pencil'
+  | 'brush'
   | 'text'
   | 'text-path'
   | 'hand'
   | 'comment'
   | 'image';
 
-export type Mode = 'design' | 'prototype' | 'dev' | 'motion';
+export type Mode = 'design' | 'draw' | 'prototype' | 'dev' | 'motion';

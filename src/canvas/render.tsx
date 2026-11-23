@@ -127,7 +127,7 @@ function geometry(n: SceneNode, props: React.SVGProps<SVGElement>, inset = 0): R
     case 'line':
       return <line x1={0} y1={0} x2={n.w} y2={n.h} {...p} />;
     case 'path':
-      return <path d={n.rings?.length ? ringsPath(n.rings) : pathData(n.points ?? [], !!n.closed)} fillRule="evenodd" {...p} />;
+      return <path d={n.rings?.length ? ringsPath(n.rings) : pathData(n.points ?? [], !!n.closed)} fillRule={n.fillRule ?? "evenodd"} {...p} />;
     default: {
       const r = Math.max(0, (n.radius ?? 0) - inset);
       if (n.radii && n.radii.some((v) => v !== n.radii![0]))
