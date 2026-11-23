@@ -125,16 +125,22 @@ export interface LibraryEntry {
 }
 
 const DB = 'vectura';
+let dbPromise: Promise<IDBDatabase> | null = null;
 function idb(): Promise<IDBDatabase> {
-  return new Promise((res, rej) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((res, rej) => {
     const r = indexedDB.open(DB, 1);
     r.onupgradeneeded = () => {
       r.result.createObjectStore('files');
       r.result.createObjectStore('meta');
     };
     r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
+    r.onerror = () => {
+      dbPromise = null;
+      rej(r.error);
+    };
   });
+  return dbPromise;
 }
 async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const db = await idb();

@@ -306,8 +306,8 @@ export function RenderNode({ id, ctx }: { id: string; ctx: RenderCtx }): React.R
 
   const childEls =
     n.type === 'group' || isContainer ? (
-      <g key="kids" transform={`translate(${-n.x},${-n.y})`} clipPath={isContainer && n.clip && !outline ? `url(#${pre}clip)` : undefined}>
-        {renderChildren(n.children, ctx)}
+      <g key="kids" clipPath={isContainer && n.clip && !outline ? `url(#${pre}clip)` : undefined}>
+        <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children, ctx)}</g>
       </g>
     ) : null;
 

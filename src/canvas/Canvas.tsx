@@ -31,7 +31,7 @@ const SNAP = 6;
 export function Canvas() {
   const ref = useRef<HTMLDivElement>(null);
   const st = useEditor();
-  const { doc, zoom, panX, panY, tool, selection, mode } = st;
+  const { doc, zoom, panX, panY, tool } = st;
   const page = st.page();
   const [drag, setDrag] = useState<Drag | null>(null);
   const [space, setSpace] = useState(false);
