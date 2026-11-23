@@ -3,6 +3,7 @@ import { useEditor } from './store/store';
 import { RenderNode } from './canvas/render';
 import { EASINGS, lerp, scrollExtent, smartAnimateFrame } from './lib/proto';
 import { descendants } from './lib/layout';
+import { childOverrides, resolveNested, swapPatch } from './lib/components';
 import type { Animation, PrototypeLink, SceneNode } from './types';
 
 type Nodes = Record<string, SceneNode>;
@@ -76,6 +77,17 @@ export function Presenter() {
     if (!ids.length) return nodes;
     let out: Nodes = { ...nodes };
     for (const instId of ids) {
+      if (instId.includes('/')) {
+        // nested instance: express the variant as a scoped override on the outermost instance
+        const [head, ...rest] = instId.split('/');
+        const top = out[head];
+        const nested = top ? resolveNested(out, top, rest) : null;
+        if (!top || !nested || !nodes[variants[instId]]) continue;
+        const key = rest.join('/');
+        out[head] = { ...top, overrides: { ...(top.overrides ?? {}), [key]: { ...(top.overrides?.[key] ?? {}), ...swapPatch(nodes, nested.node, variants[instId]) } } };
+        out = animateVariant(out, instId);
+        continue;
+      }
       const inst = nodes[instId];
       const compId = variants[instId];
       const comp = nodes[compId];
@@ -84,25 +96,29 @@ export function Presenter() {
       // follow the variant's size unless the instance was resized
       const follows = orig && Math.abs(inst.w - orig.w) < 0.5 && Math.abs(inst.h - orig.h) < 0.5;
       out[instId] = { ...inst, componentId: compId, w: follows ? comp.w : inst.w, h: follows ? comp.h : inst.h };
+      out = animateVariant(out, instId);
       const va = variantAnims[instId];
-      if (va && nodes[va.from]) {
-        const p = Math.min(1, (now - va.start) / Math.max(1, va.link.duration));
-        const e = EASINGS[va.link.easing ?? 'ease-out'](p);
-        const { kind } = normAnim(va.link.animation);
-        if (kind !== 'instant') {
-          const sa = smartAnimateFrame(out, va.from, va.to, kind === 'smart-animate' ? e : 1);
-          const ids2 = [va.to, ...descendants(nodes, va.to)];
-          out = { ...out };
-          for (const id of ids2) out[id] = sa.nodes[id];
-          if (kind === 'dissolve') for (const c of nodes[va.to].children) out[c] = { ...out[c], opacity: out[c].opacity * e };
-          if (follows) {
-            const from = nodes[va.from];
-            out[instId] = { ...out[instId], w: lerp(from.w, comp.w, e), h: lerp(from.h, comp.h, e) };
-          }
-        }
+      if (va && nodes[va.from] && follows && normAnim(va.link.animation).kind !== 'instant') {
+        const e = EASINGS[va.link.easing ?? 'ease-out'](Math.min(1, (now - va.start) / Math.max(1, va.link.duration)));
+        const from = nodes[va.from];
+        out[instId] = { ...out[instId], w: lerp(from.w, comp.w, e), h: lerp(from.h, comp.h, e) };
       }
     }
     return out;
+
+    /** Tween the destination variant's layers from the source variant (shared by top-level and nested instances). */
+    function animateVariant(base: Nodes, key: string): Nodes {
+      const va = variantAnims[key];
+      if (!va || !nodes[va.from] || !nodes[va.to]) return base;
+      const e = EASINGS[va.link.easing ?? 'ease-out'](Math.min(1, (now - va.start) / Math.max(1, va.link.duration)));
+      const { kind } = normAnim(va.link.animation);
+      if (kind === 'instant') return base;
+      const sa = smartAnimateFrame(base, va.from, va.to, kind === 'smart-animate' ? e : 1);
+      const next = { ...base };
+      for (const id of [va.to, ...descendants(nodes, va.to)]) next[id] = sa.nodes[id];
+      if (kind === 'dissolve') for (const c of nodes[va.to].children) next[c] = { ...next[c], opacity: next[c].opacity * e };
+      return next;
+    }
   }, [nodes, variants, variantAnims, now]);
 
   /* ---------- animation loops ---------- */
@@ -155,7 +171,12 @@ export function Presenter() {
   };
 
   /* ---------- interactive components ---------- */
-  const currentVariant = (instId: string) => variants[instId] ?? nodes[instId]?.componentId ?? '';
+  const currentVariant = (instPath: string) => {
+    if (variants[instPath]) return variants[instPath];
+    const [head, ...rest] = instPath.split('/');
+    if (!rest.length) return nodes[head]?.componentId ?? '';
+    return (rn[head] && resolveNested(rn, rn[head], rest)?.node.componentId) || '';
+  };
 
   const changeVariant = (instId: string, to: string, link: PrototypeLink, temp?: 'hover' | 'press') => {
     const from = currentVariant(instId);
@@ -258,19 +279,23 @@ export function Presenter() {
   const linkedIn = useCallback(
     (frameId: string): (Hit & { n: SceneNode })[] => {
       const out: (Hit & { n: SceneNode })[] = [];
-      const walk = (id: string, inst: string | null, depth: number) => {
-        const n = rn[id];
-        if (!n || !n.visible || depth > 20) return;
+      const walk = (id: string, inst: string | null, level: Record<string, Partial<SceneNode>> | undefined, depth: number) => {
+        const raw = rn[id];
+        if (!raw || depth > 20) return;
+        const n = level?.[id] ? { ...raw, ...level[id] } : raw;
+        if (!n.visible) return;
         if (n.prototype?.length) out.push({ id, inst, n });
         if (n.type === 'instance' && n.componentId && rn[n.componentId]) {
           const comp = rn[n.componentId];
-          if (comp.prototype?.length) out.push({ id: comp.id, inst: n.id, n: comp });
-          comp.children.forEach((c) => walk(c, n.id, depth + 1));
+          const path = inst ? `${inst}/${id}` : id;
+          if (comp.prototype?.length) out.push({ id: comp.id, inst: path, n: comp });
+          const lv = childOverrides(rn, n, level);
+          comp.children.forEach((c) => walk(c, path, lv, depth + 1));
           return;
         }
-        n.children.forEach((c) => walk(c, inst, depth + 1));
+        raw.children.forEach((c) => walk(c, inst, level, depth + 1));
       };
-      walk(frameId, null, 0);
+      walk(frameId, null, undefined, 0);
       return out;
     },
     [rn],
@@ -347,29 +372,33 @@ export function Presenter() {
   const pathAt = (rootId: string, lx: number, ly: number): Hit[] => {
     const root = rn[rootId];
     let best: Hit[] = [];
-    const walk = (id: string, px: number, py: number, path: Hit[], inst: string | null, depth: number) => {
-      const n = rn[id];
-      if (!n || !n.visible || depth > 30) return;
+    const walk = (id: string, px: number, py: number, path: Hit[], inst: string | null, level: Record<string, Partial<SceneNode>> | undefined, depth: number) => {
+      const raw = rn[id];
+      if (!raw || depth > 30) return;
+      const n = level?.[id] ? { ...raw, ...level[id] } : raw;
+      if (!n.visible) return;
       const inside = px >= n.x && px <= n.x + n.w && py >= n.y && py <= n.y + n.h;
       if (!inside && (n.clip || n.type !== 'group')) return;
       const p = inside ? [...path, { id, inst }] : path;
       if (inside && p.length > best.length) best = p;
       if (n.type === 'instance' && n.componentId && rn[n.componentId]) {
         const comp = rn[n.componentId];
+        const instPath = inst ? `${inst}/${id}` : id;
         const cx = comp.x + ((px - n.x) * comp.w) / (n.w || 1);
         const cy = comp.y + ((py - n.y) * comp.h) / (n.h || 1);
-        const pc = [...p, { id: comp.id, inst: n.id }];
+        const pc = [...p, { id: comp.id, inst: instPath }];
         if (pc.length > best.length) best = pc;
-        for (const c of comp.children) walk(c, cx, cy, pc, n.id, depth + 1);
+        const lv = childOverrides(rn, n, level);
+        for (const c of comp.children) walk(c, cx, cy, pc, instPath, lv, depth + 1);
         return;
       }
       const s = scroll[id];
-      for (const c of n.children) {
+      for (const c of raw.children) {
         const k = rn[c];
-        walk(c, px + (s && !k?.fixed ? s.x : 0), py + (s && !k?.fixed ? s.y : 0), p, inst, depth + 1);
+        walk(c, px + (s && !k?.fixed ? s.x : 0), py + (s && !k?.fixed ? s.y : 0), p, inst, level, depth + 1);
       }
     };
-    walk(rootId, root.x + lx, root.y + ly, [], null, 0);
+    walk(rootId, root.x + lx, root.y + ly, [], null, undefined, 0);
     return best;
   };
 
@@ -443,7 +472,7 @@ export function Presenter() {
     const entered = path.filter((h) => !prevKeys.has(keyOf(h)));
     const left = prev.filter((h) => !keys.has(keyOf(h)));
     // instances under the pointer (for "while hovering" variant changes, tracked per instance so swaps don't flicker)
-    const instUnder = new Set(path.flatMap((h) => [h.inst, rn[h.id]?.type === 'instance' ? h.id : null]).filter(Boolean) as string[]);
+    const instUnder = new Set(path.flatMap((h) => [h.inst, rn[h.id]?.type === 'instance' ? (h.inst ? `${h.inst}/${h.id}` : h.id) : null]).filter(Boolean) as string[]);
     for (const [instId, tv] of Object.entries(tempVariant.current)) if (tv.trigger === 'hover' && !instUnder.has(instId)) revertTemp(instId);
     for (const h of left) {
       const n = rn[h.id];

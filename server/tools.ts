@@ -114,6 +114,7 @@ export const tools: ToolDef[] = [
         'Common screen sizes: mobile 390×844, tablet 834×1194, desktop 1440×1024. Use 8px spacing steps and a clear type scale (e.g. 12/14/16/20/24/32/48).',
         'Text nodes: set "text", "fontSize", "fontWeight", "color". Omit width for single-line labels (auto width); set width for paragraphs (auto height).',
         'Every change appears live in all open editors. Use get_selection to act on what the user selected.',
+        'Nested instances: set_instance_properties with nested: [{ path: "Row/Icon", swapTo: "Icon/Star" }] swaps or overrides nested instances and texts by layer path; add_component_property type "instance-swap" exposes a swap slot on the component.',
         'Variants: build each state as a component named "Prop=Value" (e.g. "State=Default"), then combine_as_variants. Instances switch with set_instance_properties. Interactive components: add_interaction with action "change-to" on a layer inside a variant (e.g. trigger "hover" → State=Hover, smart-animate).',
         nodeSpecDoc,
       ],
@@ -500,8 +501,8 @@ export const tools: ToolDef[] = [
   {
     name: 'add_component_property',
     title: 'Add component property',
-    description: 'Expose a layer inside a component as a boolean (show/hide) or text property that instances can set.',
-    schema: { fileId, layerId: z.string().describe('Layer inside a main component / variant'), type: z.enum(['boolean', 'text']), name: z.string().optional() },
+    description: 'Expose a layer inside a component as a boolean (show/hide), text, or instance-swap (choose which component a nested instance shows) property that instances can set.',
+    schema: { fileId, layerId: z.string().describe('Layer inside a main component / variant (a nested instance for instance-swap)'), type: z.enum(['boolean', 'text', 'instance-swap']), name: z.string().optional() },
     run: (a, ctx) => {
       const room = resolveRoom(ctx, a.fileId);
       return ctx.rooms.edit(room, (d) => comps.addComponentProp(d, String(a.layerId), a.type as 'boolean' | 'text', a.name as string | undefined));
@@ -510,14 +511,37 @@ export const tools: ToolDef[] = [
   {
     name: 'set_instance_properties',
     title: 'Set instance properties',
-    description: 'Configure an instance: switch variant properties (e.g. {"State":"Hover"}) and set boolean/text component properties by name.',
-    schema: { fileId, instanceId: z.string(), properties: z.record(z.string(), z.union([z.string(), z.boolean()])) },
+    description: 'Configure an instance: switch variant properties (e.g. {"State":"Hover"}), set boolean/text/instance-swap component properties by name, and override nested instances or texts by layer path (e.g. nested: [{ path: "Row/Icon", swapTo: "<componentId or name>" }, { path: "Row/Button/Label", text: "Buy" }]).',
+    schema: {
+      fileId,
+      instanceId: z.string(),
+      properties: z.record(z.string(), z.union([z.string(), z.boolean()])).optional().describe('Variant / boolean / text values; instance-swap values are a component id or name'),
+      nested: z
+        .array(
+          z.object({
+            path: z.string().describe('Layer name path inside the instance, through nested instances, e.g. "Row/Button/Icon"'),
+            swapTo: z.string().nullable().optional().describe('Component id or name to swap a nested instance to (null = reset)'),
+            properties: z.record(z.string(), z.union([z.string(), z.boolean()])).optional().describe('Variant / component property values of the nested instance'),
+            text: z.string().optional().describe('New text for a nested text layer'),
+            visible: z.boolean().optional(),
+            fill: z.string().optional().describe('Fill colour override (#hex)'),
+            reset: z.boolean().optional().describe('Clear all overrides at and below this path'),
+          }),
+        )
+        .optional(),
+    },
     run: (a, ctx) => {
       const room = resolveRoom(ctx, a.fileId);
       ctx.rooms.edit(room, (d) => {
         const inst = requireNode(d, String(a.instanceId));
         if (inst.type !== 'instance') throw new Error('Not an instance');
-        for (const [k, v] of Object.entries(a.properties as Record<string, string | boolean>)) {
+        const findComp = (q: string) => {
+          if (d.nodes[q]?.type === 'component') return q;
+          const hit = Object.values(d.nodes).find((n) => n.type === 'component' && (n.name === q || `${comps.setOf(d.nodes, n.id)?.name ?? ''}/${n.name}` === q || comps.setOf(d.nodes, n.id)?.name === q));
+          if (!hit) throw new Error(`Component "${q}" not found`);
+          return hit.id;
+        };
+        for (const [k, v] of Object.entries((a.properties as Record<string, string | boolean>) ?? {})) {
           const set = comps.setOf(d.nodes, inst.componentId);
           if (set && comps.variantDefs(d.nodes, set.id).some((x) => x.name === k)) {
             comps.setInstanceVariant(d, inst.id, k, String(v));
@@ -525,7 +549,61 @@ export const tools: ToolDef[] = [
           }
           const prop = comps.componentPropsFor(d.nodes, inst.componentId).find((p) => p.name === k || p.id === k);
           if (!prop) throw new Error(`Unknown property "${k}"`);
-          inst.propValues = { ...(inst.propValues ?? {}), [prop.id]: prop.type === 'boolean' ? v === true || v === 'true' : String(v) };
+          let value: string | boolean = prop.type === 'boolean' ? v === true || v === 'true' : String(v);
+          if (prop.type === 'instance-swap') {
+            value = findComp(String(v));
+            if (inst.componentId && comps.usesComponent(d.nodes, value, inst.componentId)) throw new Error('That swap would make the component contain itself');
+          }
+          inst.propValues = { ...(inst.propValues ?? {}), [prop.id]: value };
+        }
+        for (const ns of (a.nested as { path: string; swapTo?: string | null; properties?: Record<string, string | boolean>; text?: string; visible?: boolean; fill?: string; reset?: boolean }[]) ?? []) {
+          const key = comps.keyForNamePath(d.nodes, inst, ns.path);
+          if (!key) throw new Error(`Nested layer "${ns.path}" not found in this instance`);
+          const ov = { ...(inst.overrides ?? {}) };
+          if (ns.reset) for (const k of Object.keys(ov)) if (k === key || k.startsWith(key + '/')) delete ov[k];
+          const ids = key.split('/');
+          const raw = d.nodes[ids[ids.length - 1]];
+          const patch: Partial<SceneNode> = { ...(ov[key] ?? {}) };
+          if (ns.swapTo !== undefined) {
+            if (raw.type !== 'instance') throw new Error(`"${ns.path}" is not an instance`);
+            for (const k of Object.keys(ov)) if (k.startsWith(key + '/')) delete ov[k];
+            if (ns.swapTo === null) {
+              delete patch.componentId;
+              delete patch.w;
+              delete patch.h;
+            } else {
+              const target = findComp(ns.swapTo);
+              if (inst.componentId && comps.usesComponent(d.nodes, target, inst.componentId)) throw new Error('That swap would make the component contain itself');
+              Object.assign(patch, comps.swapPatch(d.nodes, raw, target));
+            }
+          }
+          if (ns.properties) {
+            inst.overrides = { ...ov, [key]: patch };
+            const eff = comps.resolveNested(d.nodes, inst, ids)?.node;
+            if (!eff || eff.type !== 'instance') throw new Error(`"${ns.path}" is not an instance`);
+            const pv = { ...(eff.propValues ?? {}) };
+            for (const [k, v] of Object.entries(ns.properties)) {
+              const set = comps.setOf(d.nodes, eff.componentId);
+              const def = set ? comps.variantDefs(d.nodes, set.id).find((x) => x.name === k) : undefined;
+              if (def && set) {
+                const target = comps.findVariant(d.nodes, set.id, { ...(d.nodes[eff.componentId!].variantProps ?? {}), [k]: String(v) });
+                if (target) Object.assign(patch, comps.swapPatch(d.nodes, raw, target));
+                continue;
+              }
+              const prop = comps.componentPropsFor(d.nodes, patch.componentId ?? eff.componentId).find((p) => p.name === k || p.id === k);
+              if (!prop) throw new Error(`Unknown property "${k}" on "${ns.path}"`);
+              pv[prop.id] = prop.type === 'boolean' ? v === true || v === 'true' : prop.type === 'instance-swap' ? findComp(String(v)) : String(v);
+            }
+            patch.propValues = pv;
+          }
+          if (ns.text !== undefined) {
+            if (!raw.text) throw new Error(`"${ns.path}" is not a text layer`);
+            patch.text = { ...raw.text, ...(patch.text ?? {}), content: ns.text };
+          }
+          if (ns.visible !== undefined) patch.visible = ns.visible;
+          if (ns.fill) patch.fills = [{ id: uid(), kind: 'solid', color: ns.fill, opacity: 1, visible: true }];
+          ov[key] = patch;
+          inst.overrides = ov;
         }
       });
       return { node: describeNode(room.doc, String(a.instanceId), 0, 0) };

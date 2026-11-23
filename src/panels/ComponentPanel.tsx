@@ -3,7 +3,7 @@ import { useEditor } from '../store/store';
 import { Section, IconButton } from './controls';
 import { Icon } from './icons';
 import type { ComponentProp, SceneNode } from '../types';
-import { componentPropsFor, findByPath, isSet, setOf, variantDefs } from '../lib/components';
+import { componentPropsFor, findByPath, findVariant, isSet, nestedLayers, setOf, swapOptions, variantDefs, variantsOf } from '../lib/components';
 import { pageOf } from '../lib/docops';
 
 /** Design-panel section for component sets, variants, components, instances and layers inside components. */
@@ -12,20 +12,27 @@ export function ComponentPanel({ n }: { n: SceneNode }) {
   const nodes = st.doc.nodes;
   if (isSet(n)) return <SetSection set={n} />;
   if (n.type === 'component') return <MainComponentSection comp={n} />;
-  if (n.type === 'instance') return <InstanceSection inst={n} />;
   // a layer inside a main component → offer to expose it as a component property
   let owner: SceneNode | undefined = n.parentId ? nodes[n.parentId] : undefined;
   while (owner && owner.type !== 'component') owner = owner.parentId ? nodes[owner.parentId] : undefined;
-  if (!owner) return null;
-  return (
+  const propSection = owner ? (
     <Section title="Component property">
       <p className="muted">Expose this layer on instances of “{(setOf(nodes, owner.id) ?? owner).name}”.</p>
       <div className="row gap">
         <button className="btn small" onClick={() => st.addComponentProp(n.id, 'boolean')}>+ Visibility toggle</button>
         {n.type === 'text' && <button className="btn small" onClick={() => st.addComponentProp(n.id, 'text')}>+ Text property</button>}
+        {n.type === 'instance' && <button className="btn small" onClick={() => st.addComponentProp(n.id, 'instance-swap')}>+ Instance swap</button>}
       </div>
     </Section>
-  );
+  ) : null;
+  if (n.type === 'instance')
+    return (
+      <>
+        <InstanceSection inst={n} />
+        {propSection}
+      </>
+    );
+  return propSection;
 }
 
 function goTo(id: string) {
@@ -174,10 +181,12 @@ function PropsEditor({ owner }: { owner: SceneNode }) {
         const found = firstVariant ? findByPath(st.doc.nodes, firstVariant, p.layer) : null;
         return (
           <div key={p.id} className="comp-prop">
-            <span className="type-badge">{p.type === 'boolean' ? '◐' : 'T'}</span>
+            <span className="type-badge">{p.type === 'boolean' ? '◐' : p.type === 'instance-swap' ? '◇' : 'T'}</span>
             <EditableText className="grow" value={p.name} onCommit={(v) => st.updateComponentProp(owner.id, p.id, { name: v })} />
             {p.type === 'boolean' ? (
               <input type="checkbox" title="Default value" checked={p.default === true} onChange={(e) => st.updateComponentProp(owner.id, p.id, { default: e.target.checked })} />
+            ) : p.type === 'instance-swap' ? (
+              <ComponentPicker value={String(p.default)} owner={isSet(owner) ? owner.children[0] : owner.id} preferred={p.preferred} onChange={(v) => v && st.updateComponentProp(owner.id, p.id, { default: v })} />
             ) : (
               <EditableText className="small-w" value={String(p.default)} onCommit={(v) => st.updateComponentProp(owner.id, p.id, { default: v })} />
             )}
@@ -194,6 +203,21 @@ function PropsEditor({ owner }: { owner: SceneNode }) {
   );
 }
 
+/** Component select used for instance swapping (preferred values first, never a component that contains the owner). */
+function ComponentPicker({ value, owner, preferred, onChange, allowReset }: { value: string; owner?: string; preferred?: string[]; onChange: (id: string | null) => void; allowReset?: boolean }) {
+  const nodes = useEditor((s) => s.doc.nodes);
+  const opts = swapOptions(nodes, owner, preferred);
+  return (
+    <select className="select swap-select" value={value} onChange={(e) => onChange(e.target.value || null)} onKeyDown={(e) => e.stopPropagation()} title="Swap instance">
+      {allowReset && <option value="">↺ Default</option>}
+      {!opts.some((o) => o.id === value) && value && <option value={value}>{nodes[value]?.name ?? 'Missing'}</option>}
+      {opts.map((o) => (
+        <option key={o.id} value={o.id}>{o.preferred ? '★ ' : ''}{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
 function InstanceSection({ inst }: { inst: SceneNode }) {
   const st = useEditor();
   const nodes = st.doc.nodes;
@@ -201,68 +225,142 @@ function InstanceSection({ inst }: { inst: SceneNode }) {
   const set = setOf(nodes, inst.componentId);
   const defs = set ? variantDefs(nodes, set.id) : [];
   const props: ComponentProp[] = componentPropsFor(nodes, inst.componentId);
-  // plain text layers (not driven by a text property) can still be overridden directly
+  const topComp = set ? set.children[0] : comp?.id;
+  const layers = nestedLayers(nodes, inst);
+  // layers driven by a property of this instance are edited through the property instead
   const propLayers = new Set(props.map((p) => (comp ? findByPath(nodes, comp.id, p.layer) : null)));
-  const texts: SceneNode[] = [];
-  const walk = (ids: string[]) =>
-    ids.forEach((id) => {
-      const c = nodes[id];
-      if (!c) return;
-      if (c.type === 'text' && !propLayers.has(c.id)) texts.push(c);
-      walk(c.children);
-    });
-  if (comp) walk(comp.children);
+  const texts = layers.filter((e) => e.node.type === 'text' && !propLayers.has(e.key));
+  const nested = layers.filter((e) => e.node.type === 'instance');
+  const rawOf = (key: string) => nodes[key.split('/').pop()!];
   return (
-    <Section title="Instance">
-      <div className="row gap">
-        <Icon name="instance" />
-        <span className="grow">{(set ?? comp)?.name ?? 'Missing component'}</span>
-      </div>
-      {defs.map((d) => (
-        <label key={d.name} className="row">
-          <span className="grow muted">{d.name}</span>
-          <select className="select" value={comp?.variantProps?.[d.name] ?? ''} onChange={(e) => st.setInstanceVariant(inst.id, d.name, e.target.value)} onKeyDown={(e) => e.stopPropagation()}>
-            {d.values.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
-        </label>
-      ))}
-      {props.map((p) => {
-        const val = inst.propValues?.[p.id] ?? p.default;
-        return p.type === 'boolean' ? (
-          <label key={p.id} className="row">
-            <span className="grow muted">{p.name}</span>
-            <input type="checkbox" checked={val === true || val === 'true'} onChange={(e) => st.setInstanceProp([inst.id], p.id, e.target.checked)} />
+    <>
+      <Section title="Instance">
+        <div className="row gap">
+          <Icon name="instance" />
+          <span className="grow">{(set ?? comp)?.name ?? 'Missing component'}</span>
+        </div>
+        {defs.map((d) => (
+          <label key={d.name} className="row">
+            <span className="grow muted">{d.name}</span>
+            <select className="select" value={comp?.variantProps?.[d.name] ?? ''} onChange={(e) => st.setInstanceVariant(inst.id, d.name, e.target.value)} onKeyDown={(e) => e.stopPropagation()}>
+              {d.values.map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
           </label>
-        ) : (
-          <label key={p.id} className="row">
-            <span className="grow muted">{p.name}</span>
-            <EditableText className="small-w" value={String(val)} onCommit={(v) => st.setInstanceProp([inst.id], p.id, v)} />
-          </label>
-        );
-      })}
-      {texts.length > 0 && (
-        <div className="overrides">
-          <div className="muted">Text overrides</div>
-          {texts.map((t) => {
-            const v = inst.overrides?.[t.id]?.text?.content ?? t.text!.content;
+        ))}
+        {props.map((p) => {
+          const val = inst.propValues?.[p.id] ?? p.default;
+          if (p.type === 'boolean')
             return (
-              <EditableText
-                key={t.id + v}
-                className="text-input"
-                value={v}
-                onCommit={(val) => st.updateNodes([inst.id], (x) => ({ overrides: { ...(x.overrides ?? {}), [t.id]: { ...(x.overrides?.[t.id] ?? {}), text: { ...t.text!, content: val } } } }))}
-              />
+              <label key={p.id} className="row">
+                <span className="grow muted">{p.name}</span>
+                <input type="checkbox" checked={val === true || val === 'true'} onChange={(e) => st.setInstanceProp([inst.id], p.id, e.target.checked)} />
+              </label>
+            );
+          if (p.type === 'instance-swap')
+            return (
+              <label key={p.id} className="row">
+                <span className="grow muted">◇ {p.name}</span>
+                <ComponentPicker value={String(val)} owner={topComp} preferred={p.preferred} onChange={(v) => v && st.setInstanceProp([inst.id], p.id, v)} />
+              </label>
+            );
+          return (
+            <label key={p.id} className="row">
+              <span className="grow muted">{p.name}</span>
+              <EditableText className="small-w" value={String(val)} onCommit={(v) => st.setInstanceProp([inst.id], p.id, v)} />
+            </label>
+          );
+        })}
+        <div className="row gap">
+          <button className="btn small" onClick={() => comp && goTo(comp.id)}>Go to main</button>
+          <button className="btn small" onClick={st.detachInstance}>Detach</button>
+          <button className="btn small" onClick={() => st.updateNodes([inst.id], { overrides: {}, propValues: {} })}>Reset all</button>
+        </div>
+      </Section>
+
+      {nested.length > 0 && (
+        <Section title="Nested instances" collapsible>
+          {nested.map((e) => {
+            const raw = rawOf(e.key);
+            const nComp = e.node.componentId;
+            const nSet = setOf(nodes, nComp);
+            const nDefs = nSet ? variantDefs(nodes, nSet.id) : [];
+            const nProps = componentPropsFor(nodes, nComp);
+            const swapped = !!inst.overrides?.[e.key]?.componentId;
+            return (
+              <div key={e.key} className="nested-inst" style={{ marginLeft: e.depth * 10 }}>
+                <div className="row gap">
+                  <Icon name="instance" size={12} />
+                  <span className="grow" title={e.path}>{e.path.split('/').pop()}</span>
+                  {swapped && <span className="badge">swapped</span>}
+                  <button className="icon-btn ghost" title="Reset this nested instance" onClick={() => st.setNestedOverride(inst.id, e.key, null)}>
+                    <Icon name="undo" size={12} />
+                  </button>
+                </div>
+                <ComponentPicker value={nComp ?? ''} owner={topComp} preferred={raw?.componentId ? [raw.componentId, ...(setOf(nodes, raw.componentId) ? variantsOf(nodes, setOf(nodes, raw.componentId)!.id).map((v) => v.id) : [])] : []} allowReset={swapped} onChange={(v) => st.swapNested(inst.id, e.key, v)} />
+                {nDefs.map((d) => (
+                  <label key={d.name} className="row">
+                    <span className="grow muted">{d.name}</span>
+                    <select
+                      className="select"
+                      value={nodes[nComp!]?.variantProps?.[d.name] ?? ''}
+                      onChange={(ev) => {
+                        const target = findVariant(nodes, nSet!.id, { ...(nodes[nComp!]?.variantProps ?? {}), [d.name]: ev.target.value });
+                        if (target) st.swapNested(inst.id, e.key, target);
+                      }}
+                      onKeyDown={(ev) => ev.stopPropagation()}
+                    >
+                      {d.values.map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+                {nProps.map((p) => {
+                  const val = e.node.propValues?.[p.id] ?? p.default;
+                  const setVal = (v: string | boolean) => st.setNestedOverride(inst.id, e.key, { propValues: { ...(inst.overrides?.[e.key]?.propValues ?? raw?.propValues ?? {}), [p.id]: v } });
+                  return p.type === 'boolean' ? (
+                    <label key={p.id} className="row">
+                      <span className="grow muted">{p.name}</span>
+                      <input type="checkbox" checked={val === true || val === 'true'} onChange={(ev) => setVal(ev.target.checked)} />
+                    </label>
+                  ) : p.type === 'instance-swap' ? (
+                    <label key={p.id} className="row">
+                      <span className="grow muted">◇ {p.name}</span>
+                      <ComponentPicker value={String(val)} owner={nComp} preferred={p.preferred} onChange={(v) => v && setVal(v)} />
+                    </label>
+                  ) : (
+                    <label key={p.id} className="row">
+                      <span className="grow muted">{p.name}</span>
+                      <EditableText className="small-w" value={String(val)} onCommit={(v) => setVal(v)} />
+                    </label>
+                  );
+                })}
+                <label className="row">
+                  <span className="grow muted">Visible</span>
+                  <input type="checkbox" checked={e.node.visible} onChange={(ev) => st.setNestedOverride(inst.id, e.key, { visible: ev.target.checked })} />
+                </label>
+              </div>
             );
           })}
-        </div>
+        </Section>
       )}
-      <div className="row gap">
-        <button className="btn small" onClick={() => comp && goTo(comp.id)}>Go to main</button>
-        <button className="btn small" onClick={st.detachInstance}>Detach</button>
-        <button className="btn small" onClick={() => st.updateNodes([inst.id], { overrides: {}, propValues: {} })}>Reset</button>
-      </div>
-    </Section>
+
+      {texts.length > 0 && (
+        <Section title="Text overrides" collapsible>
+          {texts.map((e) => (
+            <label key={e.key} className="text-override">
+              <small className="muted">{e.path}</small>
+              <EditableText
+                className="text-input"
+                value={e.node.text!.content}
+                onCommit={(val) => st.setNestedOverride(inst.id, e.key, { text: { ...e.node.text!, content: val } })}
+              />
+            </label>
+          ))}
+        </Section>
+      )}
+    </>
   );
 }

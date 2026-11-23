@@ -6,7 +6,6 @@ import { createNode, sampleDocument, uid } from '../lib/factory';
 import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, translateTree, resizeTree, scalePoints } from '../lib/layout';
 import { applyBoolean, type BooleanOp } from '../lib/boolean';
 import * as comps from '../lib/components';
-import { instanceOverrides } from '../lib/components';
 import type { ComponentProp } from '../types';
 import { applyAllBindings, defaultValue, newCollection } from '../lib/variables';
 import type { BindableProp, Variable } from '../types';
@@ -110,6 +109,10 @@ export interface EditorState {
   addVariantProp: (setId: string, name: string) => void;
   setInstanceVariant: (instId: string, prop: string, value: string) => void;
   setInstanceProp: (instIds: string[], propId: string, value: string | boolean) => void;
+  /** merge (or with null, clear) an override at a scoped key inside an instance */
+  setNestedOverride: (instId: string, key: string, patch: Partial<SceneNode> | null) => void;
+  /** swap a nested instance (by override key) to another component */
+  swapNested: (instId: string, key: string, compId: string | null) => void;
   addComponentProp: (layerId: string, type: ComponentProp['type']) => void;
   updateComponentProp: (ownerId: string, propId: string, patch: Partial<ComponentProp>) => void;
   deleteComponentProp: (ownerId: string, propId: string) => void;
@@ -589,11 +592,8 @@ export const useEditor = create<EditorState>((set, get) => ({
         const f = d.nodes[fid];
         f.type = 'frame';
         f.name = inst.name;
-        // apply overrides
-        for (const [cid, ov] of Object.entries(instanceOverrides(d.nodes, inst))) {
-          const nid = map[cid];
-          if (nid && d.nodes[nid]) Object.assign(d.nodes[nid], clone(ov));
-        }
+        // apply overrides (deeper, scoped ones stay on the nested instance clones)
+        comps.applyOverridesToClone(d.nodes, map, comps.childOverrides(d.nodes, inst));
         const index = siblingsOf(d, pageId, id).indexOf(id);
         link(d, pageId, fid, inst.parentId, index);
         translateTree(d.nodes, fid, inst.x - comp.x, inst.y - comp.y);
@@ -940,12 +940,48 @@ export const useEditor = create<EditorState>((set, get) => ({
         if (n?.type === 'instance') n.propValues = { ...(n.propValues ?? {}), [propId]: value };
       }
     }),
+  setNestedOverride: (instId, key, patch) =>
+    get().mutate((d) => {
+      const inst = d.nodes[instId];
+      if (!inst || inst.type !== 'instance') return;
+      const ov = { ...(inst.overrides ?? {}) };
+      if (patch === null) {
+        // clear this key and everything scoped below it
+        for (const k of Object.keys(ov)) if (k === key || k.startsWith(key + '/')) delete ov[k];
+      } else ov[key] = { ...(ov[key] ?? {}), ...patch };
+      inst.overrides = ov;
+    }),
+  swapNested: (instId, key, compId) =>
+    get().mutate((d) => {
+      const inst = d.nodes[instId];
+      if (!inst || inst.type !== 'instance') return;
+      const ov = { ...(inst.overrides ?? {}) };
+      // overrides inside the old nested component no longer apply
+      for (const k of Object.keys(ov)) if (k.startsWith(key + '/')) delete ov[k];
+      if (!compId) {
+        if (ov[key]) {
+          const { componentId: _c, w: _w, h: _h, ...rest } = ov[key];
+          void _c;
+          void _w;
+          void _h;
+          ov[key] = rest;
+        }
+      } else {
+        const ids = key.split('/');
+        const resolved = comps.resolveNested(d.nodes, { ...inst, overrides: ov }, ids);
+        const raw = d.nodes[ids[ids.length - 1]];
+        if (!resolved || !raw || raw.type !== 'instance') return;
+        if (inst.componentId && comps.usesComponent(d.nodes, compId, inst.componentId)) return;
+        ov[key] = { ...(ov[key] ?? {}), ...comps.swapPatch(d.nodes, raw, compId) };
+      }
+      inst.overrides = ov;
+    }),
   addComponentProp: (layerId, type) => {
     try {
       get().mutate((d) => {
         comps.addComponentProp(d, layerId, type);
       });
-      get().notify(type === 'boolean' ? 'Visibility property added' : 'Text property added');
+      get().notify(type === 'boolean' ? 'Visibility property added' : type === 'text' ? 'Text property added' : 'Instance swap property added');
     } catch (e) {
       get().notify((e as Error).message);
     }

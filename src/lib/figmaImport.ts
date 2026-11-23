@@ -237,7 +237,7 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
   let imageCount = 0;
   const instances: { id: string; componentId: string; props: Record<string, { type: string; value: string | boolean }> }[] = [];
   const propDefs: { id: string; defs: Record<string, { type: string; defaultValue: string | boolean }> }[] = [];
-  const refs: Record<string, { visible?: string; characters?: string }> = {};
+  const refs: Record<string, { visible?: string; characters?: string; mainComponent?: string }> = {};
 
   const conv = (n: FNode, parentId: string | null): string | null => {
     const box = n.absoluteBoundingBox ?? n.absoluteRenderBounds;
@@ -466,12 +466,16 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
     if (!root) continue;
     const props: ComponentProp[] = [];
     for (const [key, def] of Object.entries(defs)) {
-      if (def.type !== 'BOOLEAN' && def.type !== 'TEXT') continue;
-      const field = def.type === 'BOOLEAN' ? 'visible' : 'characters';
+      if (def.type !== 'BOOLEAN' && def.type !== 'TEXT' && def.type !== 'INSTANCE_SWAP') continue;
+      const field = def.type === 'BOOLEAN' ? 'visible' : def.type === 'TEXT' ? 'characters' : 'mainComponent';
       const layerId = [root, ...descendantIds(doc.nodes, root)].find((x) => refs[x]?.[field] === key);
       const layer = layerId ? pathOf(doc.nodes, root, layerId) : null;
       if (layer === null || layer === '') continue;
-      props.push({ id: key, name: key.split('#')[0], type: def.type === 'BOOLEAN' ? 'boolean' : 'text', default: def.defaultValue, layer });
+      if (def.type === 'INSTANCE_SWAP') {
+        const dflt = idMap[String(def.defaultValue)];
+        if (!dflt) continue;
+        props.push({ id: key, name: key.split('#')[0], type: 'instance-swap', default: dflt, layer, preferred: [dflt] });
+      } else props.push({ id: key, name: key.split('#')[0], type: def.type === 'BOOLEAN' ? 'boolean' : 'text', default: def.defaultValue, layer });
     }
     if (props.length) owner.componentProps = props;
   }
@@ -489,7 +493,10 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
     node.autoLayout = null;
     node.overrides = {};
     const pv: Record<string, string | boolean> = {};
-    for (const [k, v] of Object.entries(inst.props)) if (v.type === 'BOOLEAN' || v.type === 'TEXT') pv[k] = v.value;
+    for (const [k, v] of Object.entries(inst.props)) {
+      if (v.type === 'BOOLEAN' || v.type === 'TEXT') pv[k] = v.value;
+      else if (v.type === 'INSTANCE_SWAP' && idMap[String(v.value)]) pv[k] = idMap[String(v.value)];
+    }
     if (Object.keys(pv).length) node.propValues = pv;
   }
 

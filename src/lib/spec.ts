@@ -8,7 +8,7 @@ import { applyAutoLayout, relayoutAncestors, resizeTree, translateTree } from '.
 import { parsePath } from './svgImport';
 import { samplePath } from './boolean';
 import { textBoxSize } from './text';
-import { componentPropsFor, setOf, variantDefs } from './components';
+import { componentPropsFor, nestedLayers, setOf, variantDefs } from './components';
 
 export type FillSpec = string | { type: 'solid'; color: string; opacity?: number } | { type: 'linear' | 'radial'; angle?: number; stops: { offset: number; color: string }[]; opacity?: number } | { type: 'image'; src: string };
 
@@ -331,6 +331,9 @@ export function describeNode(d: DocumentData, id: string, depth = 0, maxDepth = 
     if (set) out.variant = { set: set.name, current: d.nodes[n.componentId]?.variantProps, options: variantDefs(d.nodes, set.id) };
     const props = componentPropsFor(d.nodes, n.componentId);
     if (props.length) out.properties = Object.fromEntries(props.map((p) => [p.name, n.propValues?.[p.id] ?? p.default]));
+    const nested = nestedLayers(d.nodes, n).filter((e) => e.node.type === 'instance' || e.node.type === 'text');
+    if (nested.length)
+      out.nestedLayers = nested.slice(0, 60).map((e) => ({ path: e.path, type: e.node.type, ...(e.node.type === 'instance' ? { component: d.nodes[e.node.componentId!]?.name } : { text: e.node.text?.content }), ...(n.overrides?.[e.key] ? { overridden: true } : {}) }));
   }
   if (n.prototype?.length) out.interactions = n.prototype;
   if (n.bindings && Object.keys(n.bindings).length) out.bindings = n.bindings;

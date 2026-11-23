@@ -126,6 +126,59 @@ const assert = (c, m) => {
   const v1 = await onClass();
   assert(v0 === `v-${ids[0]}` && v1 === `v-${ids[1]}`, `exported HTML switches variant on click (${v0} → ${v1})`);
 
+  await p.click('.export-modal >> text=Close');
+
+  // ---------- nested instances: a Row component containing two switch instances ----------
+  const nestedIds = await p.evaluate(([off]) => {
+    const s = () => window.figmy.store.getState();
+    const row = { id: 'row', type: 'component', name: 'Row', parentId: null, children: [], x: 600, y: 0, w: 320, h: 80, rotation: 0, opacity: 1, blend: 'normal', visible: true, locked: false, fills: [{ id: 'rf', kind: 'solid', color: '#f4f4f8', opacity: 1, visible: true }], strokes: [], effects: [], radius: 8, clip: true };
+    s().addNode(row);
+    const label = { id: 'rowlabel', type: 'text', name: 'Title', parentId: null, children: [], x: 610, y: 10, w: 80, h: 20, rotation: 0, opacity: 1, blend: 'normal', visible: true, locked: false, fills: [{ id: 'lf', kind: 'solid', color: '#111111', opacity: 1, visible: true }], strokes: [], effects: [], radius: 0, text: { content: 'Wi-Fi', fontFamily: 'Inter', fontSize: 14, fontWeight: 600, italic: false, underline: false, strike: false, lineHeight: 1.3, letterSpacing: 0, align: 'left', vAlign: 'top', autoResize: 'fixed', transform: 'none' } };
+    s().addNode(label, 'row');
+    const mkInst = (id, x) => s().addNode({ id, type: 'instance', name: id === 'swA' ? 'First' : 'Second', componentId: off, parentId: null, children: [], x, y: 10, w: 120, h: 60, rotation: 0, opacity: 1, blend: 'normal', visible: true, locked: false, fills: [], strokes: [], effects: [], radius: 0, overrides: {} }, 'row');
+    mkInst('swA', 660); mkInst('swB', 790);
+    // place a Row instance inside the Settings screen and present it
+    s().createInstance('row', 0, 0);
+    const outer = s().selection[0];
+    s().reparent([outer], 'screen');
+    s().updateNodes([outer], { x: 40, y: 450 });
+    s().select([outer]);
+    return { outer };
+  }, ids);
+  await p.waitForSelector('text=Nested instances');
+  assert(await p.isVisible('text=Text overrides'), 'instance panel lists nested instances and nested texts');
+  // swap the second nested switch to the "On" variant from the panel
+  const swapSelects = p.locator('.nested-inst >> nth=1 >> select.swap-select');
+  await swapSelects.selectOption(ids[1]);
+  const ov = await p.evaluate((id) => window.figmy.store.getState().doc.nodes[id].overrides, nestedIds.outer);
+  assert(ov.swB?.componentId === ids[1] && !ov.swA, 'swapping a nested instance only overrides that copy');
+  // nested text override through the panel
+  const textInput = p.locator('.text-override input').first();
+  await textInput.fill('Bluetooth');
+  await textInput.press('Enter');
+  assert(await p.evaluate((id) => Object.values(window.figmy.store.getState().doc.nodes[id].overrides).some((o) => o.text?.content === 'Bluetooth'), nestedIds.outer), 'nested text override saved');
+  assert(await p.evaluate(() => [...document.querySelectorAll('.canvas svg.world text')].some((t) => t.textContent.includes('Bluetooth'))), 'canvas renders the nested override');
+
+  // presenter: clicking the first nested switch toggles only that copy
+  await p.evaluate(([off, on]) => {
+    const s = window.figmy.store.getState();
+    s.updateNodes([off], { prototype: [{ trigger: 'click', action: 'change-to', targetId: on, animation: 'instant', duration: 0 }] });
+    s.updateNodes([on], { prototype: [{ trigger: 'click', action: 'change-to', targetId: off, animation: 'instant', duration: 0 }] });
+    s.set({ selection: [] });
+  }, ids);
+  await p.keyboard.press('Control+Alt+Enter');
+  await p.waitForSelector('.present-stage');
+  const bb2 = await (await p.$('.present-stage')).boundingBox();
+  const k2 = bb2.width / 400;
+  const greens = () => p.evaluate(() => [...document.querySelectorAll('.present-stage rect, .present-stage path')].filter((e) => e.getAttribute('fill') === '#22c55e').length);
+  const g0 = await greens();
+  // Row instance at (40,450) inside a screen at y=300 → first switch at screen-local (40+60+60, 150+10+30)
+  await p.mouse.click(bb2.x + 160 * k2, bb2.y + 190 * k2);
+  await p.waitForTimeout(150);
+  const g1 = await greens();
+  assert(g1 === g0 + 1, `nested interactive switch toggles only the clicked copy (${g0} → ${g1} green switches)`);
+  await p.keyboard.press('Escape');
+
   assert(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();
 })().catch((e) => {

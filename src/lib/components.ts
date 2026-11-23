@@ -114,10 +114,118 @@ export function instanceOverrides(nodes: Nodes, inst: SceneNode, compId = inst.c
     const target = findByPath(nodes, compId, p.layer);
     if (!target || target === compId) continue;
     const t = nodes[target];
-    if (p.type === 'boolean') out[target] = { ...(out[target] ?? {}), visible: val === true || val === 'true' };
-    else if (p.type === 'text' && t?.text) out[target] = { ...(out[target] ?? {}), text: { ...t.text, ...(out[target]?.text ?? {}), content: String(val) } };
+    // explicit overrides on the same layer win over property values
+    const explicit = inst.overrides?.[target] ?? {};
+    if (p.type === 'boolean') out[target] = { visible: val === true || val === 'true', ...explicit };
+    else if (p.type === 'text' && t?.text) out[target] = { text: { ...t.text, content: String(val) }, ...explicit };
+    else if (p.type === 'instance-swap' && t?.type === 'instance' && typeof val === 'string' && nodes[val]?.type === 'component' && !explicit.componentId)
+      out[target] = { ...swapPatch(nodes, t, val), ...explicit };
   }
   return out;
+}
+
+/** Overrides scoped under a nested instance id ("N/x" → "x"). */
+export function scopedOverrides(ov: Record<string, Partial<SceneNode>> | undefined, instId: string): Record<string, Partial<SceneNode>> {
+  const out: Record<string, Partial<SceneNode>> = {};
+  if (!ov) return out;
+  const pre = instId + '/';
+  for (const [k, v] of Object.entries(ov)) if (k.startsWith(pre)) out[k.slice(pre.length)] = v;
+  return out;
+}
+
+/**
+ * Overrides for the layers of an instance's component: the instance's own overrides and property values,
+ * with overrides coming from enclosing instances (already scoped to this instance) winning per property.
+ */
+export function childOverrides(nodes: Nodes, inst: SceneNode, outer?: Record<string, Partial<SceneNode>>): Record<string, Partial<SceneNode>> {
+  const own = instanceOverrides(nodes, inst);
+  const up = scopedOverrides(outer, inst.id);
+  const out: Record<string, Partial<SceneNode>> = { ...own };
+  for (const [k, v] of Object.entries(up)) out[k] = { ...(own[k] ?? {}), ...v, ...(own[k]?.text && v.text ? { text: { ...own[k].text!, ...v.text } } : {}) };
+  return out;
+}
+
+/** Patch that swaps a (nested) instance to another component, following its size unless it was resized. */
+export function swapPatch(nodes: Nodes, raw: SceneNode, compId: string): Partial<SceneNode> {
+  const orig = raw.componentId ? nodes[raw.componentId] : undefined;
+  const next = nodes[compId];
+  const follows = orig && next && Math.abs(raw.w - orig.w) < 0.5 && Math.abs(raw.h - orig.h) < 0.5;
+  return follows ? { componentId: compId, w: next.w, h: next.h } : { componentId: compId };
+}
+
+/**
+ * Effective node at the end of an override key path inside an instance (e.g. ["N", "M"] → nested instance M
+ * inside N), with all enclosing overrides applied. Also returns the overrides map at that level.
+ */
+export function resolveNested(nodes: Nodes, inst: SceneNode, keyPath: string[]): { node: SceneNode; level: Record<string, Partial<SceneNode>> } | null {
+  let level = childOverrides(nodes, inst);
+  let node: SceneNode = inst;
+  for (let i = 0; i < keyPath.length; i++) {
+    const raw = nodes[keyPath[i]];
+    if (!raw) return null;
+    node = level[raw.id] ? { ...raw, ...level[raw.id] } : raw;
+    if (i < keyPath.length - 1) {
+      if (node.type !== 'instance') return null;
+      level = childOverrides(nodes, node, level);
+    }
+  }
+  return { node, level };
+}
+
+export interface NestedEntry {
+  /** override key (ids joined by "/") */
+  key: string;
+  /** human readable name path */
+  path: string;
+  node: SceneNode; // effective node
+  depth: number;
+}
+
+/** Every layer reachable inside an instance (descending into nested instances), with its override key. */
+export function nestedLayers(nodes: Nodes, inst: SceneNode, maxDepth = 6): NestedEntry[] {
+  const out: NestedEntry[] = [];
+  const walkComp = (comp: SceneNode, level: Record<string, Partial<SceneNode>>, prefix: string, namePrefix: string, depth: number) => {
+    const walk = (id: string, names: string) => {
+      const raw = nodes[id];
+      if (!raw) return;
+      const node = level[id] ? { ...raw, ...level[id] } : raw;
+      const key = prefix + id;
+      const path = names ? `${names}/${raw.name}` : raw.name;
+      out.push({ key, path, node, depth });
+      if (node.type === 'instance' && node.componentId && nodes[node.componentId] && depth < maxDepth) {
+        walkComp(nodes[node.componentId], childOverrides(nodes, node, level), key + '/', path, depth + 1);
+      } else for (const c of raw.children) walk(c, path);
+    };
+    for (const c of comp.children) walk(c, namePrefix);
+  };
+  const comp = inst.componentId ? nodes[inst.componentId] : undefined;
+  if (comp) walkComp(comp, childOverrides(nodes, inst), '', '', 0);
+  return out;
+}
+
+/** Resolve a layer name path ("Row/Button/Label") inside an instance to an override key. */
+export function keyForNamePath(nodes: Nodes, inst: SceneNode, namePath: string): string | null {
+  const hit = nestedLayers(nodes, inst, 12).find((e) => e.path === namePath);
+  if (hit) return hit.key;
+  // also accept an existing key made of ids
+  const ids = namePath.split('/');
+  return ids.every((x) => nodes[x]) && resolveNested(nodes, inst, ids) ? namePath : null;
+}
+
+/** Apply scoped overrides when materialising (detaching) a component tree. `map` maps component ids → clone ids. */
+export function applyOverridesToClone(nodes: Nodes, map: Record<string, string>, ov: Record<string, Partial<SceneNode>>) {
+  for (const [key, patch] of Object.entries(ov)) {
+    const i = key.indexOf('/');
+    if (i < 0) {
+      const nid = map[key];
+      if (nid && nodes[nid]) Object.assign(nodes[nid], JSON.parse(JSON.stringify(patch)));
+    } else {
+      // deeper override: keep it on the (still linked) nested instance clone
+      const nid = map[key.slice(0, i)];
+      const n = nid ? nodes[nid] : undefined;
+      if (n?.type === 'instance') n.overrides = { ...(n.overrides ?? {}), [key.slice(i + 1)]: { ...(n.overrides?.[key.slice(i + 1)] ?? {}), ...JSON.parse(JSON.stringify(patch)) } };
+    }
+  }
 }
 
 /* ---------- editing (mutating; pass an immer draft or plain object) ---------- */
@@ -279,10 +387,12 @@ export function swapVariant(d: DocumentData, instId: string, newCompId: string) 
   if (!inst || inst.type !== 'instance' || !inst.componentId || inst.componentId === newCompId) return;
   const old = inst.componentId;
   const remapped: Record<string, Partial<SceneNode>> = {};
-  for (const [cid, ov] of Object.entries(inst.overrides ?? {})) {
-    const path = pathOf(d.nodes, old, cid);
+  for (const [key, ov] of Object.entries(inst.overrides ?? {})) {
+    // only the first segment lives in the variant; deeper segments belong to nested components
+    const [head, ...rest] = key.split('/');
+    const path = pathOf(d.nodes, old, head);
     const target = path !== null ? findByPath(d.nodes, newCompId, path) : null;
-    if (target) remapped[target] = ov;
+    if (target) remapped[[target, ...rest].join('/')] = ov;
   }
   const oldComp = d.nodes[old],
     newComp = d.nodes[newCompId];
@@ -322,9 +432,41 @@ export function addComponentProp(d: DocumentData, layerId: string, type: Compone
     id: uid(),
     name: name ?? (type === 'boolean' ? `Show ${target.name}` : target.name),
     type,
-    default: type === 'boolean' ? target.visible : target.text?.content ?? '',
+    default: type === 'boolean' ? target.visible : type === 'instance-swap' ? target.componentId ?? '' : target.text?.content ?? '',
     layer,
   };
+  if (type === 'instance-swap') {
+    if (target.type !== 'instance' || !target.componentId) throw new Error('Instance swap properties need a nested instance layer');
+    prop.name = name ?? `${target.name} swap`;
+    const set = setOf(d.nodes, target.componentId);
+    prop.preferred = set ? variantsOf(d.nodes, set.id).map((v) => v.id) : [target.componentId];
+  }
   owner.componentProps = [...(owner.componentProps ?? []), prop];
   return prop;
+}
+
+/** True if component `compId` (through its layers and nested instances) uses component `targetId`. */
+export function usesComponent(nodes: Nodes, compId: string, targetId: string, seen = new Set<string>()): boolean {
+  if (compId === targetId) return true;
+  if (seen.has(compId)) return false;
+  seen.add(compId);
+  const walk = (id: string): boolean => {
+    const n = nodes[id];
+    if (!n) return false;
+    if (n.type === 'instance' && n.componentId && usesComponent(nodes, n.componentId, targetId, seen)) return true;
+    return n.children.some(walk);
+  };
+  return walk(compId);
+}
+
+/** Components a nested instance can be swapped to (never one that would contain itself). */
+export function swapOptions(nodes: Nodes, ownerCompId: string | undefined, preferred: string[] = []): { id: string; label: string; preferred: boolean }[] {
+  const out: { id: string; label: string; preferred: boolean }[] = [];
+  for (const n of Object.values(nodes)) {
+    if (n.type !== 'component') continue;
+    if (ownerCompId && usesComponent(nodes, n.id, ownerCompId)) continue;
+    const set = setOf(nodes, n.id);
+    out.push({ id: n.id, label: set ? `${set.name} / ${n.name}` : n.name, preferred: preferred.includes(n.id) });
+  }
+  return out.sort((a, b) => Number(b.preferred) - Number(a.preferred) || a.label.localeCompare(b.label));
 }

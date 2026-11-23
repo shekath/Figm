@@ -12,7 +12,7 @@ It was written from scratch. It contains no code, assets or branding from any pr
 | **Editing** | Resize/rotate/flip, corner radius handles, align/distribute/tidy, groups, masks, pages, layer tree with drag-reorder, copy/paste across files, undo/redo |
 | **Boolean operations** | Union, subtract, intersect, exclude, flatten (`Ctrl+Alt+U/S/I/X`, `Ctrl+E`) with even-odd holes, works on any shapes, groups and rotated layers |
 | **Layout** | Auto layout (direction, gap, padding, alignment, space-between, hug, wrap), constraints |
-| **Components & variants** | Main components and synced instances. Component sets with variant properties (`State=Hover, Size=L`): combine as variants (`Ctrl+Alt+Shift+K`), add variants, rename properties/values. Instances swap variants from dropdowns and keep overrides by layer name. Boolean (show/hide) and text component properties, text overrides, detach, assets panel |
+| **Components & variants** | Main components and synced instances. Component sets with variant properties (`State=Hover, Size=L`): combine as variants (`Ctrl+Alt+Shift+K`), add variants, rename properties/values. Instances swap variants from dropdowns and keep overrides by layer name. Boolean (show/hide), text and **instance-swap** component properties. **Nested instance overrides** at any depth: swap a nested instance, switch its variant, set its properties, visibility or text. Each nested copy is independent, detach keeps the overrides, and swaps that would make a component contain itself are blocked. Assets panel |
 | **Interactive components** | A "Change to" prototype action switches an instance to another variant on click, hover (reverts on leave), press, mouse enter/leave, key or after delay, with Smart Animate between variants. Works in the presenter and in exported HTML |
 | **Variables** | Collections, colour/number/string/boolean variables, unlimited modes (Light/Dark, brands, breakpoints), bind fill, stroke, radius, opacity, gap, padding, size, text, font size and visibility; per-frame mode overrides |
 | **Styles** | Multiple fills (solid/linear/radial/image), strokes, shadows, blurs, blend modes; colour, text and effect styles |
@@ -106,7 +106,7 @@ The same tools are available as REST for scripts: `GET /api/tools`, and `POST /a
 1. Paste a `figma.com/design/…` link.
 2. Paste a personal access token (Figma → Settings → Security, with the `file_content:read` scope). The token stays in the browser session; when the browser can't reach Figma directly, the request goes through your own Figmy server.
 
-The import covers vector geometry, image fills, gradients, effects, text styles, auto layout, constraints, components, component sets and variants, boolean/text component properties, fill styles, scroll behaviour and prototype interactions (including Change to). You can also import a saved REST API JSON response.
+The import covers vector geometry, image fills, gradients, effects, text styles, auto layout, constraints, components, component sets and variants, boolean/text/instance-swap component properties, fill styles, scroll behaviour and prototype interactions (including Change to). You can also import a saved REST API JSON response.
 
 Instances without overrides stay linked to their main component, including their property values. Instances with overrides are imported as editable frames, so they look exactly like the original. Binary `.fig` files are not supported: the format is private and undocumented.
 
@@ -114,7 +114,7 @@ Instances without overrides stay linked to their main component, including their
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | 57 unit tests: sync/repair, booleans, variables, variants/component properties, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
+| `npm test` | 69 unit tests: sync/repair, booleans, variables, variants/component properties/nested overrides, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
 | `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, variants and interactive components, two-browser collaboration, every kind of MCP edit, and the stdio bridge |
 
 CI (`.github/workflows/build.yml`) runs type-checks, the build, unit tests and e2e tests, and builds the Windows installer on a Windows runner.
@@ -137,7 +137,7 @@ tests/             Unit (vitest) and e2e (Playwright) suites + Figma REST fixtur
 ## Known limits
 
 - Smart Animate interpolates position, size, rotation, opacity, corner radius, solid colours and font size. It does not morph vector point data.
-- Instance-swap properties and nested-instance overrides beyond text/visibility are not implemented yet.
+- Nested overrides cover component swaps, variant/properties, text, visibility and fill; other style overrides on nested layers are applied but not yet editable from the panel.
 - Text sizes computed on the server for AI-created text use an estimate; the editor renders the real font.
 - Background blur is exported to HTML/CSS but not drawn on the canvas.
 

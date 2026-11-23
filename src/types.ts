@@ -175,7 +175,11 @@ export interface SceneNode {
   innerRatio?: number; // star
   src?: string; // image
   componentId?: string; // instance -> component
-  overrides?: Record<string, Partial<SceneNode>>; // instance overrides keyed by component child id
+  /**
+   * Instance overrides. Keys are a component layer id, or a scoped path through nested instances:
+   * "nestedInstanceId/innerLayerId" (any depth), so each nested copy can be customised independently.
+   */
+  overrides?: Record<string, Partial<SceneNode>>;
   prototype?: PrototypeLink[];
   exports?: ExportSetting[];
   description?: string;
@@ -204,8 +208,11 @@ export interface SceneNode {
 export interface ComponentProp {
   id: string;
   name: string;
-  type: 'boolean' | 'text';
+  type: 'boolean' | 'text' | 'instance-swap';
+  /** boolean value, text, or (instance-swap) a component id */
   default: string | boolean;
+  /** instance-swap: components offered first in the picker */
+  preferred?: string[];
   /** target layer as a name path relative to the component, e.g. "Icon" or "Row/Label" (works across variants) */
   layer: string;
 }

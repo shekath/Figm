@@ -3,7 +3,7 @@ import type { Paint, SceneNode, Stroke } from '../types';
 import { pathData, polygonPoints, roundedRectPath, starPoints } from '../lib/geometry';
 import { FONT_STACK, layoutLines, transformText } from '../lib/text';
 import { ringsPath } from '../lib/boolean';
-import { instanceOverrides } from '../lib/components';
+import { childOverrides } from '../lib/components';
 
 type Nodes = Record<string, SceneNode>;
 
@@ -14,6 +14,8 @@ export interface RenderCtx {
   prefix?: string;
   overrides?: Record<string, Partial<SceneNode>>;
   hideIds?: Set<string>; // e.g. text being edited
+  /** components currently being rendered (guards against an instance containing itself) */
+  stack?: string[];
   /** prototype scroll offsets per frame id */
   scroll?: Record<string, { x: number; y: number }>;
 }
@@ -257,7 +259,9 @@ export function RenderNode({ id, ctx }: { id: string; ctx: RenderCtx }): React.R
     // groups are positioned via children absolute coords => undo translate
   } else if (n.type === 'instance') {
     const comp = n.componentId ? ctx.nodes[n.componentId] : undefined;
-    if (comp) {
+    if (comp && ctx.stack?.includes(comp.id)) {
+      body.push(<rect key="cycle" width={n.w} height={n.h} fill="#fee" stroke="#f66" strokeDasharray="4 4" />);
+    } else if (comp) {
       const sx = n.w / (comp.w || 1),
         sy = n.h / (comp.h || 1);
       const compFills = (n.overrides?.[comp.id]?.fills ?? comp.fills).filter((f) => f.visible);
@@ -272,7 +276,7 @@ export function RenderNode({ id, ctx }: { id: string; ctx: RenderCtx }): React.R
       );
       body.push(
         <g key="ic" clipPath={comp.clip ? `url(#${pre}clip)` : undefined}>
-          <g transform={`scale(${sx},${sy}) translate(${-comp.x},${-comp.y})`}>{renderChildren(comp.children, { ...ctx, prefix: pre, overrides: { ...(ctx.overrides ?? {}), ...instanceOverrides(ctx.nodes, n, comp.id) } })}</g>
+          <g transform={`scale(${sx},${sy}) translate(${-comp.x},${-comp.y})`}>{renderChildren(comp.children, { ...ctx, prefix: pre, overrides: childOverrides(ctx.nodes, n, ctx.overrides), stack: [...(ctx.stack ?? []), comp.id] })}</g>
         </g>,
       );
       if (comp.clip) defs.push(<clipPath key="clip" id={`${pre}clip`}>{geometry({ ...comp, w: n.w, h: n.h }, {})}</clipPath>);

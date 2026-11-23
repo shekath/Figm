@@ -7,7 +7,7 @@ import type { DocumentData, Paint, PrototypeLink, SceneNode } from '../types';
 import { exportSvgString } from './exporter';
 import { visualBounds } from './geometry';
 import { FONT_STACK, transformText } from './text';
-import { instanceOverrides, setOf, variantsOf } from './components';
+import { childOverrides, setOf, variantsOf } from './components';
 
 type Nodes = Record<string, SceneNode>;
 
@@ -230,7 +230,7 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
         if (interactive) vAttrs.push(`data-variant="v-${v.id}"`, `data-w="${Math.round(vw * 100) / 100}"`, `data-h="${Math.round(vh * 100) / 100}"`);
         const vLinks = ctx.opts.prototype ? v.prototype ?? [] : [];
         if (vLinks.length) vAttrs.push(`data-links='${esc(JSON.stringify(vLinks.map(compactLink)))}'`);
-        const kids = v.children.map((c) => emit(c, ctx, v, false, depth + 2, { ...(overrides ?? {}), ...instanceOverrides(ctx.nodes, n, v.id) })).join('');
+        const kids = v.children.map((c) => emit(c, ctx, v, false, depth + 2, childOverrides(ctx.nodes, { ...n, componentId: v.id }, overrides))).join('');
         return `${pad}  <div ${vAttrs.join(' ')}>\n${kids}${pad}  </div>\n`;
       })
       .join('');
