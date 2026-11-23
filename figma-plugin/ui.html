@@ -1,0 +1,19 @@
+<!doctype html>
+<html><body style="font: 12px Inter, system-ui, sans-serif; margin: 0; padding: 16px; color: #1d1d22">
+<h3 style="margin: 0 0 6px">Import a Figmy file</h3>
+<p style="color:#6b6b78; margin: 0 0 12px">Choose a <b>.figmy</b> file (Figmy → File → Save as file). Pages, components, variants, instances, auto layout, text, images, effects, prototype links and variables are recreated as native Figma layers.</p>
+<input id="file" type="file" accept=".figmy,.vectura,.json" />
+<label style="display:block; margin-top:10px"><input id="newpages" type="checkbox" checked /> Create new pages (otherwise add to the current page)</label>
+<button id="go" style="margin-top:12px; padding:8px 14px; border:0; border-radius:6px; background:#5b5bf7; color:#fff; cursor:pointer" disabled>Import</button>
+<pre id="log" style="white-space:pre-wrap; color:#6b6b78; margin-top:12px; max-height:160px; overflow:auto"></pre>
+<script>
+  const file = document.getElementById('file'), go = document.getElementById('go'), log = document.getElementById('log');
+  let data = null;
+  file.onchange = async () => {
+    try { data = JSON.parse(await file.files[0].text()); go.disabled = false; log.textContent = 'Ready: ' + (data.name || 'Untitled'); }
+    catch (e) { log.textContent = 'Not a Figmy file: ' + e.message; go.disabled = true; }
+  };
+  go.onclick = () => { go.disabled = true; log.textContent = 'Importing…'; parent.postMessage({ pluginMessage: { type: 'import', doc: data, newPages: document.getElementById('newpages').checked } }, '*'); };
+  onmessage = (e) => { const m = e.data.pluginMessage; if (!m) return; if (m.type === 'progress') log.textContent = m.text; if (m.type === 'done') { log.textContent = m.text; go.disabled = false; } };
+</script>
+</body></html>

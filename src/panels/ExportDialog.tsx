@@ -4,7 +4,7 @@ import { exportNodes, exportSvgString } from '../lib/exporter';
 import { generateHtml, reachableFrames, type HtmlExportOptions } from '../lib/htmlExport';
 import { saveBlob } from '../lib/platform';
 
-type Format = 'png' | 'jpg' | 'svg' | 'pdf' | 'html';
+type Format = 'png' | 'jpg' | 'svg' | 'pdf' | 'html' | 'figma';
 type Scope = 'selection' | 'frames' | 'page';
 
 /** Unified export: raster/vector/PDF and design-to-HTML with live preview. */
@@ -62,7 +62,7 @@ export function ExportDialog() {
 
   // raster preview
   useEffect(() => {
-    if (!open || format === 'html' || format === 'svg' || !ids.length) return setPreview(null);
+    if (!open || format === 'html' || format === 'svg' || format === 'figma' || !ids.length) return setPreview(null);
     let url: string | null = null;
     let alive = true;
     exportNodes(st.doc.nodes, ids.slice(0, 1), format === 'pdf' ? 'png' : format, 1)
@@ -86,7 +86,8 @@ export function ExportDialog() {
     if (!ids.length) return st.notify('Nothing to export');
     setBusy(true);
     try {
-      if (format === 'html') await saveBlob(new Blob([code], { type: 'text/html' }), `${safe}.html`);
+      if (format === 'figma') await saveBlob(new Blob([JSON.stringify(st.doc)], { type: 'application/json' }), `${safe}.figmy`);
+      else if (format === 'html') await saveBlob(new Blob([code], { type: 'text/html' }), `${safe}.html`);
       else if (format === 'svg') await saveBlob(new Blob([code], { type: 'image/svg+xml' }), `${safe}.svg`);
       else if (format === 'pdf') await saveBlob(await exportNodes(st.doc.nodes, ids, 'pdf'), `${safe}.pdf`);
       else
@@ -123,7 +124,7 @@ export function ExportDialog() {
             <div className="field">
               <span>Format</span>
               <div className="seg">
-                {(['html', 'png', 'jpg', 'svg', 'pdf'] as Format[]).map((f) => (
+                {(['html', 'png', 'jpg', 'svg', 'pdf', 'figma'] as Format[]).map((f) => (
                   <button key={f} className={format === f ? 'active' : ''} onClick={() => setFormat(f)}>
                     {f.toUpperCase()}
                   </button>
@@ -174,7 +175,17 @@ export function ExportDialog() {
             </div>
           </aside>
           <main className="export-preview">
-            {format === 'html' ? (
+            {format === 'figma' ? (
+              <div className="pad">
+                <h3>Open in Figma</h3>
+                <ol className="muted">
+                  <li>Export downloads this whole file as <b>.figmy</b>.</li>
+                  <li>In Figma desktop: Plugins → Development → Import plugin from manifest… and pick <code>figma-plugin/manifest.json</code> from the Figmy repo (one-time).</li>
+                  <li>Run <b>Figmy Importer</b> and choose the .figmy file.</li>
+                </ol>
+                <p className="muted">Pages, frames, auto layout, vectors, text, images, effects, components, variant sets, component properties, instances with overrides, prototype links and variables are rebuilt as native Figma layers.</p>
+              </div>
+            ) : format === 'html' ? (
               <iframe title="HTML preview" sandbox="allow-scripts" srcDoc={code} />
             ) : format === 'svg' ? (
               <div className="img-preview" dangerouslySetInnerHTML={{ __html: code }} />

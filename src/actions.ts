@@ -104,6 +104,7 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   },
   figmaImport: { label: 'Import from Figma…', run: () => { window.dispatchEvent(new Event('figmy:figma-import')); } },
   export: { label: 'Export…', shortcut: 'Ctrl+Shift+E', run: () => { window.dispatchEvent(new CustomEvent('figmy:export')); } },
+  exportFigma: { label: 'Export for Figma…', run: () => { window.dispatchEvent(new CustomEvent('figmy:export', { detail: { format: 'figma' } })); } },
   exportHtml: { label: 'Export design to HTML…', run: () => { window.dispatchEvent(new CustomEvent('figmy:export', { detail: { format: 'html' } })); } },
   exportSelection: {
     label: 'Quick export PNG @2x',

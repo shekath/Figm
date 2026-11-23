@@ -222,3 +222,20 @@ tests/             Unit (vitest) and e2e (Playwright) suites + Figma REST fixtur
 ## License
 
 MIT
+
+## Export to Figma
+
+Figmy files move into Figma as native, editable layers through the bundled plugin:
+
+1. In Figmy, use **Export → Figma** (or the command palette, “Export for Figma…”). This saves a `.figmy` file.
+2. In Figma desktop, go to **Plugins → Development → Import plugin from manifest…** and pick `figma-plugin/manifest.json`. You only do this once.
+3. Run **Figmy Importer** and choose the `.figmy` file.
+
+The plugin rebuilds these as native Figma layers:
+- pages, frames, auto layout and constraints
+- shapes, vectors, text, images, fills, strokes and effects
+- components, variant sets and component properties (boolean, text, instance swap)
+- instances, including nested overrides
+- prototype links and variables
+
+Anything it can't convert is listed when the import finishes.
