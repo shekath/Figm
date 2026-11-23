@@ -54,6 +54,7 @@ jobs:
         run: npx tsc --noEmit && npx vite build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_REQUIRE_LOGIN: ${{ vars.REQUIRE_LOGIN }}
           VITE_FIGMY_SERVER_URL: ${{ vars.FIGMY_SERVER_URL }}
       - name: Create Pages project (first run only)
         if: steps.cfg.outputs.skip != 'true'

@@ -44,6 +44,7 @@ jobs:
         env:
           # optional: OAuth Web client ID for 'Sign in with Google' (Settings → Secrets and variables → Actions → Variables)
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_REQUIRE_LOGIN: ${{ vars.REQUIRE_LOGIN }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

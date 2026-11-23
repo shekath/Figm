@@ -76,7 +76,9 @@ export async function initAuth() {
   }
   const cid = staticClientId();
   if (cid) {
-    useAuth.setState({ mode: 'static', clientId: cid, required: false, user: saved.mode === 'static' ? saved.user ?? null : null });
+    // static hosting: once a client ID is configured, sign-in is required unless VITE_REQUIRE_LOGIN=0
+    const req = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_REQUIRE_LOGIN;
+    useAuth.setState({ mode: 'static', clientId: cid, required: req !== '0' && req !== 'false', user: saved.mode === 'static' ? saved.user ?? null : null });
     return;
   }
   useAuth.setState({ mode: 'off' });
