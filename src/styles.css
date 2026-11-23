@@ -399,3 +399,30 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .account-pop { position: absolute; z-index: 60; bottom: 110%; left: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 12px; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
 .account.compact .account-pop { bottom: auto; top: 40px; left: auto; right: 0; }
 .account-head { display: flex; gap: 10px; align-items: center; }
+
+/* ---------- bottom tool dock, context bar, command palette ---------- */
+.canvas-wrap { flex: 1; position: relative; display: flex; min-width: 0; }
+.tool-dock {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 15;
+  display: flex; align-items: center; gap: 2px; padding: 5px 6px;
+  background: #2c2c34; color: #f0f0f4; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.28);
+}
+.tool-dock .tool:hover:not(:disabled), .tool-dock .tool-caret:hover { background: #3e3e48; }
+.dock-sep { width: 1px; height: 22px; background: #44444e; margin: 0 4px; }
+.flyout.up { top: auto; bottom: 46px; }
+.context-bar {
+  position: absolute; z-index: 14; transform: translateX(-50%);
+  display: flex; gap: 1px; padding: 3px; border-radius: 10px;
+  background: #2c2c34; color: #f0f0f4; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.context-bar .tool { width: 30px; height: 30px; }
+.context-bar .tool:hover { background: #3e3e48; }
+.palette-backdrop { align-items: start; padding-top: 14vh; }
+.palette { width: min(560px, 92vw); background: var(--bg); color: var(--fg); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.palette-input { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); color: var(--fg3); }
+.palette-input input { flex: 1; border: 0; outline: none; background: transparent; font-size: 15px; color: var(--fg); }
+.palette-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
+.palette-list button { display: flex; width: 100%; padding: 8px 10px; border-radius: 6px; text-align: left; gap: 8px; }
+.palette-list button span { flex: 1; }
+.palette-list button.active { background: var(--accent); color: #fff; }
+.palette-list button.active kbd { color: #fff; }

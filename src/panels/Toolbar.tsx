@@ -38,15 +38,12 @@ const TOOLS: { group: { tool: Tool; icon: IconName; label: string; key: string }
 export function Toolbar({ theme, setTheme }: { theme: string; setTheme: (t: string) => void }) {
   const st = useEditor();
   const [menu, setMenu] = useState<string | null>(null);
-  const [flyout, setFlyout] = useState<number | null>(null);
-  const [lastInGroup, setLastInGroup] = useState<Record<number, Tool>>({});
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const close = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) {
         setMenu(null);
-        setFlyout(null);
       }
     };
     window.addEventListener('pointerdown', close);
@@ -89,40 +86,6 @@ export function Toolbar({ theme, setTheme }: { theme: string; setTheme: (t: stri
             </div>
           </div>
         )}
-        {st.mode !== 'dev' &&
-          TOOLS.map((g, gi) => {
-            const current = g.group.find((t) => t.tool === st.tool) ?? g.group.find((t) => t.tool === lastInGroup[gi]) ?? g.group[0];
-            const active = g.group.some((t) => t.tool === st.tool);
-            return (
-              <div key={gi} className="tool-group">
-                <button className={`tool ${active ? 'active' : ''}`} title={`${current.label}${current.key ? ` (${current.key})` : ''}`} onClick={() => st.set({ tool: current.tool, editingPathId: null })}>
-                  <Icon name={current.icon} />
-                </button>
-                {g.group.length > 1 && (
-                  <button className={`tool-caret ${active ? 'active' : ''}`} title="More tools" onClick={() => setFlyout(flyout === gi ? null : gi)}>
-                    <Icon name="chevronDown" size={10} />
-                  </button>
-                )}
-                {flyout === gi && (
-                  <div className="flyout">
-                    {g.group.map((t) => (
-                      <button
-                        key={t.tool}
-                        className={st.tool === t.tool ? 'active' : ''}
-                        onClick={() => {
-                          st.set({ tool: t.tool });
-                          setLastInGroup({ ...lastInGroup, [gi]: t.tool });
-                          setFlyout(null);
-                        }}
-                      >
-                        <Icon name={t.icon} /> <span>{t.label}</span> <kbd>{t.key}</kbd>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         <div className="tb-sep" />
         <button className="tool" title="Undo (Ctrl+Z)" onClick={st.undo} disabled={!st.past.length}>
           <Icon name="undo" />
@@ -208,6 +171,64 @@ function ZoomMenu() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Floating tool dock at the bottom of the canvas. */
+export function ToolDock() {
+  const st = useEditor();
+  const [flyout, setFlyout] = useState<number | null>(null);
+  const [lastInGroup, setLastInGroup] = useState<Record<number, Tool>>({});
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setFlyout(null);
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, []);
+  if (st.mode === 'dev') return null;
+  return (
+    <div className="tool-dock" ref={ref} onPointerDown={(e) => e.stopPropagation()}>
+        {          TOOLS.map((g, gi) => {
+            const current = g.group.find((t) => t.tool === st.tool) ?? g.group.find((t) => t.tool === lastInGroup[gi]) ?? g.group[0];
+            const active = g.group.some((t) => t.tool === st.tool);
+            return (
+              <div key={gi} className="tool-group">
+                <button className={`tool ${active ? 'active' : ''}`} title={`${current.label}${current.key ? ` (${current.key})` : ''}`} onClick={() => st.set({ tool: current.tool, editingPathId: null })}>
+                  <Icon name={current.icon} />
+                </button>
+                {g.group.length > 1 && (
+                  <button className={`tool-caret ${active ? 'active' : ''}`} title="More tools" onClick={() => setFlyout(flyout === gi ? null : gi)}>
+                    <Icon name="chevronDown" size={10} />
+                  </button>
+                )}
+                {flyout === gi && (
+                  <div className="flyout up">
+                    {g.group.map((t) => (
+                      <button
+                        key={t.tool}
+                        className={st.tool === t.tool ? 'active' : ''}
+                        onClick={() => {
+                          st.set({ tool: t.tool });
+                          setLastInGroup({ ...lastInGroup, [gi]: t.tool });
+                          setFlyout(null);
+                        }}
+                      >
+                        <Icon name={t.icon} /> <span>{t.label}</span> <kbd>{t.key}</kbd>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+      <div className="dock-sep" />
+      <button className={`tool ${st.mode === 'prototype' ? 'active' : ''}`} title="Prototype mode" onClick={() => st.set({ mode: st.mode === 'prototype' ? 'design' : 'prototype', tool: 'move' })}>
+        <Icon name="link" />
+      </button>
+      <button className="tool" title="Quick actions (Ctrl+K)" onClick={() => window.dispatchEvent(new Event('figmy:palette'))}>
+        <Icon name="search" />
+      </button>
     </div>
   );
 }

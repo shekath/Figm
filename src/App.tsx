@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useEditor } from './store/store';
 import { Canvas } from './canvas/Canvas';
-import { Toolbar } from './panels/Toolbar';
+import { Toolbar, ToolDock } from './panels/Toolbar';
+import { ContextBar, CommandPalette } from './panels/QuickUI';
 import { LeftPanel } from './panels/LeftPanel';
 import { RightPanel } from './panels/RightPanel';
 import { Presenter } from './Presenter';
@@ -184,12 +185,17 @@ export function App() {
       <Toolbar theme={theme} setTheme={setTheme} />
       <div className="workspace">
         <LeftPanel />
-        <Canvas />
+        <div className="canvas-wrap">
+          <Canvas />
+          <ToolDock />
+          <ContextBar />
+        </div>
         <RightPanel />
       </div>
       {presenting && <Presenter />}
       <ContextMenu />
       <ShortcutsDialog />
+      <CommandPalette />
       <VariablesModal />
       <FigmaImportDialog />
       <ExportDialog />
