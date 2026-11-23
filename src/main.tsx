@@ -37,4 +37,5 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
 // Scripting / test hook: window.figmy.store is the editor store (zustand)
 import { useEditor } from './store/store';
-(window as unknown as { figmy: unknown }).figmy = { store: useEditor };
+import { actions as figmyActions } from './actions';
+(window as unknown as { figmy: unknown }).figmy = { store: useEditor, actions: figmyActions };
