@@ -1,3 +1,5 @@
+import { useDisplayNodes } from './useDisplayNodes';
+import { DEFAULT_MOTION, sampleTrack, type Vec } from '../lib/motion';
 import { useEditor } from '../store/store';
 import { rotatePoint, unionRects, visualBounds } from '../lib/geometry';
 import type { SceneNode } from '../types';
@@ -8,10 +10,10 @@ const PROTO = '#9747ff';
 /** Screen-space overlay: selection, handles, hover, guides, frame labels, prototype links. */
 export function Overlay({ protoDrag, penId, cursor }: { protoDrag: { fromId: string; x: number; y: number } | null; penId: string | null; cursor: { x: number; y: number } | null }) {
   const st = useEditor();
-  const { zoom, panX, panY, doc, selection, hoverId, mode, guides, marquee, editingPathId } = st;
+  const { zoom, panX, panY, selection, hoverId, mode, guides, marquee, editingPathId } = st;
   const page = st.page();
   const S = (x: number, y: number) => ({ x: x * zoom + panX, y: y * zoom + panY });
-  const nodes = doc.nodes;
+  const nodes = useDisplayNodes();
 
   const outlineOf = (n: SceneNode, color: string, width = 1, key?: string) => {
     const cx = n.x + n.w / 2,
@@ -34,6 +36,40 @@ export function Overlay({ protoDrag, penId, cursor }: { protoDrag: { fromId: str
   const bounds = single ? null : unionRects(sel.map(visualBounds));
 
   const handles: JSX.Element[] = [];
+  // Motion mode: motion path + axis arrows (drag to record position keyframes)
+  if (single && mode === 'motion' && !single.locked) {
+    const base = st.doc.nodes[single.id];
+    const kfs = base?.motion?.tracks.position;
+    const dur = { ...DEFAULT_MOTION, ...st.doc.motion }.duration;
+    const cxB = base.x + base.w / 2, cyB = base.y + base.h / 2;
+    if (kfs && kfs.length > 1) {
+      const pts: string[] = [];
+      for (let i = 0; i <= 60; i++) {
+        const v = sampleTrack(kfs, (i / 60) * dur) as Vec;
+        const p = S(cxB + v.x, cyB + v.y);
+        pts.push(`${p.x},${p.y}`);
+      }
+      handles.push(<polyline key="mpath" points={pts.join(' ')} fill="none" stroke={ACCENT} strokeWidth={1.2} strokeDasharray="4 3" opacity={0.8} />);
+      for (const k of kfs) {
+        const v = k.v as Vec;
+        const p = S(cxB + v.x, cyB + v.y);
+        handles.push(<path key={'mk' + k.id} d={`M${p.x} ${p.y - 5}L${p.x + 5} ${p.y}L${p.x} ${p.y + 5}L${p.x - 5} ${p.y}Z`} fill="#fff" stroke={ACCENT} strokeWidth={1.2} />);
+      }
+    }
+    const c = S(single.x + single.w / 2, single.y + single.h / 2);
+    handles.push(
+      <g key="gizmo">
+        <line x1={c.x} y1={c.y} x2={c.x} y2={c.y - 44} stroke="#22c55e" strokeWidth={2} />
+        <path d={`M${c.x - 6} ${c.y - 40}L${c.x} ${c.y - 50}L${c.x + 6} ${c.y - 40}Z`} fill="#22c55e" />
+        <rect data-handle="axis-y" x={c.x - 7} y={c.y - 52} width={14} height={44} fill="transparent" style={{ cursor: 'ns-resize' }} />
+        <line x1={c.x} y1={c.y} x2={c.x + 44} y2={c.y} stroke="#ec4899" strokeWidth={2} />
+        <path d={`M${c.x + 40} ${c.y - 6}L${c.x + 50} ${c.y}L${c.x + 40} ${c.y + 6}Z`} fill="#ec4899" />
+        <rect data-handle="axis-x" x={c.x + 8} y={c.y - 7} width={44} height={14} fill="transparent" style={{ cursor: 'ew-resize' }} />
+        <circle cx={c.x} cy={c.y} r={Math.min(30, Math.max(14, Math.min(single.w, single.h) * zoom * 0.3))} fill="none" stroke={ACCENT} strokeWidth={1.2} />
+        <path data-handle="axis-xy" d={`M${c.x} ${c.y - 6}L${c.x + 6} ${c.y}L${c.x} ${c.y + 6}L${c.x - 6} ${c.y}Z`} fill="#fff" stroke={ACCENT} strokeWidth={1.4} style={{ cursor: 'move' }} />
+      </g>,
+    );
+  }
   if (sel.length && mode === 'design' && !st.editingTextId && !editingPathId && !sel.some((n) => n.locked)) {
     const box = single ?? { x: bounds!.x, y: bounds!.y, w: bounds!.w, h: bounds!.h, rotation: 0 };
     const rot = single?.rotation ?? 0;

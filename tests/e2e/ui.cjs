@@ -75,6 +75,18 @@ const assert = (c, m) => {
   assert(await p.evaluate(() => { const v = window.figmy.store.getState().doc.variables[0].variables[1]; return typeof Object.values(v.values)[0] === 'object'; }), 'variables editor links a variable to another (alias)');
   await p.click('.vx button[title="Close (Esc)"]');
 
+  // motion mode: drag at the playhead records a position keyframe; presets add tracks
+  await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
+  await p.click('.mode-btn[title^="Motion"]');
+  assert(await p.isVisible('.timeline'), 'motion mode shows the timeline');
+  await p.evaluate(() => window.figmy.store.getState().set({ motionTime: 800 }));
+  await p.evaluate(() => { const s = window.figmy.store.getState(); s.setKeyframe(s.selection, 'opacity', 0.3); });
+  await p.click('.section button[title="Add an animation preset"]');
+  await p.click('.mp-presets >> text=Spin');
+  assert(await p.evaluate(() => { const s = window.figmy.store.getState(); const t = s.doc.nodes[s.selection[0]].motion.tracks; return t.opacity.length === 2 && t.rotation.length === 2; }), 'keyframes and presets create animation tracks');
+  assert(await p.isVisible('.tl-key'), 'timeline shows keyframes');
+  await p.click('.mode-btn[title^="Design"]');
+
   // prototype overlay in the presenter
   await p.evaluate(() => {
     const st = () => window.figmy.store.getState();

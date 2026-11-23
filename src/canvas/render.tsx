@@ -149,7 +149,36 @@ function strokeProps(s: Stroke): React.SVGProps<SVGElement> {
   };
 }
 
+/** Outline of a shape as SVG path data in its own coordinates (used as a text-on-path baseline). */
+export function shapePathD(n: SceneNode): string {
+  const w = n.w, h = n.h;
+  switch (n.type) {
+    case 'ellipse': return `M0 ${h / 2} A${w / 2} ${h / 2} 0 1 1 ${w} ${h / 2} A${w / 2} ${h / 2} 0 1 1 0 ${h / 2}`;
+    case 'line': return `M0 0 L${w} ${h}`;
+    case 'path': return n.rings?.length ? ringsPath(n.rings) : pathData(n.points ?? [], !!n.closed);
+    case 'polygon': return 'M' + polygonPoints(w, h, n.sides ?? 3).trim().split(/\s+/).join(' L') + ' Z';
+    case 'star': return 'M' + starPoints(w, h, n.sides ?? 5, n.innerRatio ?? 0.38).trim().split(/\s+/).join(' L') + ' Z';
+    default: return `M0 ${h} L0 0 L${w} 0 L${w} ${h} Z`;
+  }
+}
+
+function renderTextOnPath(n: SceneNode, pre: string): React.ReactNode {
+  const t = n.text!;
+  const fills = n.fills.filter((f) => f.visible);
+  const id = `${pre}tp`;
+  const offset = t.align === 'center' ? '50%' : t.align === 'right' ? '100%' : '0%';
+  return [
+    <defs key="d"><path id={id} d={n.textPathD} /></defs>,
+    ...fills.map((f, fi) => (
+      <text key={fi} fill={paintValue(f, `${pre}f${fi}`)} fillOpacity={f.opacity} fontFamily={FONT_STACK(t.fontFamily)} fontSize={t.fontSize} fontWeight={t.fontWeight} fontStyle={t.italic ? 'italic' : 'normal'} letterSpacing={t.letterSpacing} style={{ whiteSpace: 'pre', userSelect: 'none' }}>
+        <textPath href={`#${id}`} startOffset={offset} textAnchor={t.align === 'center' ? 'middle' : t.align === 'right' ? 'end' : 'start'}>{t.content.replace(/\n/g, ' ')}</textPath>
+      </text>
+    )),
+  ];
+}
+
 function renderText(n: SceneNode, pre: string): React.ReactNode {
+  if (n.textPathD) return renderTextOnPath(n, pre);
   const t = n.text!;
   const lines = layoutLines(t, t.autoResize === 'width' ? Infinity : n.w);
   const lh = t.fontSize * t.lineHeight;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '../store/store';
 import { actions } from '../actions';
 import { Icon, type IconName } from './icons';
-import type { Tool } from '../types';
+import type { Mode, Tool } from '../types';
 import { CollabBar } from '../collab/CollabUI';
 import { AccountBadge } from '../auth/LoginUI';
 
@@ -31,7 +31,7 @@ const TOOLS: { group: { tool: Tool; icon: IconName; label: string; key: string }
     ],
   },
   { group: [{ tool: 'pen', icon: 'pen', label: 'Pen', key: 'P' }, { tool: 'pencil', icon: 'pencil', label: 'Pencil', key: 'Shift+P' }] },
-  { group: [{ tool: 'text', icon: 'text', label: 'Text', key: 'T' }] },
+  { group: [{ tool: 'text', icon: 'text', label: 'Text', key: 'T' }, { tool: 'text-path', icon: 'textPath', label: 'Text on path', key: '' }] },
   { group: [{ tool: 'comment', icon: 'comment', label: 'Comment', key: 'C' }] },
 ];
 
@@ -111,8 +111,8 @@ export function Toolbar({ theme, setTheme }: { theme: string; setTheme: (t: stri
 
       <div className="tb-right">
         <div className="mode-switch" role="tablist">
-          {(['design', 'prototype', 'dev'] as const).map((m) => (
-            <button key={m} className={st.mode === m ? 'active' : ''} onClick={() => st.set({ mode: m, tool: 'move' })}>
+          {(['design', 'prototype', 'motion', 'dev'] as const).map((m) => (
+            <button key={m} className={st.mode === m ? 'active' : ''} onClick={() => st.set({ mode: m, tool: 'move', motionPlaying: false })}>
               {m === 'dev' ? <><Icon name="code" size={13} /> Dev</> : m[0].toUpperCase() + m.slice(1)}
             </button>
           ))}
@@ -186,10 +186,16 @@ export function ToolDock() {
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   }, []);
-  if (st.mode === 'dev') return null;
+  const modes: { mode: Mode; icon: IconName; label: string; key: string }[] = [
+    { mode: 'design', icon: 'designMode', label: 'Design', key: 'Shift+W' },
+    { mode: 'prototype', icon: 'link', label: 'Prototype', key: 'Shift+E' },
+    { mode: 'motion', icon: 'motion', label: 'Motion — keyframe animation', key: 'Shift+M' },
+    { mode: 'dev', icon: 'code', label: 'Dev mode', key: 'Shift+D' },
+  ];
+  const setMode = (mode: Mode) => st.set({ mode, tool: 'move', motionPlaying: false, editingPathId: null });
   return (
     <div className="tool-dock" ref={ref} onPointerDown={(e) => e.stopPropagation()}>
-        {          TOOLS.map((g, gi) => {
+        {st.mode !== 'dev' && TOOLS.map((g, gi) => {
             const current = g.group.find((t) => t.tool === st.tool) ?? g.group.find((t) => t.tool === lastInGroup[gi]) ?? g.group[0];
             const active = g.group.some((t) => t.tool === st.tool);
             return (
@@ -222,13 +228,18 @@ export function ToolDock() {
               </div>
             );
           })}
-      <div className="dock-sep" />
-      <button className={`tool ${st.mode === 'prototype' ? 'active' : ''}`} title="Prototype mode" onClick={() => st.set({ mode: st.mode === 'prototype' ? 'design' : 'prototype', tool: 'move' })}>
-        <Icon name="link" />
-      </button>
-      <button className="tool" title="Quick actions (Ctrl+K)" onClick={() => window.dispatchEvent(new Event('figmy:palette'))}>
-        <Icon name="search" />
-      </button>
+      {st.mode !== 'dev' && (
+        <button className="tool" title="Quick actions (Ctrl+K)" onClick={() => window.dispatchEvent(new Event('figmy:palette'))}>
+          <Icon name="search" />
+        </button>
+      )}
+      <div className="dock-modes" role="tablist" aria-label="Mode">
+        {modes.map((m) => (
+          <button key={m.mode} role="tab" aria-selected={st.mode === m.mode} className={`mode-btn ${st.mode === m.mode ? 'on' : ''}`} title={`${m.label} (${m.key})`} onClick={() => setMode(m.mode)}>
+            <Icon name={m.icon} />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

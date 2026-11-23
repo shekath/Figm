@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEditor } from './store/store';
 import { RenderNode } from './canvas/render';
+import { DEFAULT_MOTION, hasMotion, sampleNodes } from './lib/motion';
 import { EASINGS, lerp, scrollExtent, smartAnimateFrame } from './lib/proto';
 import { descendants } from './lib/layout';
 import { childOverrides, resolveNested, swapPatch } from './lib/components';
@@ -521,9 +522,28 @@ export function Presenter() {
     });
   };
 
+  /* ---------- keyframe animation (Motion mode) plays from the moment a screen appears ---------- */
+  const animated = useMemo(() => Object.values(nodes).some(hasMotion), [nodes]);
+  const [motionT, setMotionT] = useState(0);
+  const screenKey = screens.length ? screens[screens.length - 1].id + ':' + screens.length : '';
+  useEffect(() => {
+    if (!animated) return;
+    const dm = { ...DEFAULT_MOTION, ...useEditor.getState().doc.motion };
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = now - t0;
+      setMotionT(dm.loop ? t % dm.duration : Math.min(t, dm.duration));
+      if (dm.loop || t < dm.duration) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [animated, screenKey]);
+
   /* ---------- rendering ---------- */
-  const svgFor = (id: string, n: Nodes, extra?: React.ReactNode, style?: React.CSSProperties) => {
-    const f = n[id];
+  const svgFor = (id: string, n0: Nodes, extra?: React.ReactNode, style?: React.CSSProperties) => {
+    const n = animated ? sampleNodes(n0, motionT) : n0;
+    const f = n0[id];
     return (
       <svg key={id + (style ? 'a' : '')} className="present-layer" style={style} width={f.w * scale} height={f.h * scale} viewBox={`${f.x} ${f.y} ${f.w} ${f.h}`}>
         <RenderNode id={id} ctx={{ nodes: n, scroll }} />

@@ -180,6 +180,10 @@ export interface SceneNode {
   layoutSizing?: { h?: LayoutSizing; v?: LayoutSizing };
   /** Ignore auto layout of the parent and keep a free position. */
   layoutAbsolute?: boolean;
+  /** Keyframe animation (Motion mode). */
+  motion?: import('./lib/motion').NodeMotion;
+  /** Text on path: SVG path data (in the text layer's own coordinates) the text flows along. */
+  textPathD?: string;
   minW?: number;
   maxW?: number;
   minH?: number;
@@ -316,6 +320,8 @@ export interface DocumentData {
   textStyles: TextStyleDef[];
   effectStyles: EffectStyle[];
   variables: VariableCollection[];
+  /** Timeline settings for Motion mode. */
+  motion?: import('./lib/motion').DocMotion;
   /** active mode per variable collection (collection id -> mode id) */
   activeModes?: Record<string, string>;
   versions: Version[];
@@ -335,8 +341,9 @@ export type Tool =
   | 'pen'
   | 'pencil'
   | 'text'
+  | 'text-path'
   | 'hand'
   | 'comment'
   | 'image';
 
-export type Mode = 'design' | 'prototype' | 'dev';
+export type Mode = 'design' | 'prototype' | 'dev' | 'motion';

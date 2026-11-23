@@ -3,6 +3,7 @@ import { useEditor } from '../store/store';
 import { ColorField, IconButton, NumberField, Section, Select } from './controls';
 import { Icon } from './icons';
 import { PaintPicker } from './ColorPicker';
+import { MotionPageProps, MotionProps } from './MotionPanel';
 import { FramePresetPanel, FrameTypeHeader } from './FramePresets';
 import type { BlendMode, Effect, Paint, SceneNode, Stroke, TextStyle, PrototypeLink, ExportSetting, AutoLayout, LayoutSizing } from '../types';
 import { defaultEffect, defaultStroke, solid, uid } from '../lib/factory';
@@ -21,6 +22,9 @@ export function RightPanel() {
   const sel = st.selectedNodes();
   return (
     <aside className="panel right">
+      {st.mode === 'motion' ? (
+        <div className="tabs motion-tabs"><span className="motion-title">Motion</span><span className="beta">Beta</span></div>
+      ) : (
       <div className="tabs">
         {(['design', 'prototype', 'dev'] as const).map((m) => (
           <button key={m} className={st.mode === m ? 'active' : ''} onClick={() => st.set({ mode: m })}>
@@ -28,8 +32,10 @@ export function RightPanel() {
           </button>
         ))}
       </div>
+      )}
       <div className="panel-scroll">
         {st.mode === 'design' && (st.tool === 'frame' ? <FramePresetPanel /> : sel.length ? <DesignProps sel={sel} /> : <PageProps />)}
+        {st.mode === 'motion' && (sel.length ? <MotionProps sel={sel} /> : <MotionPageProps />)}
         {st.mode === 'prototype' && <PrototypeProps sel={sel} />}
         {st.mode === 'dev' && <DevProps sel={sel} />}
       </div>

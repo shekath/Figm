@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor, setViewportSize, deepCopy, type Guide } from '../store/store';
-import { RenderNode } from './render';
+import { RenderNode, shapePathD } from './render';
+import { useDisplayNodes } from './useDisplayNodes';
+import { currentValue, putKeyframe, type Vec } from '../lib/motion';
 import { hitPath, pickFromPath } from './hit';
 import { createNode, solid } from '../lib/factory';
 import { normalizeRect, rotatePoint, simplify, unionRects, visualBounds, intersects, contains, type Rect } from '../lib/geometry';
@@ -28,7 +30,8 @@ type Drag =
   | { kind: 'point'; id: string; index: number; part: 'p' | 'cin' | 'cout'; wx: number; wy: number; orig: PathPoint }
   | { kind: 'proto'; fromId: string; x: number; y: number }
   | { kind: 'radius'; id: string; startR: number; wx: number; wy: number }
-  | { kind: 'textbox'; wx: number; wy: number; parentId: string | null; r: Rect | null };
+  | { kind: 'textbox'; wx: number; wy: number; parentId: string | null; r: Rect | null }
+  | { kind: 'axis'; axis: 'x' | 'y' | 'xy'; ids: string[]; wx: number; wy: number; start: Record<string, Vec> };
 
 const SNAP = 6;
 
@@ -38,6 +41,7 @@ export function Canvas() {
   const { doc, zoom, panX, panY, tool } = st;
   const page = st.page();
   const [drag, setDrag] = useState<Drag | null>(null);
+  const displayNodes = useDisplayNodes();
   const [space, setSpace] = useState(false);
   const [cursorW, setCursorW] = useState<{ x: number; y: number } | null>(null);
   const [protoDrag, setProtoDrag] = useState<{ fromId: string; x: number; y: number } | null>(null);
@@ -190,6 +194,13 @@ export function Canvas() {
       setDrag({ kind: 'point', id: s.editingPathId, index: idx, part, wx: w.x, wy: w.y, orig: structuredClone(n.points![idx]) });
       return;
     }
+    if (handle?.startsWith('axis-')) {
+      const start: Record<string, Vec> = {};
+      for (const id of s.selection) start[id] = currentValue(s.doc.nodes[id], 'position', s.motionTime) as Vec;
+      s.checkpoint();
+      setDrag({ kind: 'axis', axis: handle.slice(5) as 'x' | 'y' | 'xy', ids: s.selection, wx: w.x, wy: w.y, start });
+      return;
+    }
     if (handle === 'radius') {
       const n = s.selectedNodes()[0];
       s.checkpoint();
@@ -226,6 +237,18 @@ export function Canvas() {
         const text = prompt('Add a comment');
         if (text) s.addComment(w.x, w.y, text);
         s.set({ tool: 'move' });
+        return;
+      }
+      case 'text-path': {
+        const path = hitPath(s.doc.nodes, s.page().children, w.x, w.y, 4 / s.zoom);
+        const target = [...path].reverse().map((id) => s.doc.nodes[id]).find((n) => n && ['path', 'ellipse', 'rect', 'line', 'polygon', 'star'].includes(n.type));
+        if (!target) { s.notify('Click a shape or path to put text on it'); return; }
+        const t = createNode('text', { x: target.x, y: target.y, w: target.w, h: target.h, name: 'Text on path', rotation: target.rotation });
+        t.text!.content = 'Text on a path';
+        t.text!.autoResize = 'fixed';
+        t.textPathD = shapePathD(target);
+        s.addNode(t, target.parentId);
+        s.set({ selection: [t.id], tool: 'move' });
         return;
       }
       case 'text': {
@@ -283,7 +306,7 @@ export function Canvas() {
     }
 
     // move tool
-    if (s.mode === 'prototype' || s.mode === 'design' || s.mode === 'dev') {
+    if (s.mode === 'prototype' || s.mode === 'design' || s.mode === 'dev' || s.mode === 'motion') {
       // frame title click
       if (target.dataset?.frameLabel) {
         const id = target.dataset.frameLabel;
@@ -377,6 +400,13 @@ export function Canvas() {
         drag.lastDx = dx;
         drag.lastDy = dy;
         s.set({ guides: snapped.guides });
+        break;
+      }
+      case 'axis': {
+        const dx = drag.axis === 'y' ? 0 : snapV(w.x - drag.wx), dy = drag.axis === 'x' ? 0 : snapV(w.y - drag.wy);
+        s.mutate((d) => {
+          for (const id of drag.ids) if (d.nodes[id]) putKeyframe(d.nodes[id], 'position', s.motionTime, { x: Math.round(drag.start[id].x + dx), y: Math.round(drag.start[id].y + dy) });
+        }, false);
         break;
       }
       case 'textbox': {
@@ -657,6 +687,18 @@ export function Canvas() {
           if (picked && !e.shiftKey && s.selection.length > 1) s.select([picked]);
           // discard empty checkpoint
           s.set({ past: s.past.slice(0, -1) });
+          break;
+        }
+        if (s.mode === 'motion' && s.autoKey) {
+          // Motion mode: a drag records a position keyframe at the playhead instead of moving the design
+          const dx = drag.lastDx, dy = drag.lastDy;
+          s.undo();
+          const ids = drag.ids;
+          useEditor.getState().setKeyframe(ids, 'position', (n) => {
+            const c = currentValue(n, 'position', useEditor.getState().motionTime) as Vec;
+            return { x: Math.round(c.x + dx), y: Math.round(c.y + dy) };
+          });
+          useEditor.getState().set({ selection: ids });
           break;
         }
         // reparent into frame under cursor
@@ -981,7 +1023,7 @@ export function Canvas() {
       <svg className="world" width="100%" height="100%">
         <g transform={`translate(${panX},${panY}) scale(${zoom})`}>
           {page.children.map((id) => (
-            <RenderNode key={id} id={id} ctx={{ nodes: doc.nodes, outlines: st.showOutlines, hideIds: hidden }} />
+            <RenderNode key={id} id={id} ctx={{ nodes: displayNodes, outlines: st.showOutlines, hideIds: hidden }} />
           ))}
           {drag?.kind === 'pencil' && <polyline points={drag.pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#000" strokeWidth={2 / zoom} />}
         </g>

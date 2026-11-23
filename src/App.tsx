@@ -5,6 +5,7 @@ import { Toolbar, ToolDock } from './panels/Toolbar';
 import { ContextBar, CommandPalette } from './panels/QuickUI';
 import { LeftPanel } from './panels/LeftPanel';
 import { RightPanel } from './panels/RightPanel';
+import { Timeline } from './panels/Timeline';
 import { Presenter } from './Presenter';
 import { ContextMenu, ShortcutsDialog, Toast } from './Overlays';
 import { Home } from './Home';
@@ -43,6 +44,7 @@ export function App() {
   }, [theme]);
 
   const presenting = useEditor((s) => s.presenting);
+  const mode = useEditor((s) => s.mode);
   const name = useEditor((s) => s.doc.name);
   const dirty = useEditor((s) => s.dirty);
   const authMode = useAuth((s) => s.mode);
@@ -192,6 +194,7 @@ export function App() {
         </div>
         <RightPanel />
       </div>
+      {mode === 'motion' && <Timeline />}
       {presenting && <Presenter />}
       <ContextMenu />
       <ShortcutsDialog />

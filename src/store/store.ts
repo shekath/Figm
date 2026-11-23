@@ -7,6 +7,7 @@ import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, 
 import { applyBoolean, type BooleanOp } from '../lib/boolean';
 import * as comps from '../lib/components';
 import type { ComponentProp } from '../types';
+import { DEFAULT_MOTION, currentValue, presetTracks, putKeyframe, type DocMotion, type Keyframe, type MotionPreset, type MotionProp, type MotionValue } from '../lib/motion';
 import { applyAllBindings, defaultValue, importTokens, newCollection, resolveInMode, resolveMode } from '../lib/variables';
 import type { BindableProp, Variable, VariableValue } from '../types';
 import { unionRects, visualBounds, type Rect } from '../lib/geometry';
@@ -34,6 +35,11 @@ export interface EditorState {
   hoverId: string | null;
   tool: Tool;
   mode: Mode;
+  /** Motion mode: playhead (ms), playback and auto-keying. */
+  motionTime: number;
+  motionPlaying: boolean;
+  autoKey: boolean;
+  selectedKeys: { nodeId: string; prop: MotionProp; id: string }[];
   zoom: number;
   panX: number;
   panY: number;
@@ -98,6 +104,13 @@ export interface EditorState {
   toggleAutoLayout: () => void;
   setAutoLayout: (id: string, patch: Partial<AutoLayout>) => void;
   useAsMask: () => void;
+  setMotion: (patch: Partial<DocMotion>) => void;
+  setKeyframe: (ids: string[], prop: MotionProp, value: MotionValue | ((n: SceneNode) => MotionValue), t?: number) => void;
+  toggleKeyframe: (ids: string[], prop: MotionProp) => void;
+  updateKeyframes: (keys: { nodeId: string; prop: MotionProp; id: string }[], patch: Partial<Keyframe> | ((k: Keyframe) => Partial<Keyframe>)) => void;
+  deleteKeyframes: (keys: { nodeId: string; prop: MotionProp; id: string }[]) => void;
+  clearMotion: (ids: string[], prop?: MotionProp) => void;
+  applyMotionPreset: (ids: string[], preset: MotionPreset) => void;
   booleanOp: (op: BooleanOp) => void;
 
   // variants & component properties
@@ -252,6 +265,10 @@ export const useEditor = create<EditorState>((set, get) => ({
   hoverId: null,
   tool: 'move',
   mode: 'design',
+  motionTime: 0,
+  motionPlaying: false,
+  autoKey: true,
+  selectedKeys: [],
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -766,6 +783,73 @@ export const useEditor = create<EditorState>((set, get) => ({
       applyAutoLayout(d.nodes, id);
       relayoutAncestors(d.nodes, n.parentId);
     }),
+
+  setMotion: (patch) => get().mutate((d) => { d.motion = { ...DEFAULT_MOTION, ...d.motion, ...patch }; }),
+  setKeyframe: (ids, prop, value, t) =>
+    get().mutate((d) => {
+      const time = t ?? get().motionTime;
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (n) putKeyframe(n, prop, time, typeof value === 'function' ? value(n) : value);
+      }
+    }),
+  toggleKeyframe: (ids, prop) => {
+    const t = get().motionTime;
+    const nodes = get().doc.nodes;
+    const has = ids.some((id) => nodes[id]?.motion?.tracks[prop]?.some((k) => Math.abs(k.t - t) < 1));
+    get().mutate((d) => {
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (!n) continue;
+        if (has) {
+          const list = (n.motion?.tracks[prop] ?? []).filter((k) => Math.abs(k.t - t) >= 1);
+          n.motion = { tracks: { ...n.motion?.tracks, [prop]: list } };
+        } else putKeyframe(n, prop, t, currentValue(n, prop, t));
+      }
+    });
+  },
+  updateKeyframes: (keys, patch) =>
+    get().mutate((d) => {
+      for (const key of keys) {
+        const n = d.nodes[key.nodeId];
+        const list = n?.motion?.tracks[key.prop];
+        if (!n || !list) continue;
+        const next = list.map((k) => (k.id === key.id ? { ...k, ...(typeof patch === 'function' ? patch(k) : patch) } : k)).sort((a, b) => a.t - b.t);
+        n.motion = { tracks: { ...n.motion!.tracks, [key.prop]: next } };
+      }
+    }),
+  deleteKeyframes: (keys) => {
+    get().mutate((d) => {
+      for (const key of keys) {
+        const n = d.nodes[key.nodeId];
+        const list = n?.motion?.tracks[key.prop];
+        if (!n || !list) continue;
+        n.motion = { tracks: { ...n.motion!.tracks, [key.prop]: list.filter((k) => k.id !== key.id) } };
+      }
+    });
+    set({ selectedKeys: [] });
+  },
+  clearMotion: (ids, prop) =>
+    get().mutate((d) => {
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (!n?.motion) continue;
+        if (prop) n.motion = { tracks: { ...n.motion.tracks, [prop]: [] } };
+        else delete n.motion;
+      }
+    }),
+  applyMotionPreset: (ids, preset) => {
+    const dm = { ...DEFAULT_MOTION, ...get().doc.motion };
+    const start = Math.min(get().motionTime, Math.max(0, dm.duration - 200));
+    const dur = Math.min(preset === 'spin' || preset === 'pulse' || preset === 'float' || preset === 'color-cycle' ? dm.duration : 600, dm.duration - start);
+    get().mutate((d) => {
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (!n) continue;
+        n.motion = { tracks: { ...n.motion?.tracks, ...presetTracks(n, preset, start, dur) } };
+      }
+    });
+  },
 
   useAsMask: () => {
     const sel = get().selectedNodes();

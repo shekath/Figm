@@ -7,6 +7,7 @@ import type { DocumentData, Paint, PrototypeLink, SceneNode } from '../types';
 import { exportSvgString } from './exporter';
 import { visualBounds } from './geometry';
 import { FONT_STACK, transformText } from './text';
+import { DEFAULT_MOTION, hasMotion, sampleTrack, type DocMotion, type Vec } from './motion';
 import { childOverrides, setOf, variantsOf } from './components';
 
 type Nodes = Record<string, SceneNode>;
@@ -127,6 +128,37 @@ interface Ctx {
   fonts: Set<string>;
   frameIds: Set<string>;
   count: number;
+  motion: DocMotion;
+}
+
+/** Keyframe animation → CSS @keyframes, sampled so every easing (springs, bounce) plays exactly as in Figmy. */
+function motionCss(n: SceneNode, cls: string, ctx: Ctx): string | null {
+  if (!hasMotion(n)) return null;
+  const tr = n.motion!.tracks;
+  const dur = ctx.motion.duration;
+  const steps = 30;
+  const frames: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * dur;
+    const pos = (sampleTrack(tr.position, t) as Vec | undefined) ?? { x: 0, y: 0 };
+    const sc = (sampleTrack(tr.scale, t) as Vec | undefined) ?? { x: 1, y: 1 };
+    const rot = sampleTrack(tr.rotation, t) as number | undefined;
+    const tf = [`translate(${px(pos.x)}, ${px(pos.y)})`, `rotate(${Math.round((rot ?? n.rotation) * 100) / 100}deg)`, `scale(${Math.round(sc.x * (n.flipX ? -1 : 1) * 1000) / 1000}, ${Math.round(sc.y * (n.flipY ? -1 : 1) * 1000) / 1000})`];
+    const props = [`transform: ${tf.join(' ')}`];
+    const op = sampleTrack(tr.opacity, t);
+    if (typeof op === 'number') props.push(`opacity: ${Math.round(op * 1000) / 1000}`);
+    const w = sampleTrack(tr.width, t), h = sampleTrack(tr.height, t);
+    if (typeof w === 'number') props.push(`width: ${px(w)}`);
+    if (typeof h === 'number') props.push(`height: ${px(h)}`);
+    const r = sampleTrack(tr.radius, t);
+    if (typeof r === 'number') props.push(`border-radius: ${px(r)}`);
+    const f = sampleTrack(tr.fill, t);
+    if (typeof f === 'string') props.push(n.type === 'text' ? `color: ${f}` : `background: ${f}`);
+    frames.push(`${Math.round((i / steps) * 10000) / 100}% { ${props.join('; ')}; }`);
+  }
+  const name = `m-${cls}`;
+  ctx.rules.push(`@keyframes ${name} { ${frames.join(' ')} }`);
+  return `animation: ${name} ${Math.round(dur)}ms linear ${ctx.motion.loop ? 'infinite' : '1 forwards'}`;
 }
 
 const slug = (s: string) =>
@@ -209,6 +241,8 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
     css.push('cursor: pointer');
   }
   if (n.overflow && n.overflow !== 'none' && ctx.opts.prototype) css.push(n.overflow === 'vertical' ? 'overflow-y: auto' : n.overflow === 'horizontal' ? 'overflow-x: auto' : 'overflow: auto');
+  const anim = motionCss(n, cls, ctx);
+  if (anim) css.push(anim, 'transform-origin: center');
   ctx.rules.push(`.${cls} { ${css.join('; ')}; }`);
 
   if (n.type === 'text' && n.text) {
@@ -454,9 +488,9 @@ const RUNTIME = `
 `;
 
 /** Generate a complete HTML document for the given top-level frames. */
-export function generateHtml(doc: Pick<DocumentData, 'nodes' | 'name' | 'pages'>, frameIds: string[], options: Partial<HtmlExportOptions> = {}): string {
+export function generateHtml(doc: Pick<DocumentData, 'nodes' | 'name' | 'pages' | 'motion'>, frameIds: string[], options: Partial<HtmlExportOptions> = {}): string {
   const opts = { ...defaultHtmlOptions, ...options };
-  const ctx: Ctx = { nodes: doc.nodes, opts, rules: [], fonts: new Set(), frameIds: new Set(frameIds), count: 0 };
+  const ctx: Ctx = { nodes: doc.nodes, opts, rules: [], fonts: new Set(), frameIds: new Set(frameIds), count: 0, motion: { ...DEFAULT_MOTION, ...doc.motion } };
   const ids = frameIds.filter((id) => doc.nodes[id]);
   const body = ids.map((id) => emit(id, ctx, null, false, 2)).join('\n');
   const page = doc.pages.find((p) => ids.some((id) => p.children.includes(id)));
