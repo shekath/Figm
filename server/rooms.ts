@@ -45,6 +45,8 @@ export const validRoomId = (id: string) => ROOM_ID.test(id);
 
 export class RoomManager {
   rooms = new Map<string, Room>();
+  /** called after a file in the data folder is written (used for off-machine backup) */
+  onSaved: ((file: string) => void) | null = null;
   constructor(private dataDir: string | null) {
     if (dataDir) fs.mkdirSync(path.join(dataDir, 'rooms'), { recursive: true });
   }
@@ -101,7 +103,7 @@ export class RoomManager {
       room.saveTimer = null;
       const tmp = f + '.tmp';
       fs.writeFile(tmp, JSON.stringify(room.doc), (err) => {
-        if (!err) fs.rename(tmp, f, () => undefined);
+        if (!err) fs.rename(tmp, f, (e) => !e && this.onSaved?.(f));
       });
     }, 800);
   }
@@ -112,6 +114,7 @@ export class RoomManager {
       if (room.saveTimer && f) {
         clearTimeout(room.saveTimer);
         fs.writeFileSync(f, JSON.stringify(room.doc));
+        this.onSaved?.(f);
       }
     }
   }

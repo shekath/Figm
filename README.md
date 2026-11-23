@@ -60,6 +60,23 @@ The desktop app starts the server automatically on `127.0.0.1:4317`, so collabor
 - `--token` (or `FIGMY_TOKEN`) requires `Authorization: Bearer <token>` (or `?token=`) for the API, MCP and WebSocket. Always set it when the server is reachable from other machines.
 - The server binds to `127.0.0.1` by default. Use `--host 0.0.0.0` to share it on your network.
 
+## Always-on in Cloudflare (Containers)
+
+This runs the full server (editor, collaboration, AI connector, Google sign-in) on Cloudflare itself, so no machine of yours has to stay on. A Worker on your domain sends every request, including WebSockets, to one Figmy container. The container's disk is wiped when it restarts, so all files and sign-in sessions are backed up to **R2** and restored on start. The container sleeps after `SLEEP_AFTER` (default 2h) without visitors and wakes on the next request; the first load after a sleep takes a few seconds.
+
+You need the **Workers Paid** plan (Containers and R2 are billed by usage).
+
+1. **R2 bucket.** In R2, create a bucket named `figmy-data`. Then go to R2 → *Manage API tokens* → create a token with **Object Read & Write** on that bucket and copy its access key ID and secret.
+2. **API token.** In My Profile → API Tokens, create a token from the **Edit Cloudflare Workers** template, and add **Containers: Edit** if it's listed separately.
+3. **GitHub secrets** (Settings → Secrets and variables → Actions → Secrets): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `FIGMY_TOKEN` (a long random string), `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`.
+4. **GitHub variables** (Variables tab): `FIGMY_CONTAINER` = `1`, and `FIGMY_SERVER_URL` = e.g. `https://app.example.com`. Optionally add `GOOGLE_CLIENT_ID`, `REQUIRE_LOGIN` (default `1`), `ALLOWED_DOMAINS`, `ALLOWED_EMAILS` and `R2_BUCKET`.
+5. **Deploy.** Run **Deploy server to Cloudflare Containers** in the Actions tab (it also runs on every push once enabled).
+6. **Your domain.** In Workers & Pages → **figmy** (the Worker) → Settings → Domains & Routes → *Add custom domain*, enter `app.example.com`. If a Tunnel already uses that hostname, remove the Tunnel's public hostname first.
+
+The AI connector address is `https://app.example.com/mcp`, with the header `Authorization: Bearer <FIGMY_TOKEN>`. To make the Pages site use this server, set the `FIGMY_SERVER_URL` variable and redeploy Pages.
+
+Any S3-compatible host works for backups via `FIGMY_S3_ENDPOINT`, `FIGMY_S3_BUCKET`, `FIGMY_S3_ACCESS_KEY_ID` and `FIGMY_S3_SECRET_ACCESS_KEY`, so you can also use this with Docker anywhere.
+
 ## Sign in with Google
 
 Figmy can sign people in with their Google account. On a Figmy server (`npm start`, Docker, or the desktop app's built-in server), the browser gets a Google-signed ID token. The server checks its signature against Google's published keys, then checks the audience, issuer, expiry, verified email and your allow-lists, and creates a 30-day session. No client secret is needed.

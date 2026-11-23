@@ -24,6 +24,8 @@ export interface ServerOptions {
   log?: (msg: string) => void;
   /** Google sign-in settings (defaults to FIGMY_GOOGLE_CLIENT_ID / FIGMY_REQUIRE_LOGIN / FIGMY_ALLOWED_* env vars) */
   auth?: AuthConfig;
+  /** called after any file in the data folder is written */
+  onFileSaved?: (file: string) => void;
 }
 
 export interface RunningServer {
@@ -81,6 +83,7 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
   const ctx: ToolContext = { rooms, publicUrl: '' };
 
   const auth = new Auth(opts.auth ?? authConfigFromEnv(), opts.dataDir ?? null);
+  if (opts.onFileSaved) rooms.onSaved = auth.onSaved = opts.onFileSaved;
 
   /** Signed-in user for a request (session cookie or bearer), if any. */
   const userOf = (req: IncomingMessage, url: URL): User | null => auth.session(auth.tokenFrom(req.headers, url))?.user ?? null;

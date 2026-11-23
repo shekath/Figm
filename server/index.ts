@@ -10,6 +10,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { startServer } from './app';
 import { runStdioBridge } from './stdio';
+import { Backup, backupConfigFromEnv } from './backup';
 
 function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -38,13 +39,28 @@ async function main() {
   if (host !== '127.0.0.1' && host !== 'localhost' && !token) {
     console.error('[figmy] WARNING: listening on a public interface without --token. Anyone who can reach this port can edit your files.');
   }
-  const s = await startServer({ port, host, dataDir, staticDir: staticDir ?? null, token, publicUrl });
+  // off-machine backup (e.g. Cloudflare R2) for hosts with ephemeral disks
+  const bcfg = backupConfigFromEnv();
+  let backup: Backup | null = null;
+  if (bcfg) {
+    backup = new Backup(bcfg, dataDir, (m) => console.error(m));
+    fs.mkdirSync(dataDir, { recursive: true });
+    try {
+      const n = await backup.restore();
+      console.error(`[figmy] restored ${n} file(s) from backup bucket ${bcfg.bucket}`);
+    } catch (e) {
+      console.error(`[figmy] backup restore failed: ${(e as Error).message}`);
+      if (process.env.FIGMY_BACKUP_REQUIRED === '1') process.exit(1);
+    }
+  }
+  const s = await startServer({ port, host, dataDir, staticDir: staticDir ?? null, token, publicUrl, onFileSaved: backup ? (f) => backup!.schedule(f) : undefined });
   console.error(`[figmy] server running at ${s.url}`);
   console.error(`[figmy]   editor:        ${s.url}${staticDir ? '' : '  (web app not bundled: run "npm run build" first)'}`);
   console.error(`[figmy]   MCP endpoint:  ${s.url}/mcp${token ? '  (Authorization: Bearer <token>)' : ''}`);
   console.error(`[figmy]   files stored in ${dataDir}`);
   const stop = async () => {
     await s.close();
+    await backup?.flush();
     process.exit(0);
   };
   process.on('SIGINT', stop);

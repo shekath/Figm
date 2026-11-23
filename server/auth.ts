@@ -68,6 +68,7 @@ export class Auth {
   private handoffs = new Map<string, { session?: Session; expiresAt: number }>();
   private keys: { jwks: Jwk[]; fetchedAt: number; maxAge: number } | null = null;
   private file: string | null;
+  onSaved: ((file: string) => void) | null = null;
 
   constructor(
     public config: AuthConfig,
@@ -162,7 +163,8 @@ export class Auth {
     if (!this.file) return;
     // tokens are stored as-is so restarts keep people signed in; the file lives in the private data dir
     const list = [...this.sessions.values()].filter((s) => s.expiresAt > Date.now());
-    fs.writeFile(this.file, JSON.stringify(list), { mode: 0o600 }, () => undefined);
+    const f = this.file;
+    fs.writeFile(f, JSON.stringify(list), { mode: 0o600 }, (e) => !e && this.onSaved?.(f));
   }
 
   /* ---------- desktop hand-off (sign in in the system browser, pick up in the app) ---------- */
