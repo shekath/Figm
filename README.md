@@ -1,6 +1,6 @@
 # Figmy
 
-Figmy is an open-source vector design and prototyping tool. It runs in the browser, as a Windows desktop app (Electron), and as a self-hostable server. The server adds real-time multiplayer and an MCP connector, so Claude, ChatGPT or any MCP client can design inside your files while you watch.
+Figmy is an open-source vector design and prototyping tool. It runs in the browser, as a Windows and macOS desktop app (Electron), and as a self-hostable server. The server adds real-time multiplayer and an MCP connector, so Claude, ChatGPT or any MCP client can design inside your files while you watch.
 
 It was written from scratch. It contains no code, assets or branding from any proprietary design product. Figma files can be imported through Figma's public REST API.
 
@@ -49,6 +49,7 @@ Other ways to run it:
 | `npm run dev:server` | Server with auto-reload; run alongside `npm run dev` |
 | `npm run electron:dev` | Desktop app with hot reload |
 | `npm run electron:build` | Windows installer + portable `.exe` in `release/` (run on Windows; CI builds it too) |
+| `npm run electron:build:mac` | macOS `.dmg` + `.zip` for Apple Silicon and Intel in `release/` (run on a Mac; CI builds it too) |
 | `docker build -t figmy . && docker run -p 4317:4317 -v figmy:/data -e FIGMY_TOKEN=secret figmy` | Host the server |
 
 The desktop app starts the server automatically on `127.0.0.1:4317`, so collaboration on your machine and the AI connector work with no setup.
@@ -195,7 +196,9 @@ Instances without overrides stay linked to their main component, including their
 | `npm test` | 79 unit tests: Google sign-in token checks and sessions, sync/repair, booleans, variables, variants/component properties/nested overrides, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
 | `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, variants and interactive components, two-browser collaboration, every kind of MCP edit, the stdio bridge, and the Google sign-in gate |
 
-CI (`.github/workflows/build.yml`) runs type-checks, the build, unit tests and e2e tests, and builds the Windows installer on a Windows runner.
+CI (`.github/workflows/build.yml`) runs type-checks, the build, unit tests and e2e tests, and builds the Windows installer on a Windows runner and the macOS disk images on a macOS runner.
+
+**Installing on macOS:** open the `.dmg` for your Mac (`arm64` = Apple Silicon M1–M4, `x64` = Intel) and drag Figmy to Applications. The build isn't notarized by Apple, so the first time, right-click Figmy → **Open** → **Open** (or run `xattr -dr com.apple.quarantine /Applications/Figmy.app`). To ship a signed, notarized build, add an Apple Developer ID certificate as `CSC_LINK`/`CSC_KEY_PASSWORD` and `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` secrets and remove `identity: "-"`.
 
 ## Project layout
 

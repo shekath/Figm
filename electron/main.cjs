@@ -188,6 +188,12 @@ function buildMenu() {
       ],
     },
   ];
+  if (process.platform === 'darwin') {
+    // macOS: app menu first; Quit lives there instead of File
+    const file = template.find((m) => m.label === '&File');
+    if (file) file.submenu = file.submenu.filter((i) => i.role !== 'quit' && !(i.type === 'separator' && file.submenu.indexOf(i) === file.submenu.length - 1));
+    template.unshift({ role: 'appMenu' });
+  }
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
