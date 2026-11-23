@@ -54,3 +54,29 @@ describe('MCP design tools', () => {
     expect(del.deleted).toBe(1);
   });
 });
+
+describe('MCP variant tools', () => {
+  it('builds an interactive component end to end', async () => {
+    const c = ctx();
+    const { fileId } = (await callTool('create_file', { name: 'V' }, c)) as { fileId: string };
+    const r = (await callTool('create_nodes', { fileId, nodes: [
+      { type: 'component', name: 'Off', width: 60, height: 32, fill: '#cccccc', children: [{ type: 'ellipse', name: 'Knob', x: 2, y: 2, width: 28, height: 28 }] },
+      { type: 'component', name: 'On', x: 100, width: 60, height: 32, fill: '#22c55e', children: [{ type: 'ellipse', name: 'Knob', x: 30, y: 2, width: 28, height: 28 }] },
+    ] }, c)) as { created: { id: string }[] };
+    const [off, on] = r.created.map((x) => x.id);
+    const set = (await callTool('combine_as_variants', { fileId, ids: [off, on], name: 'Switch', variants: [{ State: 'Off' }, { State: 'On' }] }, c)) as { setId: string; properties: unknown };
+    expect(set.properties).toEqual([{ name: 'State', values: ['Off', 'On'] }]);
+    await callTool('add_interaction', { fileId, fromId: off, action: 'change-to', targetId: on }, c);
+    await callTool('add_interaction', { fileId, fromId: on, action: 'change-to', targetId: off }, c);
+    const inst = (await callTool('create_instance', { fileId, componentId: off }, c)) as { id: string };
+    const res = (await callTool('set_instance_properties', { fileId, instanceId: inst.id, properties: { State: 'On' } }, c)) as { node: { componentId: string; variant: { current: Record<string, string> } } };
+    expect(res.node.componentId).toBe(on);
+    expect(res.node.variant.current).toEqual({ State: 'On' });
+    const added = (await callTool('add_variant', { fileId, sourceId: on, props: { State: 'Disabled' } }, c)) as { id: string };
+    expect(added.id).toBeTruthy();
+    await expect(callTool('add_interaction', { fileId, fromId: inst.id, action: 'change-to', targetId: on }, c)).rejects.toThrow(/inside a variant/);
+    await expect(callTool('set_instance_properties', { fileId, instanceId: inst.id, properties: { Nope: 'x' } }, c)).rejects.toThrow(/Unknown property/);
+    const html = (await callTool('export_html', { fileId, frameIds: [inst.id] }, c)) as { html: string };
+    expect(html.html).toContain('data-instance');
+  });
+});

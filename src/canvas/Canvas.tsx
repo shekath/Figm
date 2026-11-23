@@ -13,6 +13,7 @@ import { TextEditor } from './TextEditor';
 import { Rulers } from './Rulers';
 import { CommentPins } from './CommentPins';
 import { PeerCursors } from '../collab/CollabUI';
+import { setOf, variantsOf } from '../lib/components';
 import { collabCursor } from '../collab/client';
 
 type Drag =
@@ -772,6 +773,19 @@ export function Canvas() {
         break;
       case 'proto': {
         const target = frameAt(w.x, w.y, [drag.fromId]);
+        // interactive components: dropping onto a sibling variant creates a "change to" link
+        let owner: SceneNode | undefined = s.doc.nodes[drag.fromId];
+        while (owner && owner.type !== 'component') owner = owner.parentId ? s.doc.nodes[owner.parentId] : undefined;
+        const ownerSet = owner ? setOf(s.doc.nodes, owner.id) : null;
+        if (ownerSet && owner) {
+          const variant = variantsOf(s.doc.nodes, ownerSet.id).find((v) => v.id !== owner!.id && w.x >= v.x && w.x <= v.x + v.w && w.y >= v.y && w.y <= v.y + v.h);
+          if (variant) {
+            s.updateNodes([drag.fromId], (n) => ({ prototype: [...(n.prototype ?? []).filter((l) => l.trigger !== 'click'), { trigger: 'click', action: 'change-to', targetId: variant.id, animation: 'smart-animate', easing: 'ease-out', duration: 300 }] }));
+            s.notify(`Change to “${variant.name}” on click`);
+            setProtoDrag(null);
+            break;
+          }
+        }
         // only top-level frames are targets
         let top = target;
         while (top && s.doc.nodes[top]?.parentId) top = s.doc.nodes[top].parentId;

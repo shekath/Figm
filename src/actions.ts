@@ -147,6 +147,8 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   frameSelection: { label: 'Frame selection', shortcut: 'Ctrl+Alt+G', run: () => S().frameSelection() },
   autoLayout: { label: 'Add / remove auto layout', shortcut: 'Shift+A', run: () => S().toggleAutoLayout() },
   component: { label: 'Create component', shortcut: 'Ctrl+Alt+K', run: () => S().makeComponent() },
+  combineVariants: { label: 'Combine as variants', shortcut: 'Ctrl+Alt+Shift+K', run: () => S().combineAsVariants() },
+  addVariant: { label: 'Add variant', run: () => S().addVariant() },
   detach: { label: 'Detach instance', shortcut: 'Ctrl+Alt+B', run: () => S().detachInstance() },
   mask: { label: 'Use as mask', shortcut: 'Ctrl+Alt+M', run: () => S().useAsMask() },
   union: { label: 'Union selection', shortcut: 'Ctrl+Alt+U', run: () => S().booleanOp('union') },

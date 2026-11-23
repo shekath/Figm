@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEditor } from './store/store';
 import { RenderNode } from './canvas/render';
-import { EASINGS, scrollExtent, smartAnimateFrame } from './lib/proto';
+import { EASINGS, lerp, scrollExtent, smartAnimateFrame } from './lib/proto';
+import { descendants } from './lib/layout';
 import type { Animation, PrototypeLink, SceneNode } from './types';
 
 type Nodes = Record<string, SceneNode>;
@@ -9,7 +10,7 @@ type Scroll = Record<string, { x: number; y: number }>;
 interface Screen {
   id: string;
   via?: PrototypeLink;
-  temp?: string; // node id that triggered a temporary (hover/press) navigation
+  temp?: string; // node key that triggered a temporary (hover/press) navigation
 }
 interface Overlay {
   id: string;
@@ -24,16 +25,30 @@ interface Anim {
   reverse: boolean;
   start: number;
 }
+/** Running variant change on an instance (interactive components). */
+interface VariantAnim {
+  from: string;
+  to: string;
+  link: PrototypeLink;
+  start: number;
+}
+/** A hit-tested layer and the instance it lives in (for layers inside components). */
+interface Hit {
+  id: string;
+  inst: string | null;
+}
 
 const normAnim = (a: Animation): { kind: Animation; dir?: PrototypeLink['direction'] } =>
   a === 'slide-left' ? { kind: 'move-in', dir: 'left' } : a === 'slide-right' ? { kind: 'move-in', dir: 'right' } : a === 'slide-up' ? { kind: 'move-in', dir: 'up' } : { kind: a };
 
-/** Full-screen prototype player with Smart Animate, overlays, scrolling and all trigger types. */
+const keyOf = (h: Hit) => `${h.inst ?? ''}:${h.id}`;
+
+/** Full-screen prototype player with Smart Animate, interactive components, overlays, scrolling and all trigger types. */
 export function Presenter() {
   const st = useEditor();
   const page = st.page();
   const nodes = st.doc.nodes;
-  const frames = page.children.map((id) => nodes[id]).filter((n): n is SceneNode => !!n && (n.type === 'frame' || n.type === 'component') && n.visible);
+  const frames = page.children.map((id) => nodes[id]).filter((n): n is SceneNode => !!n && (n.type === 'frame' || n.type === 'component') && n.visible && !n.isComponentSet);
   const start = (page.startFrameId && nodes[page.startFrameId] ? page.startFrameId : frames[0]?.id) ?? null;
 
   const [screens, setScreens] = useState<Screen[]>(start ? [{ id: start }] : []);
@@ -41,16 +56,56 @@ export function Presenter() {
   const [scroll, setScroll] = useState<Scroll>({});
   const [anim, setAnim] = useState<Anim | null>(null);
   const [t, setT] = useState(1);
+  const [variants, setVariants] = useState<Record<string, string>>({}); // instance id -> current variant component id
+  const [variantAnims, setVariantAnims] = useState<Record<string, VariantAnim>>({});
+  const [now, setNow] = useState(0);
   const [hints, setHints] = useState(false);
   const [size, setSize] = useState({ w: innerWidth, h: innerHeight });
   const stageRef = useRef<HTMLDivElement>(null);
-  const hoverPath = useRef<string[]>([]);
+  const hoverPath = useRef<Hit[]>([]);
   const pressed = useRef<string | null>(null);
+  /** temporary variant changes (while hovering / pressing): instance id -> variant to restore */
+  const tempVariant = useRef<Record<string, { prev: string; link: PrototypeLink; trigger: 'hover' | 'press' }>>({});
 
   const cur = screens[screens.length - 1]?.id;
   const frame = cur ? nodes[cur] : null;
 
-  /* ---------- animation loop ---------- */
+  /* ---------- render nodes: document + interactive component state ---------- */
+  const rn: Nodes = useMemo(() => {
+    const ids = Object.keys(variants);
+    if (!ids.length) return nodes;
+    let out: Nodes = { ...nodes };
+    for (const instId of ids) {
+      const inst = nodes[instId];
+      const compId = variants[instId];
+      const comp = nodes[compId];
+      const orig = inst?.componentId ? nodes[inst.componentId] : undefined;
+      if (!inst || !comp) continue;
+      // follow the variant's size unless the instance was resized
+      const follows = orig && Math.abs(inst.w - orig.w) < 0.5 && Math.abs(inst.h - orig.h) < 0.5;
+      out[instId] = { ...inst, componentId: compId, w: follows ? comp.w : inst.w, h: follows ? comp.h : inst.h };
+      const va = variantAnims[instId];
+      if (va && nodes[va.from]) {
+        const p = Math.min(1, (now - va.start) / Math.max(1, va.link.duration));
+        const e = EASINGS[va.link.easing ?? 'ease-out'](p);
+        const { kind } = normAnim(va.link.animation);
+        if (kind !== 'instant') {
+          const sa = smartAnimateFrame(out, va.from, va.to, kind === 'smart-animate' ? e : 1);
+          const ids2 = [va.to, ...descendants(nodes, va.to)];
+          out = { ...out };
+          for (const id of ids2) out[id] = sa.nodes[id];
+          if (kind === 'dissolve') for (const c of nodes[va.to].children) out[c] = { ...out[c], opacity: out[c].opacity * e };
+          if (follows) {
+            const from = nodes[va.from];
+            out[instId] = { ...out[instId], w: lerp(from.w, comp.w, e), h: lerp(from.h, comp.h, e) };
+          }
+        }
+      }
+    }
+    return out;
+  }, [nodes, variants, variantAnims, now]);
+
+  /* ---------- animation loops ---------- */
   useEffect(() => {
     if (!anim) return;
     let raf = 0;
@@ -68,6 +123,25 @@ export function Presenter() {
     return () => cancelAnimationFrame(raf);
   }, [anim]);
 
+  useEffect(() => {
+    if (!Object.keys(variantAnims).length) return;
+    let raf = 0;
+    const tick = () => {
+      const time = performance.now();
+      setNow(time);
+      const done = Object.entries(variantAnims).filter(([, a]) => time - a.start >= a.link.duration).map(([k]) => k);
+      if (done.length)
+        setVariantAnims((v) => {
+          const n = { ...v };
+          for (const k of done) delete n[k];
+          return n;
+        });
+      else raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [variantAnims]);
+
   const animate = (a: Omit<Anim, 'start'>) => {
     const { kind } = normAnim(a.link.animation);
     if (kind === 'instant' || a.link.duration <= 0) {
@@ -78,6 +152,26 @@ export function Presenter() {
     }
     setT(0);
     setAnim({ ...a, start: performance.now() });
+  };
+
+  /* ---------- interactive components ---------- */
+  const currentVariant = (instId: string) => variants[instId] ?? nodes[instId]?.componentId ?? '';
+
+  const changeVariant = (instId: string, to: string, link: PrototypeLink, temp?: 'hover' | 'press') => {
+    const from = currentVariant(instId);
+    if (!nodes[to] || !from || from === to) return;
+    if (temp && !tempVariant.current[instId]) tempVariant.current[instId] = { prev: from, link, trigger: temp };
+    setVariants((v) => ({ ...v, [instId]: to }));
+    const start = performance.now();
+    setNow(start);
+    if (normAnim(link.animation).kind !== 'instant' && link.duration > 0) setVariantAnims((v) => ({ ...v, [instId]: { from, to, link, start } }));
+  };
+
+  const revertTemp = (instId: string) => {
+    const tv = tempVariant.current[instId];
+    if (!tv) return;
+    delete tempVariant.current[instId];
+    changeVariant(instId, tv.prev, tv.link);
   };
 
   /* ---------- navigation ---------- */
@@ -132,9 +226,13 @@ export function Presenter() {
     requestAnimationFrame(step);
   };
 
-  const follow = (l: PrototypeLink, sourceId?: string, temp = false) => {
+  const follow = (l: PrototypeLink, source?: Hit, temp?: 'hover' | 'press') => {
     const action = l.action ?? (l.targetId === 'back' ? 'back' : 'navigate');
+    const tempKey = temp && source ? keyOf(source) : undefined;
     switch (action) {
+      case 'change-to':
+        if (source?.inst) changeVariant(source.inst, l.targetId, l, temp);
+        return;
       case 'back':
         return back();
       case 'close-overlay':
@@ -145,50 +243,59 @@ export function Presenter() {
       case 'scroll-to':
         return scrollTo(l.targetId, l);
       case 'overlay':
-        return openOverlay(l.targetId, l, temp ? sourceId : undefined);
+        return openOverlay(l.targetId, l, tempKey);
       case 'swap-overlay':
         return openOverlay(l.targetId, l, undefined, true);
       default:
-        return go(l.targetId, l, temp ? sourceId : undefined);
+        return go(l.targetId, l, tempKey);
     }
   };
 
   /* ---------- timers & keys ---------- */
   const activeFrames = useMemo(() => [cur, ...overlays.map((o) => o.id)].filter(Boolean) as string[], [cur, overlays]);
+
+  /** Layers with interactions in a frame, including layers inside (the current variant of) instances. */
   const linkedIn = useCallback(
-    (frameId: string) => {
-      const out: SceneNode[] = [];
-      const walk = (id: string) => {
-        const n = nodes[id];
-        if (!n || !n.visible) return;
-        if (n.prototype?.length) out.push(n);
-        n.children.forEach(walk);
+    (frameId: string): (Hit & { n: SceneNode })[] => {
+      const out: (Hit & { n: SceneNode })[] = [];
+      const walk = (id: string, inst: string | null, depth: number) => {
+        const n = rn[id];
+        if (!n || !n.visible || depth > 20) return;
+        if (n.prototype?.length) out.push({ id, inst, n });
+        if (n.type === 'instance' && n.componentId && rn[n.componentId]) {
+          const comp = rn[n.componentId];
+          if (comp.prototype?.length) out.push({ id: comp.id, inst: n.id, n: comp });
+          comp.children.forEach((c) => walk(c, n.id, depth + 1));
+          return;
+        }
+        n.children.forEach((c) => walk(c, inst, depth + 1));
       };
-      walk(frameId);
+      walk(frameId, null, 0);
       return out;
     },
-    [nodes],
+    [rn],
   );
 
+  // after-delay interactions: screens/overlays, and variants (re-armed whenever a variant changes)
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const top = activeFrames[activeFrames.length - 1];
     if (top)
-      for (const n of linkedIn(top))
-        for (const l of n.prototype!) if (l.trigger === 'after-delay') timers.push(setTimeout(() => follow(l, n.id), l.delay ?? 800));
+      for (const h of linkedIn(top))
+        for (const l of h.n.prototype!) if (l.trigger === 'after-delay') timers.push(setTimeout(() => follow(l, h), l.delay ?? 800));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFrames.join('|')]);
+  }, [activeFrames.join('|'), JSON.stringify(variants)]);
 
   useEffect(() => {
     const r = () => setSize({ w: innerWidth, h: innerHeight });
     const k = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return st.set({ presenting: false });
       const top = activeFrames[activeFrames.length - 1];
-      const keyed = top ? linkedIn(top).flatMap((n) => n.prototype!.filter((l) => l.trigger === 'key' && l.key && l.key.toLowerCase() === e.key.toLowerCase()).map((l) => ({ n, l }))) : [];
+      const keyed = top ? linkedIn(top).flatMap((h) => h.n.prototype!.filter((l) => l.trigger === 'key' && l.key && l.key.toLowerCase() === e.key.toLowerCase()).map((l) => ({ h, l }))) : [];
       if (keyed.length) {
         e.preventDefault();
-        return follow(keyed[0].l, keyed[0].n.id);
+        return follow(keyed[0].l, keyed[0].h);
       }
       if (e.key === 'ArrowLeft' || e.key === 'Backspace') back();
       if (e.key === 'ArrowRight') {
@@ -200,6 +307,9 @@ export function Presenter() {
         setScreens(start ? [{ id: start }] : []);
         setOverlays([]);
         setScroll({});
+        setVariants({});
+        setVariantAnims({});
+        tempVariant.current = {};
       }
     };
     window.addEventListener('resize', r);
@@ -230,28 +340,36 @@ export function Presenter() {
     return { x, y, w: n.w, h: n.h };
   };
 
-  /** Path of node ids under a point (frame-local coords), honouring scroll offsets and fixed layers. */
-  const pathAt = (rootId: string, lx: number, ly: number): string[] => {
-    const root = nodes[rootId];
-    const px = root.x + lx,
-      py = root.y + ly;
-    let best: string[] = [];
-    const walk = (id: string, ox: number, oy: number, path: string[]) => {
-      const n = nodes[id];
-      if (!n || !n.visible) return;
-      const inside = px >= n.x - ox && px <= n.x - ox + n.w && py >= n.y - oy && py <= n.y - oy + n.h;
+  /**
+   * Path of layers under a point (frame-local coords), honouring scroll offsets, fixed layers,
+   * and descending into instances (mapped into the current variant's coordinate space).
+   */
+  const pathAt = (rootId: string, lx: number, ly: number): Hit[] => {
+    const root = rn[rootId];
+    let best: Hit[] = [];
+    const walk = (id: string, px: number, py: number, path: Hit[], inst: string | null, depth: number) => {
+      const n = rn[id];
+      if (!n || !n.visible || depth > 30) return;
+      const inside = px >= n.x && px <= n.x + n.w && py >= n.y && py <= n.y + n.h;
       if (!inside && (n.clip || n.type !== 'group')) return;
-      const p = inside ? [...path, id] : path;
+      const p = inside ? [...path, { id, inst }] : path;
       if (inside && p.length > best.length) best = p;
+      if (n.type === 'instance' && n.componentId && rn[n.componentId]) {
+        const comp = rn[n.componentId];
+        const cx = comp.x + ((px - n.x) * comp.w) / (n.w || 1);
+        const cy = comp.y + ((py - n.y) * comp.h) / (n.h || 1);
+        const pc = [...p, { id: comp.id, inst: n.id }];
+        if (pc.length > best.length) best = pc;
+        for (const c of comp.children) walk(c, cx, cy, pc, n.id, depth + 1);
+        return;
+      }
       const s = scroll[id];
       for (const c of n.children) {
-        const k = nodes[c];
-        const cox = ox + (s && !k?.fixed ? s.x : 0),
-          coy = oy + (s && !k?.fixed ? s.y : 0);
-        walk(c, cox, coy, p);
+        const k = rn[c];
+        walk(c, px + (s && !k?.fixed ? s.x : 0), py + (s && !k?.fixed ? s.y : 0), p, inst, depth + 1);
       }
     };
-    walk(rootId, 0, 0, []);
+    walk(rootId, root.x + lx, root.y + ly, [], null, 0);
     return best;
   };
 
@@ -272,11 +390,12 @@ export function Presenter() {
     return { frameId: frame.id, x: p.x, y: p.y, outside: false };
   };
 
-  const linkFor = (path: string[], triggers: PrototypeLink['trigger'][]) => {
+  /** Innermost layer on the path with an interaction for one of the triggers. */
+  const linkFor = (path: Hit[], triggers: PrototypeLink['trigger'][]) => {
     for (let i = path.length - 1; i >= 0; i--) {
-      const n = nodes[path[i]];
+      const n = rn[path[i].id];
       const l = n?.prototype?.find((x) => triggers.includes(x.trigger));
-      if (l) return { n, l };
+      if (l) return { h: path[i], l };
     }
     return null;
   };
@@ -289,7 +408,7 @@ export function Presenter() {
       return;
     }
     const hit = linkFor(pathAt(tg.frameId, tg.x, tg.y), ['click']);
-    if (hit) follow(hit.l, hit.n.id);
+    if (hit) follow(hit.l, hit.h);
     else {
       setHints(true);
       setTimeout(() => setHints(false), 500);
@@ -301,16 +420,17 @@ export function Presenter() {
     if (tg.outside) return;
     const hit = linkFor(pathAt(tg.frameId, tg.x, tg.y), ['press']);
     if (hit) {
-      pressed.current = hit.n.id;
-      follow(hit.l, hit.n.id, true);
+      pressed.current = keyOf(hit.h);
+      follow(hit.l, hit.h, 'press');
     }
   };
   const onPointerUp = () => {
+    for (const [instId, tv] of Object.entries(tempVariant.current)) if (tv.trigger === 'press') revertTemp(instId);
     if (!pressed.current) return;
-    const id = pressed.current;
+    const key = pressed.current;
     pressed.current = null;
-    if (screens[screens.length - 1]?.temp === id) back();
-    else if (overlays[overlays.length - 1]?.temp === id) closeOverlay();
+    if (screens[screens.length - 1]?.temp === key) back();
+    else if (overlays[overlays.length - 1]?.temp === key) closeOverlay();
   };
 
   const onMove = (e: React.PointerEvent) => {
@@ -318,41 +438,46 @@ export function Presenter() {
     const path = tg.outside ? [] : pathAt(tg.frameId, tg.x, tg.y);
     const prev = hoverPath.current;
     hoverPath.current = path;
-    const entered = path.filter((id) => !prev.includes(id));
-    const left = prev.filter((id) => !path.includes(id));
-    for (const id of left) {
-      const n = nodes[id];
-      for (const l of n?.prototype ?? []) if (l.trigger === 'mouse-leave') follow(l, id);
-      if (n?.prototype?.some((l) => l.trigger === 'hover')) {
-        if (screens[screens.length - 1]?.temp === id) back();
-        else if (overlays[overlays.length - 1]?.temp === id) closeOverlay();
+    const keys = new Set(path.map(keyOf));
+    const prevKeys = new Set(prev.map(keyOf));
+    const entered = path.filter((h) => !prevKeys.has(keyOf(h)));
+    const left = prev.filter((h) => !keys.has(keyOf(h)));
+    // instances under the pointer (for "while hovering" variant changes, tracked per instance so swaps don't flicker)
+    const instUnder = new Set(path.flatMap((h) => [h.inst, rn[h.id]?.type === 'instance' ? h.id : null]).filter(Boolean) as string[]);
+    for (const [instId, tv] of Object.entries(tempVariant.current)) if (tv.trigger === 'hover' && !instUnder.has(instId)) revertTemp(instId);
+    for (const h of left) {
+      const n = rn[h.id];
+      for (const l of n?.prototype ?? []) if (l.trigger === 'mouse-leave') follow(l, h);
+      if (n?.prototype?.some((l) => l.trigger === 'hover' && l.action !== 'change-to')) {
+        const key = keyOf(h);
+        if (screens[screens.length - 1]?.temp === key) back();
+        else if (overlays[overlays.length - 1]?.temp === key) closeOverlay();
       }
     }
     if (!anim)
-      for (const id of entered) {
-        const n = nodes[id];
+      for (const h of entered) {
+        const n = rn[h.id];
         for (const l of n?.prototype ?? []) {
-          if (l.trigger === 'mouse-enter') follow(l, id);
-          if (l.trigger === 'hover') follow(l, id, true);
+          if (l.trigger === 'mouse-enter') follow(l, h);
+          if (l.trigger === 'hover' && !(l.action === 'change-to' && h.inst && tempVariant.current[h.inst])) follow(l, h, 'hover');
         }
       }
-    const interactive = path.some((id) => nodes[id]?.prototype?.length);
+    const interactive = path.some((h) => rn[h.id]?.prototype?.length);
     stageRef.current!.style.cursor = interactive ? 'pointer' : 'default';
   };
 
   const onWheel = (e: React.WheelEvent) => {
     const tg = target(e);
     if (tg.outside) return;
-    const path = pathAt(tg.frameId, tg.x, tg.y);
-    // deepest scrollable container under the pointer, else the frame itself
-    const candidates = [...path].reverse().filter((id) => {
-      const n = nodes[id];
+    const path = pathAt(tg.frameId, tg.x, tg.y).filter((h) => !h.inst);
+    const candidates = [...path].reverse().filter((h) => {
+      const n = rn[h.id];
       return n && (n.type === 'frame' || n.type === 'component') && (n.overflow ?? 'none') !== 'none';
     });
-    const id = candidates[0] ?? (nodes[tg.frameId].overflow && nodes[tg.frameId].overflow !== 'none' ? tg.frameId : null);
+    const id = candidates[0]?.id ?? (rn[tg.frameId].overflow && rn[tg.frameId].overflow !== 'none' ? tg.frameId : null);
     if (!id) return;
-    const n = nodes[id];
-    const ext = scrollExtent(nodes, id);
+    const n = rn[id];
+    const ext = scrollExtent(rn, id);
     setScroll((s) => {
       const c = s[id] ?? { x: 0, y: 0 };
       const canX = n.overflow === 'horizontal' || n.overflow === 'both';
@@ -386,7 +511,7 @@ export function Presenter() {
   };
 
   let layers: React.ReactNode;
-  if (anim?.kind === 'screen' && anim.from && nodes[anim.from]) {
+  if (anim?.kind === 'screen' && anim.from && rn[anim.from]) {
     const forwardFrom = anim.reverse ? anim.to : anim.from;
     const forwardTo = anim.reverse ? anim.from : anim.to;
     const e = eased(anim.link, anim.reverse ? 1 - t : t);
@@ -396,8 +521,8 @@ export function Presenter() {
       H = frame.h * scale;
     const tf = (o: { x: number; y: number }, opacity = 1): React.CSSProperties => ({ transform: `translate(${o.x}px, ${o.y}px)`, opacity });
     if (kind === 'smart-animate') {
-      const sa = smartAnimateFrame(nodes, forwardFrom, forwardTo, e);
-      const dest = nodes[forwardTo];
+      const sa = smartAnimateFrame(rn, forwardFrom, forwardTo, e);
+      const dest = rn[forwardTo];
       layers = svgFor(
         forwardTo,
         sa.nodes,
@@ -417,49 +542,49 @@ export function Presenter() {
     } else if (kind === 'dissolve') {
       layers = (
         <>
-          {svgFor(forwardFrom, nodes, null, tf({ x: 0, y: 0 }))}
-          {svgFor(forwardTo, nodes, null, tf({ x: 0, y: 0 }, e))}
+          {svgFor(forwardFrom, rn, null, tf({ x: 0, y: 0 }))}
+          {svgFor(forwardTo, rn, null, tf({ x: 0, y: 0 }, e))}
         </>
       );
     } else if (kind === 'move-in') {
       layers = (
         <>
-          {svgFor(forwardFrom, nodes, null, tf({ x: 0, y: 0 }))}
-          {svgFor(forwardTo, nodes, null, tf(offsetFor(direction, 1 - e, W, H)))}
+          {svgFor(forwardFrom, rn, null, tf({ x: 0, y: 0 }))}
+          {svgFor(forwardTo, rn, null, tf(offsetFor(direction, 1 - e, W, H)))}
         </>
       );
     } else if (kind === 'move-out') {
       layers = (
         <>
-          {svgFor(forwardTo, nodes, null, tf({ x: 0, y: 0 }))}
-          {svgFor(forwardFrom, nodes, null, tf(offsetFor(direction, -e, W, H)))}
+          {svgFor(forwardTo, rn, null, tf({ x: 0, y: 0 }))}
+          {svgFor(forwardFrom, rn, null, tf(offsetFor(direction, -e, W, H)))}
         </>
       );
     } else if (kind === 'push') {
       layers = (
         <>
-          {svgFor(forwardFrom, nodes, null, tf(offsetFor(direction, -e, W, H)))}
-          {svgFor(forwardTo, nodes, null, tf(offsetFor(direction, 1 - e, W, H)))}
+          {svgFor(forwardFrom, rn, null, tf(offsetFor(direction, -e, W, H)))}
+          {svgFor(forwardTo, rn, null, tf(offsetFor(direction, 1 - e, W, H)))}
         </>
       );
     } else if (kind === 'slide-in') {
       layers = (
         <>
-          {svgFor(forwardFrom, nodes, null, tf(offsetFor(direction, -0.3 * e, W, H), 1 - 0.3 * e))}
-          {svgFor(forwardTo, nodes, null, tf(offsetFor(direction, 1 - e, W, H)))}
+          {svgFor(forwardFrom, rn, null, tf(offsetFor(direction, -0.3 * e, W, H), 1 - 0.3 * e))}
+          {svgFor(forwardTo, rn, null, tf(offsetFor(direction, 1 - e, W, H)))}
         </>
       );
     } else if (kind === 'slide-out') {
       layers = (
         <>
-          {svgFor(forwardTo, nodes, null, tf(offsetFor(direction, 0.3 * (e - 1), W, H)))}
-          {svgFor(forwardFrom, nodes, null, tf(offsetFor(direction, -e, W, H)))}
+          {svgFor(forwardTo, rn, null, tf(offsetFor(direction, 0.3 * (e - 1), W, H)))}
+          {svgFor(forwardFrom, rn, null, tf(offsetFor(direction, -e, W, H)))}
         </>
       );
-    } else layers = svgFor(cur!, nodes);
-  } else layers = svgFor(cur!, nodes);
+    } else layers = svgFor(cur!, rn);
+  } else layers = svgFor(cur!, rn);
 
-  const linked = activeFrames.flatMap((id) => linkedIn(id));
+  const linked = activeFrames.flatMap((id) => linkedIn(id)).filter((h) => !h.inst);
 
   return (
     <div className="presenter">
@@ -497,14 +622,14 @@ export function Presenter() {
           const opacity = kind === 'dissolve' || kind === 'smart-animate' ? p : 1;
           return (
             <div key={o.id + i} className="present-overlay" style={{ background: o.link.overlay?.background ?? 'rgba(0,0,0,0.4)', opacity: animating ? Math.min(1, p * 1.5) : 1 }}>
-              <div style={{ position: 'absolute', left: r.x * scale, top: r.y * scale, transform: `translate(${off.x}px, ${off.y}px)`, opacity }}>{svgFor(o.id, nodes)}</div>
+              <div style={{ position: 'absolute', left: r.x * scale, top: r.y * scale, transform: `translate(${off.x}px, ${off.y}px)`, opacity }}>{svgFor(o.id, rn)}</div>
             </div>
           );
         })}
         {hints && (
           <svg className="present-hints" width={frame.w * scale} height={frame.h * scale} viewBox={`${frame.x} ${frame.y} ${frame.w} ${frame.h}`}>
-            {linked.map((n) => (
-              <rect key={n.id} x={n.x - (scroll[frame.id]?.x ?? 0)} y={n.y - (scroll[frame.id]?.y ?? 0)} width={n.w} height={n.h} fill="rgba(151,71,255,0.22)" stroke="#9747ff" />
+            {linked.map((h) => (
+              <rect key={h.id} x={h.n.x - (scroll[frame.id]?.x ?? 0)} y={h.n.y - (scroll[frame.id]?.y ?? 0)} width={h.n.w} height={h.n.h} fill="rgba(151,71,255,0.22)" stroke="#9747ff" />
             ))}
           </svg>
         )}

@@ -357,3 +357,15 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .tabs.inline { border: 0; padding: 0; }
 .ai-connect h4 { margin: 16px 0 4px; }
 .ai-connect code, .share-modal code { background: var(--bg2); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+/* ---------- components & variants ---------- */
+.variant-def { margin: 6px 0; }
+.variant-def .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.inline-input { border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 3px 5px; outline: none; min-width: 0; font: inherit; color: inherit; }
+.inline-input:hover { border-color: var(--line); }
+.inline-input:focus { border-color: var(--select); background: var(--bg); }
+.inline-input.prop-name { font-weight: 600; width: 100%; }
+.inline-input.chip-input { background: var(--bg2); border-radius: 10px; width: 92px; text-align: center; }
+.inline-input.small-w, .text-input.small-w { width: 96px; }
+.inline-input.grow { flex: 1; }
+.comp-prop { display: flex; align-items: center; gap: 4px; margin: 3px 0; }

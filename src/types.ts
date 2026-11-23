@@ -124,8 +124,8 @@ export type Animation =
 
 export interface PrototypeLink {
   trigger: 'click' | 'hover' | 'press' | 'mouse-enter' | 'mouse-leave' | 'after-delay' | 'key';
-  action?: 'navigate' | 'back' | 'overlay' | 'swap-overlay' | 'close-overlay' | 'scroll-to' | 'url';
-  targetId: string; // frame / node id, or 'back'
+  action?: 'navigate' | 'back' | 'overlay' | 'swap-overlay' | 'close-overlay' | 'scroll-to' | 'url' | 'change-to';
+  targetId: string; // frame / node id, variant component id for 'change-to', or 'back'
   animation: Animation;
   direction?: 'left' | 'right' | 'up' | 'down';
   easing?: Easing;
@@ -191,6 +191,23 @@ export interface SceneNode {
   overflow?: 'none' | 'vertical' | 'horizontal' | 'both';
   /** stays fixed while the parent frame scrolls (prototype) */
   fixed?: boolean;
+  /** frame that groups variant components (a component set) */
+  isComponentSet?: boolean;
+  /** variant property values of a component inside a set, e.g. { State: 'Hover', Size: 'L' } */
+  variantProps?: Record<string, string>;
+  /** boolean / text component properties (on a standalone component or on a component set) */
+  componentProps?: ComponentProp[];
+  /** instance values for component properties, keyed by property id */
+  propValues?: Record<string, string | boolean>;
+}
+
+export interface ComponentProp {
+  id: string;
+  name: string;
+  type: 'boolean' | 'text';
+  default: string | boolean;
+  /** target layer as a name path relative to the component, e.g. "Icon" or "Row/Label" (works across variants) */
+  layer: string;
 }
 
 export type BindableProp = 'fill' | 'stroke' | 'radius' | 'opacity' | 'gap' | 'padding' | 'width' | 'height' | 'text' | 'fontSize' | 'visible' | 'strokeWidth';

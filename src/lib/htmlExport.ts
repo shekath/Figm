@@ -7,6 +7,7 @@ import type { DocumentData, Paint, PrototypeLink, SceneNode } from '../types';
 import { exportSvgString } from './exporter';
 import { visualBounds } from './geometry';
 import { FONT_STACK, transformText } from './text';
+import { instanceOverrides, setOf, variantsOf } from './components';
 
 type Nodes = Record<string, SceneNode>;
 
@@ -205,15 +206,35 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
 
   if (n.type === 'instance' && n.componentId && ctx.nodes[n.componentId]) {
     const comp = ctx.nodes[n.componentId];
-    const sx = n.w / (comp.w || 1),
-      sy = n.h / (comp.h || 1);
-    const innerCls = `${cls}-inner`;
-    const bg = backgroundCss(comp.fills);
-    ctx.rules.push(
-      `.${innerCls} { position: absolute; left: 0; top: 0; width: ${px(comp.w)}; height: ${px(comp.h)}; transform-origin: 0 0; transform: scale(${Math.round(sx * 1000) / 1000}, ${Math.round(sy * 1000) / 1000});${bg ? ` background: ${bg};` : ''}${comp.radius ? ` border-radius: ${px(comp.radius)};` : ''}${comp.clip ? ' overflow: hidden;' : ''} }`,
-    );
-    const kids = comp.children.map((c) => emit(c, ctx, comp, false, depth + 2, { ...(overrides ?? {}), ...(n.overrides ?? {}) })).join('');
-    return `${pad}<div ${attrs.join(' ')}>\n${pad}  <div class="${innerCls}">\n${kids}${pad}  </div>\n${pad}</div>\n`;
+    const set = setOf(ctx.nodes, comp.id);
+    // interactive components: emit every variant so "change to" links can switch between them
+    const interactive = ctx.opts.prototype && !!set && variantsOf(ctx.nodes, set.id).some((v) => hasChangeTo(ctx.nodes, v.id));
+    const list = interactive ? variantsOf(ctx.nodes, set!.id) : [comp];
+    const follows = Math.abs(n.w - comp.w) < 0.5 && Math.abs(n.h - comp.h) < 0.5;
+    if (interactive) {
+      attrs.push('data-instance');
+      if (follows) attrs.push('data-follow');
+    }
+    const inner = list
+      .map((v, i) => {
+        const vw = follows ? v.w : n.w,
+          vh = follows ? v.h : n.h;
+        const sx = vw / (v.w || 1),
+          sy = vh / (v.h || 1);
+        const innerCls = `${cls}-v${i}`;
+        const bg = backgroundCss(v.fills);
+        ctx.rules.push(
+          `.${innerCls} { position: absolute; left: 0; top: 0; width: ${px(v.w)}; height: ${px(v.h)}; transform-origin: 0 0; transform: scale(${Math.round(sx * 1000) / 1000}, ${Math.round(sy * 1000) / 1000});${bg ? ` background: ${bg};` : ''}${v.radius ? ` border-radius: ${px(v.radius)};` : ''}${v.clip ? ' overflow: hidden;' : ''}${interactive && v.id !== comp.id ? ' display: none;' : ''} }`,
+        );
+        const vAttrs = [`class="${innerCls}${interactive && v.id === comp.id ? ' vx-on' : ''}"`];
+        if (interactive) vAttrs.push(`data-variant="v-${v.id}"`, `data-w="${Math.round(vw * 100) / 100}"`, `data-h="${Math.round(vh * 100) / 100}"`);
+        const vLinks = ctx.opts.prototype ? v.prototype ?? [] : [];
+        if (vLinks.length) vAttrs.push(`data-links='${esc(JSON.stringify(vLinks.map(compactLink)))}'`);
+        const kids = v.children.map((c) => emit(c, ctx, v, false, depth + 2, { ...(overrides ?? {}), ...instanceOverrides(ctx.nodes, n, v.id) })).join('');
+        return `${pad}  <div ${vAttrs.join(' ')}>\n${kids}${pad}  </div>\n`;
+      })
+      .join('');
+    return `${pad}<div ${attrs.join(' ')}>\n${inner}${pad}</div>\n`;
   }
 
   const kids = n.children
@@ -227,10 +248,17 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
   return `${pad}<${tag} ${attrs.join(' ')}>\n${kids}${pad}</${tag}>\n`;
 }
 
+function hasChangeTo(nodes: Nodes, id: string): boolean {
+  const n = nodes[id];
+  if (!n) return false;
+  if (n.prototype?.some((l) => l.action === 'change-to')) return true;
+  return n.children.some((c) => hasChangeTo(nodes, c));
+}
+
 const compactLink = (l: PrototypeLink) => ({
   t: l.trigger,
   a: l.action ?? (l.targetId === 'back' ? 'back' : 'navigate'),
-  to: l.targetId === 'back' ? null : `s-${l.targetId}`,
+  to: l.targetId === 'back' ? null : l.action === 'change-to' ? `v-${l.targetId}` : `s-${l.targetId}`,
   anim: l.animation,
   dir: l.direction,
   e: l.easing,
@@ -329,7 +357,41 @@ const RUNTIME = `
   }
   function closeOverlay(now) { var o = overlays.pop(); if (!o) return; if (now) return o.el.remove(); o.el.style.opacity = 0; setTimeout(function () { o.el.remove(); }, 200); }
   function closeAll() { while (overlays.length) closeOverlay(true); }
+  function changeVariant(el, to, l, temp) {
+    var inst = el.closest('[data-instance]'); if (!inst) return;
+    var kids = Array.prototype.slice.call(inst.children).filter(function (c) { return c.hasAttribute('data-variant'); });
+    var target = kids.filter(function (c) { return c.getAttribute('data-variant') === to; })[0];
+    var cur = kids.filter(function (c) { return c.classList.contains('vx-on'); })[0];
+    if (!target || target === cur) return;
+    if (temp && !inst.__prev) { inst.__prev = cur; inst.__temp = temp; inst.__link = l; }
+    var d = (l.anim && l.anim !== 'instant') ? (l.d || 0) : 0, ease = EASE[l.e] || EASE['ease-out'];
+    target.style.display = 'block'; target.classList.add('vx-on');
+    if (cur) cur.classList.remove('vx-on');
+    if (d) {
+      target.style.transition = 'none'; target.style.opacity = 0; void target.offsetWidth;
+      target.style.transition = 'opacity ' + d + 'ms ' + ease; target.style.opacity = 1;
+      if (cur) { cur.style.transition = 'opacity ' + d + 'ms ' + ease; cur.style.opacity = 0; }
+      setTimeout(function () { if (cur && !cur.classList.contains('vx-on')) { cur.style.display = 'none'; cur.style.opacity = ''; } }, d);
+    } else if (cur) cur.style.display = 'none';
+    if (inst.hasAttribute('data-follow')) {
+      inst.style.transition = d ? 'width ' + d + 'ms ' + ease + ', height ' + d + 'ms ' + ease : '';
+      inst.style.width = target.getAttribute('data-w') + 'px'; inst.style.height = target.getAttribute('data-h') + 'px';
+    }
+    armVariant(inst, target);
+  }
+  function revertVariant(inst, kind) {
+    if (!inst.__prev || (kind && inst.__temp !== kind)) return;
+    var prev = inst.__prev, l = inst.__link; inst.__prev = null;
+    changeVariant(prev, prev.getAttribute('data-variant'), l, null);
+  }
+  function armVariant(inst, variant) {
+    (inst.__timers || []).forEach(clearTimeout); inst.__timers = [];
+    [variant].concat(Array.prototype.slice.call(variant.querySelectorAll('[data-links]'))).forEach(function (el) {
+      linksOf(el).forEach(function (l) { if (l.t === 'after-delay') inst.__timers.push(setTimeout(function () { follow(l, el); }, l.dl || 800)); });
+    });
+  }
   function follow(l, el, temp) {
+    if (l.a === 'change-to') return changeVariant(el, l.to, l, temp ? (l.t === 'press' ? 'press' : 'hover') : null);
     if (l.a === 'back') return back();
     if (l.a === 'close-overlay') return closeOverlay();
     if (l.a === 'url') { if (/^https?:\\/\\//.test(l.url || '')) window.open(l.url, '_blank', 'noopener'); return; }
@@ -344,7 +406,10 @@ const RUNTIME = `
         if (l.t === 'click') el.addEventListener('click', function (e) { e.stopPropagation(); follow(l, el); });
         if (l.t === 'mouse-enter') el.addEventListener('mouseenter', function () { follow(l, el); });
         if (l.t === 'mouse-leave') el.addEventListener('mouseleave', function () { follow(l, el); });
-        if (l.t === 'hover') { el.addEventListener('mouseenter', function () { follow(l, el, true); }); el.addEventListener('mouseleave', function () { undoTemp(el); }); }
+        if (l.t === 'hover' && l.a === 'change-to') {
+          el.addEventListener('mouseenter', function () { follow(l, el, true); });
+          var hi = el.closest('[data-instance]'); if (hi && !hi.__hoverBound) { hi.__hoverBound = true; hi.addEventListener('mouseleave', function () { revertVariant(hi, 'hover'); }); }
+        } else if (l.t === 'hover') { el.addEventListener('mouseenter', function () { follow(l, el, true); }); el.addEventListener('mouseleave', function () { undoTemp(el); }); }
         if (l.t === 'press') { el.addEventListener('pointerdown', function () { follow(l, el, true); }); el.addEventListener('pointerup', function () { undoTemp(el); }); }
       });
     });
@@ -353,9 +418,11 @@ const RUNTIME = `
     var o = overlays[overlays.length - 1]; if (o && o.temp === el) return closeOverlay();
     var h = history[history.length - 1]; if (h && h.temp === el) back();
   }
+  document.addEventListener('pointerup', function () { Array.prototype.forEach.call(document.querySelectorAll('[data-instance]'), function (i) { revertVariant(i, 'press'); }); });
   function arm(screen) {
     timers.forEach(clearTimeout); timers = [];
-    var all = [screen].concat(Array.prototype.slice.call(screen.querySelectorAll('[data-links]')));
+    Array.prototype.forEach.call(screen.querySelectorAll('[data-instance] > .vx-on'), function (v) { armVariant(v.parentNode, v); });
+    var all = [screen].concat(Array.prototype.slice.call(screen.querySelectorAll('[data-links]'))).filter(function (el) { return !el.closest('[data-variant]'); });
     all.forEach(function (el) { linksOf(el).forEach(function (l) { if (l.t === 'after-delay') timers.push(setTimeout(function () { follow(l, el); }, l.dl || 800)); }); });
   }
   document.addEventListener('keydown', function (e) {
@@ -417,7 +484,7 @@ ${flexCss}${ctx.rules.join('\n')}
 <body>
   <main class="vx-stage"${multi ? ` data-start="s-${startId}"${opts.fitToViewport ? ' data-fit' : ''}` : ''}>
 ${html}  </main>
-${multi ? `  <script>${RUNTIME}</script>\n` : ''}</body>
+${multi || (opts.prototype && html.includes('data-links')) ? `  <script>${RUNTIME}</script>\n` : ''}</body>
 </html>
 `;
 }

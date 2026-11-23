@@ -5,6 +5,9 @@ import type { DocumentData, Mode, Page, SceneNode, Tool, AutoLayout, Comment } f
 import { createNode, sampleDocument, uid } from '../lib/factory';
 import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, translateTree, resizeTree, scalePoints } from '../lib/layout';
 import { applyBoolean, type BooleanOp } from '../lib/boolean';
+import * as comps from '../lib/components';
+import { instanceOverrides } from '../lib/components';
+import type { ComponentProp } from '../types';
 import { applyAllBindings, defaultValue, newCollection } from '../lib/variables';
 import type { BindableProp, Variable } from '../types';
 import { unionRects, visualBounds, type Rect } from '../lib/geometry';
@@ -97,6 +100,19 @@ export interface EditorState {
   setAutoLayout: (id: string, patch: Partial<AutoLayout>) => void;
   useAsMask: () => void;
   booleanOp: (op: BooleanOp) => void;
+
+  // variants & component properties
+  combineAsVariants: () => void;
+  addVariant: (id?: string) => void;
+  setVariantValue: (variantId: string, prop: string, value: string) => void;
+  renameVariantProp: (setId: string, from: string, to: string) => void;
+  renameVariantValue: (setId: string, prop: string, from: string, to: string) => void;
+  addVariantProp: (setId: string, name: string) => void;
+  setInstanceVariant: (instId: string, prop: string, value: string) => void;
+  setInstanceProp: (instIds: string[], propId: string, value: string | boolean) => void;
+  addComponentProp: (layerId: string, type: ComponentProp['type']) => void;
+  updateComponentProp: (ownerId: string, propId: string, patch: Partial<ComponentProp>) => void;
+  deleteComponentProp: (ownerId: string, propId: string) => void;
 
   // variables
   addCollection: (name?: string) => string;
@@ -540,7 +556,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     const comp = get().doc.nodes[componentId];
     if (!comp) return;
     const inst = createNode('instance', {
-      name: comp.name,
+      name: comps.setOf(get().doc.nodes, componentId)?.name ?? comp.name,
       componentId,
       x,
       y,
@@ -574,7 +590,7 @@ export const useEditor = create<EditorState>((set, get) => ({
         f.type = 'frame';
         f.name = inst.name;
         // apply overrides
-        for (const [cid, ov] of Object.entries(inst.overrides ?? {})) {
+        for (const [cid, ov] of Object.entries(instanceOverrides(d.nodes, inst))) {
           const nid = map[cid];
           if (nid && d.nodes[nid]) Object.assign(d.nodes[nid], clone(ov));
         }
@@ -877,6 +893,73 @@ export const useEditor = create<EditorState>((set, get) => ({
         else delete n.modeOverrides[colId];
       }
       applyAllBindings(d);
+    }),
+
+  combineAsVariants: () => {
+    const { selection } = get();
+    const ids = selection.filter((id) => ['component', 'frame', 'group'].includes(get().doc.nodes[id]?.type));
+    if (ids.length < 2) return get().notify('Select two or more components (or frames) to combine as variants');
+    const parents = new Set(ids.map((id) => get().doc.nodes[id].parentId));
+    if (parents.size > 1) return get().notify('Variants must share the same parent');
+    let setId = '';
+    try {
+      get().mutate((d) => {
+        setId = comps.combineAsVariants(d, ids);
+      });
+    } catch (e) {
+      return get().notify((e as Error).message);
+    }
+    set({ selection: [setId] });
+    get().notify('Combined as variants');
+  },
+  addVariant: (id) => {
+    const target = id ?? get().selection[0];
+    if (!target) return;
+    let nid = '';
+    try {
+      get().mutate((d) => {
+        nid = comps.addVariant(d, target);
+      });
+    } catch (e) {
+      return get().notify((e as Error).message);
+    }
+    set({ selection: [nid] });
+  },
+  setVariantValue: (variantId, prop, value) => get().mutate((d) => comps.setVariantValue(d, variantId, prop, value)),
+  renameVariantProp: (setId, from, to) => get().mutate((d) => comps.renameVariantProp(d, setId, from, to)),
+  renameVariantValue: (setId, prop, from, to) => get().mutate((d) => comps.renameVariantValue(d, setId, prop, from, to)),
+  addVariantProp: (setId, name) => get().mutate((d) => comps.addVariantProp(d, setId, name)),
+  setInstanceVariant: (instId, prop, value) =>
+    get().mutate((d) => {
+      comps.setInstanceVariant(d, instId, prop, value);
+    }),
+  setInstanceProp: (instIds, propId, value) =>
+    get().mutate((d) => {
+      for (const id of instIds) {
+        const n = d.nodes[id];
+        if (n?.type === 'instance') n.propValues = { ...(n.propValues ?? {}), [propId]: value };
+      }
+    }),
+  addComponentProp: (layerId, type) => {
+    try {
+      get().mutate((d) => {
+        comps.addComponentProp(d, layerId, type);
+      });
+      get().notify(type === 'boolean' ? 'Visibility property added' : 'Text property added');
+    } catch (e) {
+      get().notify((e as Error).message);
+    }
+  },
+  updateComponentProp: (ownerId, propId, patch) =>
+    get().mutate((d) => {
+      const o = d.nodes[ownerId];
+      if (o?.componentProps) o.componentProps = o.componentProps.map((p) => (p.id === propId ? { ...p, ...patch } : p));
+    }),
+  deleteComponentProp: (ownerId, propId) =>
+    get().mutate((d) => {
+      const o = d.nodes[ownerId];
+      if (o?.componentProps) o.componentProps = o.componentProps.filter((p) => p.id !== propId);
+      for (const n of Object.values(d.nodes)) if (n.propValues?.[propId] !== undefined) delete n.propValues[propId];
     }),
 
   toggleVisible: (ids) => {

@@ -10,6 +10,8 @@ import { saveBlob } from '../lib/platform';
 import { blobToDataUrl } from '../lib/exporter';
 import { pickFile } from '../lib/platform';
 import { BindButton, ModeOverrides } from './Variables';
+import { ComponentPanel } from './ComponentPanel';
+import { setOf, variantsOf } from '../lib/components';
 import { EASINGS } from '../lib/proto';
 
 const BLENDS: BlendMode[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
@@ -111,37 +113,11 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
     }
     st.updateNodes(ids, { [key]: key === 'w' || key === 'h' ? Math.max(0.01, v) : v });
   };
-  const comp = n.type === 'instance' && n.componentId ? st.doc.nodes[n.componentId] : null;
   const parent = n.parentId ? st.doc.nodes[n.parentId] : null;
 
   return (
     <>
-      {single && (n.type === 'component' || n.type === 'instance') && (
-        <Section title={n.type === 'component' ? 'Main component' : 'Instance'}>
-          {n.type === 'instance' ? (
-            <>
-              <div className="row gap">
-                <Icon name="instance" />
-                <span className="grow">{comp?.name ?? 'Missing component'}</span>
-              </div>
-              <div className="row gap">
-                <button className="btn small" onClick={() => comp && (st.setPage(findPage(comp.id) ?? st.pageId), setTimeout(() => { st.select([comp.id]); st.zoomToSelection(); }, 0))}>
-                  Go to main
-                </button>
-                <button className="btn small" onClick={st.detachInstance}>
-                  Detach
-                </button>
-                <button className="btn small" onClick={() => st.updateNodes([n.id], { overrides: {} })}>
-                  Reset overrides
-                </button>
-              </div>
-              {comp && <InstanceOverrides inst={n} comp={comp} />}
-            </>
-          ) : (
-            <textarea className="desc" placeholder="Component description" defaultValue={n.description} onBlur={(e) => st.updateNodes([n.id], { description: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
-          )}
-        </Section>
-      )}
+      {single && <ComponentPanel n={n} />}
 
       <Section title="Alignment">
         <div className="row icons">
@@ -255,39 +231,7 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
   );
 }
 
-function findPage(id: string) {
-  const { doc } = useEditor.getState();
-  let cur = doc.nodes[id];
-  while (cur?.parentId) cur = doc.nodes[cur.parentId];
-  return doc.pages.find((p) => p.children.includes(cur?.id))?.id;
-}
 
-function InstanceOverrides({ inst, comp }: { inst: SceneNode; comp: SceneNode }) {
-  const st = useEditor();
-  const texts: SceneNode[] = [];
-  const walk = (ids: string[]) => ids.forEach((id) => { const c = st.doc.nodes[id]; if (!c) return; if (c.type === 'text') texts.push(c); walk(c.children); });
-  walk(comp.children);
-  if (!texts.length) return null;
-  return (
-    <div className="overrides">
-      <div className="muted">Text overrides</div>
-      {texts.map((t) => {
-        const ov = inst.overrides?.[t.id];
-        const val = ov?.text?.content ?? t.text!.content;
-        return (
-          <input
-            key={t.id}
-            className="text-input"
-            defaultValue={val}
-            title={t.name}
-            onKeyDown={(e) => e.stopPropagation()}
-            onBlur={(e) => st.updateNodes([inst.id], (n) => ({ overrides: { ...(n.overrides ?? {}), [t.id]: { ...(n.overrides?.[t.id] ?? {}), text: { ...t.text!, content: e.target.value } } } }))}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 function mv(sel: SceneNode[], get: (n: SceneNode) => number) {
   const { v, mixed } = mixedValue(sel, get);
@@ -655,6 +599,7 @@ const TRIGGERS: { value: PrototypeLink['trigger']; label: string }[] = [
 ];
 const ACTIONS: { value: NonNullable<PrototypeLink['action']>; label: string }[] = [
   { value: 'navigate', label: 'Navigate to' },
+  { value: 'change-to', label: 'Change to (variant)' },
   { value: 'overlay', label: 'Open overlay' },
   { value: 'swap-overlay', label: 'Swap overlay' },
   { value: 'close-overlay', label: 'Close overlay' },
@@ -709,6 +654,11 @@ function PrototypeProps({ sel }: { sel: SceneNode[] }) {
   const upd = (list: PrototypeLink[]) => st.updateNodes([n.id], { prototype: list });
   const set = (i: number, patch: Partial<PrototypeLink>) => upd(links.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const allNodes = Object.values(st.doc.nodes).filter((x) => x.id !== n.id);
+  // interactive components: sibling variants of the component this layer belongs to
+  let ownerComp: SceneNode | undefined = n;
+  while (ownerComp && ownerComp.type !== 'component') ownerComp = ownerComp.parentId ? st.doc.nodes[ownerComp.parentId] : undefined;
+  const ownerSet = ownerComp ? setOf(st.doc.nodes, ownerComp.id) : null;
+  const variantTargets = ownerSet ? variantsOf(st.doc.nodes, ownerSet.id).filter((v) => v.id !== ownerComp!.id) : [];
   const parent = n.parentId ? st.doc.nodes[n.parentId] : null;
   return (
     <>
@@ -723,14 +673,14 @@ function PrototypeProps({ sel }: { sel: SceneNode[] }) {
         {links.length === 0 && <div className="muted">No interactions. Drag the ⊕ handle to a frame or click +.</div>}
         {links.map((l, i) => {
           const action = l.action ?? (l.targetId === 'back' ? 'back' : 'navigate');
-          const needsTarget = action === 'navigate' || action === 'overlay' || action === 'swap-overlay' || action === 'scroll-to';
-          const targets = action === 'scroll-to' ? allNodes : frames.filter((f) => f.id !== n.id);
+          const needsTarget = action === 'navigate' || action === 'overlay' || action === 'swap-overlay' || action === 'scroll-to' || action === 'change-to';
+          const targets = action === 'scroll-to' ? allNodes : action === 'change-to' ? variantTargets : frames.filter((f) => f.id !== n.id);
           const animated = action !== 'back' && action !== 'url' && action !== 'scroll-to' && action !== 'close-overlay';
           return (
             <div className="paint interaction" key={i}>
               <div className="grid2">
                 <Select value={l.trigger} options={TRIGGERS} onChange={(v) => set(i, { trigger: v })} />
-                <Select value={action} options={ACTIONS} onChange={(v) => set(i, { action: v, targetId: v === 'back' || v === 'close-overlay' || v === 'url' ? 'back' : l.targetId === 'back' ? targets[0]?.id ?? 'back' : l.targetId, overlay: v === 'overlay' || v === 'swap-overlay' ? l.overlay ?? { position: 'center', closeOnOutside: true, background: 'rgba(0,0,0,0.4)' } : l.overlay })} />
+                <Select value={action} options={ACTIONS} onChange={(v) => set(i, { action: v, targetId: v === 'back' || v === 'close-overlay' || v === 'url' ? 'back' : v === 'change-to' ? variantTargets[0]?.id ?? 'back' : l.targetId === 'back' || action === 'change-to' ? frames.find((f) => f.id !== n.id)?.id ?? 'back' : l.targetId, animation: v === 'change-to' ? 'smart-animate' : l.animation, overlay: v === 'overlay' || v === 'swap-overlay' ? l.overlay ?? { position: 'center', closeOnOutside: true, background: 'rgba(0,0,0,0.4)' } : l.overlay })} />
                 {l.trigger === 'after-delay' && <NumberField label="Delay" suffix="ms" value={l.delay ?? 800} min={0} step={100} onChange={(v) => set(i, { delay: v })} />}
                 {l.trigger === 'key' && <input className="text-input" placeholder="Key (e.g. Enter, a)" value={l.key ?? ''} onChange={(e) => set(i, { key: e.target.value })} onKeyDown={(e) => { e.stopPropagation(); if (e.key.length === 1 || ['Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) { e.preventDefault(); set(i, { key: e.key }); } }} />}
               </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useEditor } from './store/store';
 import { actions } from './actions';
 
-const CTX_ITEMS: (string | '-')[] = ['copy', 'cut', 'paste', 'duplicate', 'delete', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock', '-', 'export', 'exportHtml', 'exportSelection', 'exportSvg'];
+const CTX_ITEMS: (string | '-')[] = ['copy', 'cut', 'paste', 'duplicate', 'delete', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'combineVariants', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock', '-', 'export', 'exportHtml', 'exportSelection', 'exportSvg'];
 const CTX_EMPTY: (string | '-')[] = ['paste', 'selectAll', '-', 'zoomFit', 'toggleRulers', 'toggleGrid', 'toggleOutlines'];
 
 export function ContextMenu() {

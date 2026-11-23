@@ -14,6 +14,7 @@ import { generateHtml, reachableFrames } from '../src/lib/htmlExport';
 import { exportSvgString } from '../src/lib/exporter';
 import { unionRects, visualBounds } from '../src/lib/geometry';
 import { pageOf } from '../src/lib/docops';
+import * as comps from '../src/lib/components';
 
 export interface ToolContext {
   rooms: RoomManager;
@@ -113,6 +114,7 @@ export const tools: ToolDef[] = [
         'Common screen sizes: mobile 390×844, tablet 834×1194, desktop 1440×1024. Use 8px spacing steps and a clear type scale (e.g. 12/14/16/20/24/32/48).',
         'Text nodes: set "text", "fontSize", "fontWeight", "color". Omit width for single-line labels (auto width); set width for paragraphs (auto height).',
         'Every change appears live in all open editors. Use get_selection to act on what the user selected.',
+        'Variants: build each state as a component named "Prop=Value" (e.g. "State=Default"), then combine_as_variants. Instances switch with set_instance_properties. Interactive components: add_interaction with action "change-to" on a layer inside a variant (e.g. trigger "hover" → State=Hover, smart-animate).',
         nodeSpecDoc,
       ],
       openFiles: ctx.rooms.list().filter((r) => r.online > 0).map((r) => ({ id: r.id, name: r.name })),
@@ -450,6 +452,86 @@ export const tools: ToolDef[] = [
     },
   },
   {
+    name: 'combine_as_variants',
+    title: 'Combine as variants',
+    description: 'Combine components (or frames/groups) into a component set. Name each component like "State=Default, Size=M" first (or pass variants) to define variant properties.',
+    schema: {
+      fileId,
+      ids: z.array(z.string()).min(1),
+      name: z.string().optional().describe('Component set name, e.g. "Button"'),
+      variants: z.array(z.record(z.string(), z.string())).optional().describe('Variant property values per id, in the same order, e.g. [{"State":"Default"},{"State":"Hover"}]'),
+    },
+    run: (a, ctx) => {
+      const room = resolveRoom(ctx, a.fileId);
+      const id = ctx.rooms.edit(room, (d) => {
+        const ids = a.ids as string[];
+        ids.forEach((x, i) => {
+          const n = requireNode(d, x);
+          const v = (a.variants as Record<string, string>[] | undefined)?.[i];
+          if (v) {
+            n.variantProps = v;
+            n.name = comps.variantName(v);
+          }
+        });
+        return comps.combineAsVariants(d, ids, a.name as string | undefined);
+      });
+      focusIds(ctx, room, [id]);
+      return { setId: id, variants: comps.variantsOf(room.doc.nodes, id).map((v) => ({ id: v.id, props: v.variantProps })), properties: comps.variantDefs(room.doc.nodes, id) };
+    },
+  },
+  {
+    name: 'add_variant',
+    title: 'Add variant',
+    description: 'Duplicate a variant inside its component set with new property values (then restyle it with update_nodes).',
+    schema: { fileId, sourceId: z.string().describe('Variant (or component set) to copy'), props: z.record(z.string(), z.string()).describe('Property values for the new variant, e.g. {"State":"Pressed"}') },
+    run: (a, ctx) => {
+      const room = resolveRoom(ctx, a.fileId);
+      const id = ctx.rooms.edit(room, (d) => {
+        const entries = Object.entries(a.props as Record<string, string>);
+        const [k, v] = entries[0] ?? [undefined, undefined];
+        const nid = comps.addVariant(d, String(a.sourceId), k, v);
+        for (const [pk, pv] of entries.slice(1)) comps.setVariantValue(d, nid, pk, pv);
+        return nid;
+      });
+      focusIds(ctx, room, [id]);
+      return { id, node: describeNode(room.doc, id, 0, 2) };
+    },
+  },
+  {
+    name: 'add_component_property',
+    title: 'Add component property',
+    description: 'Expose a layer inside a component as a boolean (show/hide) or text property that instances can set.',
+    schema: { fileId, layerId: z.string().describe('Layer inside a main component / variant'), type: z.enum(['boolean', 'text']), name: z.string().optional() },
+    run: (a, ctx) => {
+      const room = resolveRoom(ctx, a.fileId);
+      return ctx.rooms.edit(room, (d) => comps.addComponentProp(d, String(a.layerId), a.type as 'boolean' | 'text', a.name as string | undefined));
+    },
+  },
+  {
+    name: 'set_instance_properties',
+    title: 'Set instance properties',
+    description: 'Configure an instance: switch variant properties (e.g. {"State":"Hover"}) and set boolean/text component properties by name.',
+    schema: { fileId, instanceId: z.string(), properties: z.record(z.string(), z.union([z.string(), z.boolean()])) },
+    run: (a, ctx) => {
+      const room = resolveRoom(ctx, a.fileId);
+      ctx.rooms.edit(room, (d) => {
+        const inst = requireNode(d, String(a.instanceId));
+        if (inst.type !== 'instance') throw new Error('Not an instance');
+        for (const [k, v] of Object.entries(a.properties as Record<string, string | boolean>)) {
+          const set = comps.setOf(d.nodes, inst.componentId);
+          if (set && comps.variantDefs(d.nodes, set.id).some((x) => x.name === k)) {
+            comps.setInstanceVariant(d, inst.id, k, String(v));
+            continue;
+          }
+          const prop = comps.componentPropsFor(d.nodes, inst.componentId).find((p) => p.name === k || p.id === k);
+          if (!prop) throw new Error(`Unknown property "${k}"`);
+          inst.propValues = { ...(inst.propValues ?? {}), [prop.id]: prop.type === 'boolean' ? v === true || v === 'true' : String(v) };
+        }
+      });
+      return { node: describeNode(room.doc, String(a.instanceId), 0, 0) };
+    },
+  },
+  {
     name: 'create_page',
     title: 'Create page',
     description: 'Add a page to a file.',
@@ -564,7 +646,7 @@ export const tools: ToolDef[] = [
       fileId,
       fromId: z.string().describe('Layer that triggers the interaction'),
       trigger: z.enum(['click', 'hover', 'press', 'mouse-enter', 'mouse-leave', 'after-delay', 'key']).optional(),
-      action: z.enum(['navigate', 'overlay', 'swap-overlay', 'close-overlay', 'scroll-to', 'back', 'url']).optional(),
+      action: z.enum(['navigate', 'change-to', 'overlay', 'swap-overlay', 'close-overlay', 'scroll-to', 'back', 'url']).optional().describe('"change-to" switches the containing instance to another variant (targetId = variant component id); put it on a layer inside a variant'),
       targetId: z.string().optional().describe('Destination frame (or layer for scroll-to)'),
       animation: z.enum(['instant', 'dissolve', 'smart-animate', 'move-in', 'move-out', 'push', 'slide-in', 'slide-out']).optional(),
       direction: z.enum(['left', 'right', 'up', 'down']).optional(),
@@ -581,14 +663,20 @@ export const tools: ToolDef[] = [
       ctx.rooms.edit(room, (d) => {
         const n = requireNode(d, String(a.fromId));
         const action = (a.action as PrototypeLink['action']) ?? 'navigate';
-        const needsTarget = ['navigate', 'overlay', 'swap-overlay', 'scroll-to'].includes(action!);
+        const needsTarget = ['navigate', 'overlay', 'swap-overlay', 'scroll-to', 'change-to'].includes(action!);
         if (needsTarget) requireNode(d, String(a.targetId));
+        if (action === 'change-to') {
+          let owner: SceneNode | undefined = n;
+          while (owner && owner.type !== 'component') owner = owner.parentId ? d.nodes[owner.parentId] : undefined;
+          const set = owner ? comps.setOf(d.nodes, owner.id) : null;
+          if (!set || comps.setOf(d.nodes, String(a.targetId))?.id !== set.id) throw new Error('change-to needs a layer inside a variant and a target variant of the same component set');
+        }
         if (action === 'url' && !/^https?:\/\//.test(String(a.url ?? ''))) throw new Error('url must start with http(s)://');
         const link: PrototypeLink = {
           trigger: (a.trigger as PrototypeLink['trigger']) ?? 'click',
           action,
           targetId: needsTarget ? String(a.targetId) : 'back',
-          animation: (a.animation as PrototypeLink['animation']) ?? 'dissolve',
+          animation: (a.animation as PrototypeLink['animation']) ?? (a.action === 'change-to' ? 'smart-animate' : 'dissolve'),
           direction: a.direction as PrototypeLink['direction'],
           easing: (a.easing as PrototypeLink['easing']) ?? 'ease-out',
           duration: Number(a.duration ?? 300),

@@ -12,12 +12,13 @@ It was written from scratch. It contains no code, assets or branding from any pr
 | **Editing** | Resize/rotate/flip, corner radius handles, align/distribute/tidy, groups, masks, pages, layer tree with drag-reorder, copy/paste across files, undo/redo |
 | **Boolean operations** | Union, subtract, intersect, exclude, flatten (`Ctrl+Alt+U/S/I/X`, `Ctrl+E`) with even-odd holes, works on any shapes, groups and rotated layers |
 | **Layout** | Auto layout (direction, gap, padding, alignment, space-between, hug, wrap), constraints |
-| **Components** | Main components, synced instances, text overrides, detach, assets panel |
+| **Components & variants** | Main components and synced instances. Component sets with variant properties (`State=Hover, Size=L`): combine as variants (`Ctrl+Alt+Shift+K`), add variants, rename properties/values. Instances swap variants from dropdowns and keep overrides by layer name. Boolean (show/hide) and text component properties, text overrides, detach, assets panel |
+| **Interactive components** | A "Change to" prototype action switches an instance to another variant on click, hover (reverts on leave), press, mouse enter/leave, key or after delay, with Smart Animate between variants. Works in the presenter and in exported HTML |
 | **Variables** | Collections, colour/number/string/boolean variables, unlimited modes (Light/Dark, brands, breakpoints), bind fill, stroke, radius, opacity, gap, padding, size, text, font size and visibility; per-frame mode overrides |
 | **Styles** | Multiple fills (solid/linear/radial/image), strokes, shadows, blurs, blend modes; colour, text and effect styles |
-| **Prototyping** | Triggers: click, hover, press, mouse enter/leave, after delay, key press. Actions: navigate, open/swap/close overlay, scroll to, back, open URL. Animations: instant, dissolve, **Smart Animate** (matches layers by name), move in/out, push, slide in/out with direction. Easing: linear, ease in/out, back, gentle/quick/bouncy springs. Scrolling frames with fixed layers |
+| **Prototyping** | Triggers: click, hover, press, mouse enter/leave, after delay, key press. Actions: navigate, open/swap/close overlay, scroll to, back, open URL. Animations: instant, dissolve, **Smart Animate** (matches layers by name; also between component variants), move in/out, push, slide in/out with direction. Easing: linear, ease in/out, back, gentle/quick/bouncy springs. Scrolling frames with fixed layers |
 | **Real-time multiplayer** | Live cursors, selections, avatars, follow mode, share links, per-user undo (never reverts other people's work), offline edits re-applied on reconnect |
-| **AI connector (MCP)** | 22 design tools (read outline/selection, create/update/delete layers from JSON specs, booleans, components, variables, prototype links, export HTML/SVG). Works over Streamable HTTP and stdio; AI edits show up live with a ✦ AI cursor |
+| **AI connector (MCP)** | 26 design tools (read outline/selection, create/update/delete layers from JSON specs, booleans, components, variants, component properties, variables, prototype links including interactive components, export HTML/SVG). Works over Streamable HTTP and stdio; AI edits show up live with a ✦ AI cursor |
 | **Import** | Figma files through the official REST API (link + personal access token), or saved REST JSON: vectors, images, auto layout, text, effects, styles, prototype links. SVG and images by drag & drop or paste |
 | **Export** | PNG/JPG at any scale, SVG, multi-page PDF, and **design → HTML**: one self-contained file with flexbox for auto layout, real text, inline SVG, embedded images, plus an optional prototype runtime (navigation, transitions, overlays, hover/press/key/delay triggers) |
 | **Inspect / dev mode** | Measurements, CSS and JSX snippets |
@@ -95,7 +96,7 @@ Example prompt:
 
 > In my open Figmy file, design a mobile sign-in screen with an email field, password field and gradient button using auto layout, add a Home screen, and link the button to it with smart animate.
 
-Main tools: `get_started`, `list_files`, `create_file`, `get_file_outline`, `get_nodes`, `get_selection`, `create_nodes`, `update_nodes`, `delete_nodes`, `duplicate_nodes`, `group_nodes`, `boolean_operation`, `create_component`, `create_instance`, `create_page`, `set_variables`, `bind_variable`, `set_variable_mode`, `add_interaction`, `export_html`, `export_svg`, `focus_nodes`.
+Main tools: `get_started`, `list_files`, `create_file`, `get_file_outline`, `get_nodes`, `get_selection`, `create_nodes`, `update_nodes`, `delete_nodes`, `duplicate_nodes`, `group_nodes`, `boolean_operation`, `create_component`, `create_instance`, `combine_as_variants`, `add_variant`, `add_component_property`, `set_instance_properties`, `create_page`, `set_variables`, `bind_variable`, `set_variable_mode`, `add_interaction`, `export_html`, `export_svg`, `focus_nodes`.
 
 The same tools are available as REST for scripts: `GET /api/tools`, and `POST /api/tools/<name>` with a JSON body.
 
@@ -105,16 +106,16 @@ The same tools are available as REST for scripts: `GET /api/tools`, and `POST /a
 1. Paste a `figma.com/design/…` link.
 2. Paste a personal access token (Figma → Settings → Security, with the `file_content:read` scope). The token stays in the browser session; when the browser can't reach Figma directly, the request goes through your own Figmy server.
 
-The import covers vector geometry, image fills, gradients, effects, text styles, auto layout, constraints, components, fill styles, scroll behaviour and prototype interactions. You can also import a saved REST API JSON response.
+The import covers vector geometry, image fills, gradients, effects, text styles, auto layout, constraints, components, component sets and variants, boolean/text component properties, fill styles, scroll behaviour and prototype interactions (including Change to). You can also import a saved REST API JSON response.
 
-Instances are imported as editable frames, so they look exactly like the original. Binary `.fig` files are not supported: the format is private and undocumented.
+Instances without overrides stay linked to their main component, including their property values. Instances with overrides are imported as editable frames, so they look exactly like the original. Binary `.fig` files are not supported: the format is private and undocumented.
 
 ## Tests
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | 44 unit tests: sync/repair, booleans, variables, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
-| `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, two-browser collaboration, every kind of MCP edit, and the stdio bridge |
+| `npm test` | 57 unit tests: sync/repair, booleans, variables, variants/component properties, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
+| `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, variants and interactive components, two-browser collaboration, every kind of MCP edit, and the stdio bridge |
 
 CI (`.github/workflows/build.yml`) runs type-checks, the build, unit tests and e2e tests, and builds the Windows installer on a Windows runner.
 
@@ -136,7 +137,7 @@ tests/             Unit (vitest) and e2e (Playwright) suites + Figma REST fixtur
 ## Known limits
 
 - Smart Animate interpolates position, size, rotation, opacity, corner radius, solid colours and font size. It does not morph vector point data.
-- Variants and interactive component states are not implemented yet.
+- Instance-swap properties and nested-instance overrides beyond text/visibility are not implemented yet.
 - Text sizes computed on the server for AI-created text use an estimate; the editor renders the real font.
 - Background blur is exported to HTML/CSS but not drawn on the canvas.
 

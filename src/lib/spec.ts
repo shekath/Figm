@@ -8,6 +8,7 @@ import { applyAutoLayout, relayoutAncestors, resizeTree, translateTree } from '.
 import { parsePath } from './svgImport';
 import { samplePath } from './boolean';
 import { textBoxSize } from './text';
+import { componentPropsFor, setOf, variantDefs } from './components';
 
 export type FillSpec = string | { type: 'solid'; color: string; opacity?: number } | { type: 'linear' | 'radial'; angle?: number; stops: { offset: number; color: string }[]; opacity?: number } | { type: 'image'; src: string };
 
@@ -322,6 +323,15 @@ export function describeNode(d: DocumentData, id: string, depth = 0, maxDepth = 
   if (n.text) out.text = { content: n.text.content, fontFamily: n.text.fontFamily, fontSize: n.text.fontSize, fontWeight: n.text.fontWeight, align: n.text.align, autoResize: n.text.autoResize };
   if (n.autoLayout) out.autoLayout = n.autoLayout;
   if (n.componentId) out.componentId = n.componentId;
+  if (n.isComponentSet) out.componentSet = { properties: variantDefs(d.nodes, n.id) };
+  if (n.variantProps) out.variantProps = n.variantProps;
+  if (n.componentProps?.length) out.componentProperties = n.componentProps.map((p) => ({ id: p.id, name: p.name, type: p.type, default: p.default, layer: p.layer }));
+  if (n.type === 'instance' && n.componentId) {
+    const set = setOf(d.nodes, n.componentId);
+    if (set) out.variant = { set: set.name, current: d.nodes[n.componentId]?.variantProps, options: variantDefs(d.nodes, set.id) };
+    const props = componentPropsFor(d.nodes, n.componentId);
+    if (props.length) out.properties = Object.fromEntries(props.map((p) => [p.name, n.propValues?.[p.id] ?? p.default]));
+  }
   if (n.prototype?.length) out.interactions = n.prototype;
   if (n.bindings && Object.keys(n.bindings).length) out.bindings = n.bindings;
   if (n.children.length) {

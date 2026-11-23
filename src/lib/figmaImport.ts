@@ -7,6 +7,8 @@ import type { BlendMode, DocumentData, Effect, Paint, PrototypeLink, SceneNode, 
 import { createNode, defaultText, emptyDocument, uid } from './factory';
 import { parsePath } from './svgImport';
 import { samplePath } from './boolean';
+import { parseVariantName, pathOf } from './components';
+import type { ComponentProp } from '../types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type FNode = any;
@@ -196,7 +198,7 @@ function rawInteractions(n: FNode): PrototypeLink[] {
       else if (a.type === 'CLOSE') out.push({ ...link, action: 'close-overlay', targetId: 'back' });
       else if (a.type === 'URL') out.push({ ...link, action: 'url', targetId: 'back', url: a.url });
       else if (a.type === 'NODE' && a.destinationId) {
-        const action = a.navigation === 'OVERLAY' ? 'overlay' : a.navigation === 'SWAP' ? 'swap-overlay' : a.navigation === 'SCROLL_TO' ? 'scroll-to' : 'navigate';
+        const action = a.navigation === 'OVERLAY' ? 'overlay' : a.navigation === 'SWAP' ? 'swap-overlay' : a.navigation === 'SCROLL_TO' ? 'scroll-to' : a.navigation === 'CHANGE_TO' ? 'change-to' : 'navigate';
         out.push({ ...link, action, targetId: a.destinationId, overlay: action === 'overlay' ? { position: 'center', closeOnOutside: true, background: 'rgba(0,0,0,0.4)' } : undefined });
       }
     }
@@ -233,6 +235,9 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
   const styleUsage: Record<string, Paint> = {};
   let skipped = 0;
   let imageCount = 0;
+  const instances: { id: string; componentId: string; props: Record<string, { type: string; value: string | boolean }> }[] = [];
+  const propDefs: { id: string; defs: Record<string, { type: string; defaultValue: string | boolean }> }[] = [];
+  const refs: Record<string, { visible?: string; characters?: string }> = {};
 
   const conv = (n: FNode, parentId: string | null): string | null => {
     const box = n.absoluteBoundingBox ?? n.absoluteRenderBounds;
@@ -322,7 +327,16 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
     if (type === 'frame' || type === 'component') {
       node.clip = n.clipsContent ?? n.type !== 'SECTION';
       if (n.type === 'SECTION') node.radius = node.radius || 8;
-      if (n.type === 'INSTANCE') node.name = n.name;
+      if (n.type === 'INSTANCE') {
+        node.name = n.name;
+        // linked later if its main component is in this file and it has no overrides we can't represent
+        if (n.componentId && !(n.overrides ?? []).length) instances.push({ id: node.id, componentId: n.componentId, props: n.componentProperties ?? {} });
+      }
+      if (n.type === 'COMPONENT_SET') {
+        node.isComponentSet = true;
+        node.clip = false;
+      }
+      if (n.componentPropertyDefinitions) propDefs.push({ id: node.id, defs: n.componentPropertyDefinitions });
       if (n.layoutMode && n.layoutMode !== 'NONE' && n.layoutMode !== 'GRID') {
         node.autoLayout = {
           direction: n.layoutMode === 'HORIZONTAL' ? 'horizontal' : 'vertical',
@@ -379,6 +393,7 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
 
     doc.nodes[node.id] = node;
     idMap[n.id] = node.id;
+    if (n.componentPropertyReferences) refs[node.id] = n.componentPropertyReferences;
     const raw = rawInteractions(n);
     if (raw.length) links.push({ id: node.id, raw });
 
@@ -435,6 +450,49 @@ export function convertFigmaFile(file: FNode, images: Record<string, string> = {
   for (const [styleId, meta] of Object.entries<FNode>(file.styles ?? {})) {
     if (meta.styleType === 'FILL' && styleUsage[styleId]) doc.colorStyles.push({ id: uid(), name: meta.name, paint: { ...styleUsage[styleId], id: uid() } });
   }
+  // variants: components inside sets carry their property values in their names ("State=Hover, Size=L")
+  for (const n of Object.values(doc.nodes)) {
+    if (!n.isComponentSet) continue;
+    for (const c of n.children) {
+      const v = doc.nodes[c];
+      if (v?.type === 'component') v.variantProps = parseVariantName(v.name) ?? { Variant: v.name };
+    }
+  }
+  // boolean / text component properties (property id = Figma property key, so instance values map 1:1)
+  for (const { id, defs } of propDefs) {
+    const owner = doc.nodes[id];
+    if (!owner) continue;
+    const root = owner.isComponentSet ? owner.children[0] : owner.id;
+    if (!root) continue;
+    const props: ComponentProp[] = [];
+    for (const [key, def] of Object.entries(defs)) {
+      if (def.type !== 'BOOLEAN' && def.type !== 'TEXT') continue;
+      const field = def.type === 'BOOLEAN' ? 'visible' : 'characters';
+      const layerId = [root, ...descendantIds(doc.nodes, root)].find((x) => refs[x]?.[field] === key);
+      const layer = layerId ? pathOf(doc.nodes, root, layerId) : null;
+      if (layer === null || layer === '') continue;
+      props.push({ id: key, name: key.split('#')[0], type: def.type === 'BOOLEAN' ? 'boolean' : 'text', default: def.defaultValue, layer });
+    }
+    if (props.length) owner.componentProps = props;
+  }
+  // re-link instances whose main component was imported
+  for (const inst of instances) {
+    const compId = idMap[inst.componentId];
+    const node = doc.nodes[inst.id];
+    if (!compId || doc.nodes[compId]?.type !== 'component' || !node) continue;
+    for (const c of descendantIds(doc.nodes, inst.id)) delete doc.nodes[c];
+    node.children = [];
+    node.type = 'instance';
+    node.componentId = compId;
+    node.fills = [];
+    node.strokes = [];
+    node.autoLayout = null;
+    node.overrides = {};
+    const pv: Record<string, string | boolean> = {};
+    for (const [k, v] of Object.entries(inst.props)) if (v.type === 'BOOLEAN' || v.type === 'TEXT') pv[k] = v.value;
+    if (Object.keys(pv).length) node.propValues = pv;
+  }
+
   // component descriptions
   for (const [fid, meta] of Object.entries<FNode>(file.components ?? {})) {
     const id = idMap[fid];
@@ -464,4 +522,11 @@ export function collectImageRefs(file: FNode): string[] {
   };
   walk(file.document ?? {});
   return [...refs];
+}
+
+function descendantIds(nodes: Record<string, SceneNode>, id: string): string[] {
+  const out: string[] = [];
+  const walk = (i: string) => (nodes[i]?.children ?? []).forEach((c) => (out.push(c), walk(c)));
+  walk(id);
+  return out;
 }

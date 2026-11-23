@@ -179,7 +179,7 @@ function Layers() {
                 <span className="twisty" />
               )}
               <span className="layer-icon">
-                <Icon name={n.isMask ? 'mask' : n.autoLayout ? (n.autoLayout.direction === 'horizontal' ? 'autoH' : 'autoV') : typeIcon(n.type)} size={13} />
+                <Icon name={n.isMask ? 'mask' : n.autoLayout ? (n.autoLayout.direction === 'horizontal' ? 'autoH' : 'autoV') : n.isComponentSet ? 'component' : typeIcon(n.type)} size={13} />
               </span>
               {renaming === n.id ? (
                 <input
@@ -229,7 +229,12 @@ function Thumb({ id }: { id: string }) {
 function Assets() {
   const st = useEditor();
   const [q, setQ] = useState('');
-  const components = Object.values(st.doc.nodes).filter((n) => n.type === 'component' && n.name.toLowerCase().includes(q.toLowerCase()));
+  // standalone components + component sets (a set is shown once, placing its first variant)
+  const components = Object.values(st.doc.nodes)
+    .filter((n) => (n.type === 'component' && !st.doc.nodes[n.parentId ?? '']?.isComponentSet) || n.isComponentSet)
+    .filter((n) => n.name.toLowerCase().includes(q.toLowerCase()))
+    .map((n) => ({ ...n, placeId: n.isComponentSet ? n.children[0] : n.id }))
+    .filter((n) => !!n.placeId && !!st.doc.nodes[n.placeId]);
   const sel = st.selectedNodes();
   return (
     <div className="assets">
@@ -250,17 +255,17 @@ function Assets() {
               className="comp-tile"
               draggable
               title={`${c.name} — drag to canvas`}
-              onDragStart={(e) => e.dataTransfer.setData('application/x-figmy-component', c.id)}
+              onDragStart={(e) => e.dataTransfer.setData('application/x-figmy-component', c.placeId)}
               onDoubleClick={() => {
                 const s = useEditor.getState();
                 const vp = { x: (innerWidth / 2 - s.panX) / s.zoom, y: (innerHeight / 2 - s.panY) / s.zoom };
-                s.createInstance(c.id, Math.round(vp.x), Math.round(vp.y));
+                s.createInstance(c.placeId, Math.round(vp.x), Math.round(vp.y));
               }}
             >
               <div className="comp-thumb">
                 <Thumb id={c.id} />
               </div>
-              <span>{c.name}</span>
+              <span>{c.name}{c.isComponentSet ? ` · ${c.children.length} variants` : ''}</span>
             </div>
           ))}
         </div>
