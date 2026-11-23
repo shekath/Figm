@@ -3,9 +3,30 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './styles.css';
 
+/** Shows a readable error instead of a blank page if rendering crashes. */
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div style={{ font: '14px Inter, system-ui, sans-serif', padding: 32, maxWidth: 640, margin: '10vh auto' }}>
+        <h2>Figmy hit an error</h2>
+        <pre style={{ whiteSpace: 'pre-wrap', color: '#e5484d' }}>{this.state.error.message}</pre>
+        <p>Your work is autosaved in this browser. Reload to continue.</p>
+        <button onClick={() => location.reload()}>Reload</button>
+      </div>
+    );
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
 
