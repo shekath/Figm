@@ -426,3 +426,78 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .palette-list button span { flex: 1; }
 .palette-list button.active { background: var(--accent); color: #fff; }
 .palette-list button.active kbd { color: #fff; }
+
+/* ---------- variables editor ---------- */
+.modal.vx { width: min(1180px, 96vw); height: min(720px, 90vh); padding: 0; display: flex; flex-direction: column; overflow: hidden; outline: none; }
+.vx-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.vx-colpick { position: relative; }
+.vx-colbtn { font-weight: 600; font-size: 13px; padding: 5px 8px; border-radius: 6px; background: transparent; border: 0; color: var(--fg); cursor: pointer; }
+.vx-colbtn:hover { background: var(--bg3); }
+.vx-colbtn .caret { color: var(--fg2); font-size: 10px; margin-left: 2px; }
+.vx-search { display: flex; align-items: center; gap: 6px; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; width: 240px; color: var(--fg2); }
+.vx-search input { border: 0; background: transparent; outline: none; padding: 5px 0; width: 100%; color: var(--fg); }
+.vx-body { flex: 1; display: flex; min-height: 0; }
+.vx-groups { width: 200px; flex-shrink: 0; border-right: 1px solid var(--line); padding: 8px 6px; display: flex; flex-direction: column; gap: 1px; overflow: auto; }
+.vx-group { display: flex; align-items: center; justify-content: space-between; text-align: left; border: 0; background: transparent; color: var(--fg); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+.vx-group:hover { background: var(--bg3); }
+.vx-group.on { background: var(--select-bg); font-weight: 600; }
+.vx-group small { color: var(--fg2); font-weight: 400; }
+.vx-group.add { color: var(--select); margin-top: 6px; }
+.vx-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vx-scroll { flex: 1; overflow: auto; }
+.vx-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+.vx-table th { position: sticky; top: 0; z-index: 2; background: var(--bg); text-align: left; font-weight: 500; color: var(--fg2); border-bottom: 1px solid var(--line); padding: 0 8px; height: 34px; }
+.vx-table td { border-bottom: 1px solid var(--line); padding: 0 8px; height: 36px; }
+.vx-table th + th, .vx-table td + td { border-left: 1px solid var(--line); }
+.vx-namecol { width: 32%; min-width: 220px; }
+.vx-addcol { width: 40px; }
+.vx-mode { display: flex; align-items: center; gap: 4px; position: relative; }
+.vx-mode input { border: 1px solid transparent; background: transparent; color: var(--fg2); font-weight: 500; padding: 3px 4px; border-radius: 4px; min-width: 0; flex: 1; outline: none; }
+.vx-mode input:focus { border-color: var(--select); color: var(--fg); background: var(--bg); }
+.vx-default { font-size: 10px; padding: 1px 5px; border-radius: 8px; background: var(--select-bg); color: var(--select); }
+.icon-btn.tiny { width: 20px; height: 20px; font-size: 13px; }
+.vx-grouprow td { height: 30px; font-weight: 600; color: var(--fg2); font-size: 11px; background: var(--bg2); }
+.vx-row:hover td { background: var(--bg2); }
+.vx-row.sel td { background: var(--select-bg); }
+.vx-row.dragging { opacity: .4; }
+.vx-name { display: flex; align-items: center; gap: 6px; }
+.vx-grip { color: var(--fg3, #999); cursor: grab; font-size: 10px; letter-spacing: -2px; opacity: 0; }
+.vx-row:hover .vx-grip { opacity: 1; }
+.vx-leaf { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; }
+.vx-nameinput { flex: 1; min-width: 0; border: 1px solid var(--select); border-radius: 4px; padding: 3px 5px; background: var(--bg); color: var(--fg); outline: none; }
+.vx-tag { font-size: 10px; color: var(--fg2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.vx-edit, .vx-link { opacity: 0; }
+.vx-row:hover .vx-edit, .vx-row.sel .vx-edit, .vx-cell:hover .vx-link { opacity: 1; }
+.vx-cell { display: flex; align-items: center; gap: 4px; position: relative; }
+.vx-cell > :first-child { flex: 1; min-width: 0; }
+.vx-alias { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 4px 2px 6px; border-radius: 5px; background: var(--bg3); border: 1px solid var(--line); flex: 0 1 auto !important; }
+.vx-alias span:not(.swatch) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vx-alias button { border: 0; background: none; color: var(--fg2); cursor: pointer; font-size: 10px; padding: 0 2px; }
+.vx-bool { display: flex; align-items: center; gap: 6px; }
+.vx-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; min-width: 200px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 4px; display: flex; flex-direction: column; }
+.vx-menu.right { left: auto; right: 0; }
+.vx-menu.up { top: auto; bottom: calc(100% + 4px); }
+.vx-menu button { display: flex; align-items: center; gap: 8px; text-align: left; border: 0; background: transparent; color: var(--fg); padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 400; }
+.vx-menu button:hover:not(:disabled) { background: var(--select); color: #fff; }
+.vx-menu button:disabled { opacity: .45; cursor: default; }
+.vx-menu button.danger { color: #e5484d; }
+.vx-menu button small { margin-left: auto; color: inherit; opacity: .6; }
+.vx-menu .check { width: 12px; }
+.vx-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.vx-aliaspick { width: 280px; top: calc(100% + 2px); left: auto; right: 0; }
+.vx-aliaspick .text-input { margin: 2px 2px 4px; }
+.vx-aliaslist { max-height: 260px; overflow: auto; display: flex; flex-direction: column; }
+.vx-create { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 8px 180px; }
+.vx-createbtn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--fg2); padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.vx-createbtn:hover { background: var(--bg3); color: var(--fg); }
+.vx-none { text-align: center; height: 80px !important; }
+.vx-empty { margin: auto; max-width: 420px; text-align: center; padding: 40px; }
+.vx-inspector { width: 280px; flex-shrink: 0; border-left: 1px solid var(--line); padding: 10px 12px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.vx-inspector header { display: flex; align-items: center; gap: 8px; }
+.vx-inspector .field { display: flex; flex-direction: column; gap: 4px; }
+.vx-inspector .field > span { font-size: 11px; color: var(--fg2); font-weight: 600; }
+.check-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.check-row.indent { padding-left: 20px; }
+.vx-syntax { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 6px; }
+.btn.danger { color: #e5484d; }
+@media (max-width: 760px) { .vx-groups { display: none; } .vx-inspector { position: absolute; right: 0; top: 48px; bottom: 0; background: var(--bg); } }

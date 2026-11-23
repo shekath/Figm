@@ -409,19 +409,64 @@ async function importDoc(doc, newPages) {
     try { if (reactions.length) await f.setReactionsAsync(reactions); } catch (e) { warnings.add('Some prototype links could not be converted: ' + e.message); }
   }
 
-  // variables
+  // variables: create all first, then values (aliases need their targets), then layer bindings
+  const SCOPE = { fill: ['FRAME_FILL', 'SHAPE_FILL'], stroke: ['STROKE_COLOR'], 'text-fill': ['TEXT_FILL'], effect: ['EFFECT_COLOR'], radius: ['CORNER_RADIUS'], size: ['WIDTH_HEIGHT'], gap: ['GAP'], padding: ['GAP'], 'stroke-width': ['STROKE_FLOAT'], opacity: ['OPACITY'], 'font-size': ['FONT_SIZE'], 'text-content': ['TEXT_CONTENT'], visibility: ['ALL_SCOPES'] };
+  const vars = {}; // figmy var id -> figma Variable
+  const modeMap = {}; // figmy mode id -> figma mode id
   try {
     for (const col of doc.variables || []) {
       const vc = figma.variables.createVariableCollection(col.name);
-      const modeIds = {};
-      col.modes.forEach((m, i) => { if (i === 0) { vc.renameMode(vc.modes[0].modeId, m.name); modeIds[m.id] = vc.modes[0].modeId; } else modeIds[m.id] = vc.addMode(m.name); });
+      col.modes.forEach((m, i) => {
+        if (i === 0) { vc.renameMode(vc.modes[0].modeId, m.name); modeMap[m.id] = vc.modes[0].modeId; }
+        else modeMap[m.id] = vc.addMode(m.name);
+      });
       for (const v of col.variables) {
         const fv = figma.variables.createVariable(v.name, vc, v.type === 'color' ? 'COLOR' : v.type === 'number' ? 'FLOAT' : v.type === 'boolean' ? 'BOOLEAN' : 'STRING');
-        for (const [mid, val] of Object.entries(v.values)) if (modeIds[mid]) fv.setValueForMode(modeIds[mid], v.type === 'color' ? Object.assign(hexToRgb(val), { a: 1 }) : val);
+        if (v.description) fv.description = v.description;
+        if (v.hidden) fv.hiddenFromPublishing = true;
+        if (v.scopes && v.scopes.length && !v.scopes.includes('all')) {
+          const sc = [...new Set(v.scopes.flatMap((x) => SCOPE[x] || []))];
+          try { if (sc.length && !sc.includes('ALL_SCOPES')) fv.scopes = sc; } catch (e) { /* scope not valid for type */ }
+        }
+        for (const [plat, code] of Object.entries(v.codeSyntax || {})) if (code) try { fv.setVariableCodeSyntax(plat === 'ios' ? 'iOS' : plat.toUpperCase(), code); } catch (e) { /* ignore */ }
+        vars[v.id] = fv;
+      }
+    }
+    for (const col of doc.variables || [])
+      for (const v of col.variables)
+        for (const [mid, val] of Object.entries(v.values)) {
+          if (!modeMap[mid]) continue;
+          if (val && typeof val === 'object' && val.alias) {
+            if (vars[val.alias]) vars[v.id].setValueForMode(modeMap[mid], figma.variables.createVariableAlias(vars[val.alias]));
+          } else vars[v.id].setValueForMode(modeMap[mid], v.type === 'color' ? Object.assign(hexToRgb(val), { a: 1 }) : v.type === 'number' ? Number(val) : v.type === 'boolean' ? val === true || val === 'true' : String(val));
+        }
+    // bindings on layers
+    const FIELD = { radius: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'], opacity: ['opacity'], gap: ['itemSpacing'], padding: ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'], width: ['width'], height: ['height'], strokeWidth: ['strokeWeight'], fontSize: ['fontSize'], text: ['characters'], visible: ['visible'] };
+    for (const [id, n] of Object.entries(nodes)) {
+      const f = made[id];
+      if (!f || !n.bindings) continue;
+      for (const [prop, vid] of Object.entries(n.bindings)) {
+        const fv = vars[vid];
+        if (!fv) continue;
+        try {
+          if (prop === 'fill' && 'fills' in f && f.fills.length) { const ps = f.fills.slice(); ps[0] = figma.variables.setBoundVariableForPaint(ps[0], 'color', fv); f.fills = ps; }
+          else if (prop === 'stroke' && 'strokes' in f && f.strokes.length) { const ps = f.strokes.slice(); ps[0] = figma.variables.setBoundVariableForPaint(ps[0], 'color', fv); f.strokes = ps; }
+          else if (prop === 'fontSize' && f.type === 'TEXT') f.setRangeBoundVariable(0, f.characters.length, 'fontSize', fv);
+          else for (const field of FIELD[prop] || []) if (field in f) f.setBoundVariable(field, fv);
+        } catch (e) {
+          warnings.add('Some variable bindings could not be applied (' + prop + ')');
+        }
+      }
+      for (const [cid, mid] of Object.entries(n.modeOverrides || {})) {
+        const fc = (doc.variables || []).find((c) => c.id === cid);
+        const anyVar = fc && fc.variables[0] && vars[fc.variables[0].id];
+        if (anyVar && modeMap[mid] && 'setExplicitVariableModeForCollection' in f) {
+          try { f.setExplicitVariableModeForCollection(anyVar.variableCollectionId, modeMap[mid]); } catch (e) { /* ignore */ }
+        }
       }
     }
   } catch (e) {
-    warnings.add('Variables could not be created: ' + e.message);
+    warnings.add('Variables could not be fully created: ' + e.message);
   }
 
   const first = Object.values(pageMap)[0];

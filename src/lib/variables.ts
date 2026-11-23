@@ -1,4 +1,4 @@
-import type { BindableProp, DocumentData, SceneNode, Variable, VariableCollection } from '../types';
+import type { BindableProp, DocumentData, SceneNode, Variable, VariableCollection, VariableScope, VariableValue } from '../types';
 import { solid, defaultStroke, uid } from './factory';
 import { applyAutoLayout } from './layout';
 
@@ -38,11 +38,136 @@ export function resolveMode(doc: DocumentData, nodeId: string | null, col: Varia
   return col.modes[0]?.id ?? '';
 }
 
-export function variableValue(doc: DocumentData, varId: string, nodeId: string | null): string | number | boolean | undefined {
+export const isAlias = (v: VariableValue | undefined): v is { alias: string } => typeof v === 'object' && v !== null && 'alias' in v;
+
+/** Resolved value for a node, following aliases (each alias resolves in its own collection's mode). Cycle-safe. */
+export function variableValue(doc: DocumentData, varId: string, nodeId: string | null, seen = new Set<string>()): string | number | boolean | undefined {
+  if (seen.has(varId)) return undefined;
+  seen.add(varId);
   const found = findVariable(doc, varId);
   if (!found) return undefined;
   const mode = resolveMode(doc, nodeId, found.col);
-  return found.v.values[mode] ?? Object.values(found.v.values)[0];
+  const raw = found.v.values[mode] ?? Object.values(found.v.values)[0];
+  return isAlias(raw) ? variableValue(doc, raw.alias, nodeId, seen) : raw;
+}
+
+/** Resolve a value as shown in a given mode column (aliases followed with default modes). */
+export function resolveInMode(doc: DocumentData, v: Variable, modeId: string, seen = new Set<string>()): string | number | boolean | undefined {
+  if (seen.has(v.id)) return undefined;
+  seen.add(v.id);
+  const raw = v.values[modeId] ?? Object.values(v.values)[0];
+  if (!isAlias(raw)) return raw;
+  const t = findVariable(doc, raw.alias);
+  if (!t) return undefined;
+  return resolveInMode(doc, t.v, resolveMode(doc, null, t.col), seen);
+}
+
+/** Would aliasing `fromId` → `toId` create a loop? */
+export function aliasCreatesCycle(doc: DocumentData, fromId: string, toId: string): boolean {
+  const stack = [toId];
+  const seen = new Set<string>();
+  while (stack.length) {
+    const id = stack.pop()!;
+    if (id === fromId) return true;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const f = findVariable(doc, id);
+    if (f) for (const val of Object.values(f.v.values)) if (isAlias(val)) stack.push(val.alias);
+  }
+  return false;
+}
+
+export const PROP_SCOPE: Record<BindableProp, VariableScope> = {
+  fill: 'fill', stroke: 'stroke', radius: 'radius', opacity: 'opacity', gap: 'gap', padding: 'padding',
+  width: 'size', height: 'size', strokeWidth: 'stroke-width', fontSize: 'font-size', text: 'text-content', visible: 'visibility',
+};
+export const SCOPES_BY_TYPE: Record<Variable['type'], { id: VariableScope; label: string }[]> = {
+  color: [{ id: 'fill', label: 'Fill' }, { id: 'stroke', label: 'Stroke' }, { id: 'text-fill', label: 'Text fill' }, { id: 'effect', label: 'Effects' }],
+  number: [{ id: 'radius', label: 'Corner radius' }, { id: 'size', label: 'Width & height' }, { id: 'gap', label: 'Gap' }, { id: 'padding', label: 'Padding' }, { id: 'stroke-width', label: 'Stroke width' }, { id: 'opacity', label: 'Opacity' }, { id: 'font-size', label: 'Font size' }],
+  string: [{ id: 'text-content', label: 'Text content' }],
+  boolean: [{ id: 'visibility', label: 'Layer visibility' }],
+};
+export const inScope = (v: Variable, prop: BindableProp) => !v.scopes || !v.scopes.length || v.scopes.includes('all') || v.scopes.includes(PROP_SCOPE[prop]);
+
+/** Group path ("color/brand") and leaf ("primary") of a variable name. */
+export function splitName(name: string): { group: string; leaf: string } {
+  const i = name.lastIndexOf('/');
+  return i < 0 ? { group: '', leaf: name } : { group: name.slice(0, i), leaf: name.slice(i + 1) };
+}
+
+/* ---------- design tokens (W3C DTCG) ---------- */
+export function exportTokens(doc: DocumentData): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const col of doc.variables) {
+    const colObj: Record<string, unknown> = {};
+    for (const m of col.modes) {
+      const modeObj: Record<string, unknown> = {};
+      for (const v of col.variables) {
+        const raw = v.values[m.id];
+        let value: unknown = raw;
+        if (isAlias(raw)) {
+          const t = findVariable(doc, raw.alias);
+          value = t ? `{${t.col.name}.${t.v.name.replace(/\//g, '.')}}` : null;
+        }
+        let cur = modeObj;
+        const parts = v.name.split('/');
+        for (const p of parts.slice(0, -1)) cur = (cur[p] ??= {}) as Record<string, unknown>;
+        cur[parts[parts.length - 1]] = { $type: v.type === 'color' ? 'color' : v.type === 'number' ? 'number' : v.type === 'boolean' ? 'boolean' : 'string', $value: value, ...(v.description ? { $description: v.description } : {}) };
+      }
+      colObj[m.name] = modeObj;
+    }
+    out[col.name] = colObj;
+  }
+  return out;
+}
+
+/** Import DTCG-style tokens: { Collection: { Mode: { group: { token: {$type,$value} } } } }. Aliases "{Collection.a.b}" are linked after creation. */
+export function importTokens(doc: DocumentData, json: Record<string, unknown>): number {
+  const pending: { v: Variable; modeId: string; ref: string }[] = [];
+  let count = 0;
+  const isToken = (o: unknown): o is { $value: unknown; $type?: string; $description?: string } => !!o && typeof o === 'object' && '$value' in (o as object);
+  for (const [colName, modesRaw] of Object.entries(json)) {
+    if (!modesRaw || typeof modesRaw !== 'object') continue;
+    let col = doc.variables.find((c) => c.name === colName);
+    if (!col) doc.variables.push((col = { ...newCollection(colName), modes: [] }));
+    for (const [modeName, tree] of Object.entries(modesRaw as Record<string, unknown>)) {
+      let mode = col.modes.find((m) => m.name === modeName);
+      if (!mode) {
+        mode = { id: uid(), name: modeName };
+        col.modes.push(mode);
+        for (const v of col.variables) v.values[mode.id] = v.values[col.modes[0].id] ?? defaultValue(v.type);
+      }
+      const walk = (node: Record<string, unknown>, path: string[]) => {
+        for (const [k, child] of Object.entries(node)) {
+          if (k.startsWith('$')) continue;
+          if (isToken(child)) {
+            const name = [...path, k].join('/');
+            const type: Variable['type'] = child.$type === 'color' ? 'color' : child.$type === 'number' || child.$type === 'dimension' ? 'number' : child.$type === 'boolean' ? 'boolean' : typeof child.$value === 'number' ? 'number' : typeof child.$value === 'boolean' ? 'boolean' : /^#[0-9a-f]{3,8}$/i.test(String(child.$value)) ? 'color' : 'string';
+            let v = col!.variables.find((x) => x.name === name);
+            if (!v) {
+              v = { id: uid(), name, type, values: Object.fromEntries(col!.modes.map((m) => [m.id, defaultValue(type)])) };
+              col!.variables.push(v);
+              count++;
+            }
+            if (child.$description) v.description = child.$description;
+            const val = child.$value;
+            if (typeof val === 'string' && /^\{.+\}$/.test(val)) pending.push({ v, modeId: mode!.id, ref: val.slice(1, -1) });
+            else v.values[mode!.id] = type === 'number' ? parseFloat(String(val)) || 0 : type === 'boolean' ? val === true || val === 'true' : type === 'color' ? String(val).toLowerCase().slice(0, 7) : String(val);
+          } else if (child && typeof child === 'object') walk(child as Record<string, unknown>, [...path, k]);
+        }
+      };
+      walk(tree as Record<string, unknown>, []);
+    }
+    if (!col.modes.length) col.modes.push({ id: uid(), name: 'Mode 1' });
+  }
+  for (const { v, modeId, ref } of pending) {
+    const [cName, ...rest] = ref.split('.');
+    const target = doc.variables.find((c) => c.name === cName)?.variables.find((x) => x.name === rest.join('/'))
+      ?? doc.variables.flatMap((c) => c.variables).find((x) => x.name === ref.replace(/\./g, '/'));
+    if (target && !aliasCreatesCycle(doc, v.id, target.id)) v.values[modeId] = { alias: target.id };
+  }
+  applyAllBindings(doc);
+  return count;
 }
 
 /** Write bound variable values into node properties (mutates). */

@@ -7,8 +7,8 @@ import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, 
 import { applyBoolean, type BooleanOp } from '../lib/boolean';
 import * as comps from '../lib/components';
 import type { ComponentProp } from '../types';
-import { applyAllBindings, defaultValue, newCollection } from '../lib/variables';
-import type { BindableProp, Variable } from '../types';
+import { applyAllBindings, defaultValue, importTokens, newCollection, resolveInMode, resolveMode } from '../lib/variables';
+import type { BindableProp, Variable, VariableValue } from '../types';
 import { unionRects, visualBounds, type Rect } from '../lib/geometry';
 
 setAutoFreeze(false);
@@ -125,8 +125,13 @@ export interface EditorState {
   renameMode: (colId: string, modeId: string, name: string) => void;
   deleteMode: (colId: string, modeId: string) => void;
   addVariable: (colId: string, type: Variable['type'], name?: string) => string;
-  updateVariable: (colId: string, varId: string, patch: Partial<Pick<Variable, 'name' | 'description'>>) => void;
-  setVariableValue: (colId: string, varId: string, modeId: string, value: string | number | boolean) => void;
+  updateVariable: (colId: string, varId: string, patch: Partial<Pick<Variable, 'name' | 'description' | 'scopes' | 'codeSyntax' | 'hidden'>>) => void;
+  setVariableValue: (colId: string, varId: string, modeId: string, value: VariableValue) => void;
+  duplicateVariables: (colId: string, varIds: string[]) => void;
+  deleteVariables: (colId: string, varIds: string[]) => void;
+  renameVariableGroup: (colId: string, from: string, to: string) => void;
+  moveVariable: (colId: string, varId: string, beforeId: string | null) => void;
+  importVariableTokens: (json: Record<string, unknown>) => number;
   deleteVariable: (colId: string, varId: string) => void;
   bindVariable: (ids: string[], prop: BindableProp, varId: string | null) => void;
   setActiveMode: (colId: string, modeId: string) => void;
@@ -860,11 +865,51 @@ export const useEditor = create<EditorState>((set, get) => ({
       v.values[modeId] = value;
       applyAllBindings(d);
     }),
+  duplicateVariables: (colId, varIds) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c) return;
+      for (const id of varIds) {
+        const i = c.variables.findIndex((v) => v.id === id);
+        if (i < 0) continue;
+        const src = c.variables[i];
+        c.variables.splice(i + 1, 0, { ...structuredClone(src), id: uid(), name: `${src.name} copy` });
+      }
+    }),
+  deleteVariables: (colId, varIds) => varIds.forEach((id) => get().deleteVariable(colId, id)),
+  renameVariableGroup: (colId, from, to) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c || !from) return;
+      const clean = to.replace(/^\/+|\/+$/g, '');
+      for (const v of c.variables)
+        if (v.name === from || v.name.startsWith(from + '/')) v.name = (clean ? clean + '/' : '') + v.name.slice(from.length + 1 || 0).replace(/^\//, '') || v.name;
+    }),
+  moveVariable: (colId, varId, beforeId) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c) return;
+      const i = c.variables.findIndex((v) => v.id === varId);
+      if (i < 0) return;
+      const [v] = c.variables.splice(i, 1);
+      const j = beforeId ? c.variables.findIndex((x) => x.id === beforeId) : -1;
+      c.variables.splice(j < 0 ? c.variables.length : j, 0, v);
+    }),
+  importVariableTokens: (json) => {
+    let n = 0;
+    get().mutate((d) => { n = importTokens(d, json); });
+    return n;
+  },
   deleteVariable: (colId, varId) =>
     get().mutate((d) => {
       const c = d.variables.find((x) => x.id === colId);
       if (!c) return;
+      // aliases pointing at the deleted variable keep its resolved value
+      const gone = c.variables.find((v) => v.id === varId);
+      const resolved = gone ? resolveInMode(d, gone, resolveMode(d, null, c)) : undefined;
       c.variables = c.variables.filter((v) => v.id !== varId);
+      for (const col of d.variables) for (const v of col.variables) for (const [m, val] of Object.entries(v.values)) if (typeof val === 'object' && val?.alias === varId) v.values[m] = resolved ?? defaultValue(v.type);
+      applyAllBindings(d);
       for (const n of Object.values(d.nodes)) if (n.bindings) for (const [k, v] of Object.entries(n.bindings)) if (v === varId) delete n.bindings[k as BindableProp];
     }),
   bindVariable: (ids, prop, varId) =>

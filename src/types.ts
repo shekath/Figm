@@ -257,12 +257,22 @@ export interface EffectStyle {
   effects: Effect[];
 }
 
+export type VariableAlias = { alias: string };
+export type VariableValue = string | number | boolean | VariableAlias;
+export type VariableScope = 'all' | 'fill' | 'stroke' | 'text-fill' | 'effect' | 'radius' | 'size' | 'gap' | 'padding' | 'stroke-width' | 'opacity' | 'font-size' | 'text-content' | 'visibility';
+
 export interface Variable {
   id: string;
+  /** Slash-separated names form groups, e.g. "color/brand/primary". */
   name: string;
   type: 'color' | 'number' | 'string' | 'boolean';
-  values: Record<string, string | number | boolean>; // modeId -> value
+  values: Record<string, VariableValue>; // modeId -> raw value or alias to another variable
   description?: string;
+  /** Where the variable is offered when binding; missing or ['all'] = everywhere. */
+  scopes?: VariableScope[];
+  codeSyntax?: { web?: string; android?: string; ios?: string };
+  /** Hidden from the binding pickers (still usable through aliases). */
+  hidden?: boolean;
 }
 
 export interface VariableCollection {

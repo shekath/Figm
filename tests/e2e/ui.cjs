@@ -62,11 +62,18 @@ const assert = (c, m) => {
 
   // variables editor
   await p.evaluate(() => window.dispatchEvent(new Event('figmy:variables')));
-  await p.click('text=+ Collection');
-  await p.click('text=+ Color');
-  await p.click('.variables-modal button[title="Add mode"]');
+  await p.click('.vx >> text=Create collection');
+  await p.click('.vx-createbtn');
+  await p.click('.vx-menu >> text=Color');
+  await p.click('.vx button[title="Add mode"]');
   assert(await p.evaluate(() => { const v = window.figmy.store.getState().doc.variables[0]; return v.variables.length === 1 && v.modes.length === 2; }), 'variables editor creates collection, variable and mode');
-  await p.click('.variables-modal >> text=Close');
+  await p.click('.vx-createbtn');
+  await p.click('.vx-menu >> text=Color');
+  await p.hover('.vx-row >> nth=1');
+  await p.click('.vx-row >> nth=1 >> .vx-link >> nth=0');
+  await p.click('.vx-aliaslist button >> nth=0');
+  assert(await p.evaluate(() => { const v = window.figmy.store.getState().doc.variables[0].variables[1]; return typeof Object.values(v.values)[0] === 'object'; }), 'variables editor links a variable to another (alias)');
+  await p.click('.vx button[title="Close (Esc)"]');
 
   // prototype overlay in the presenter
   await p.evaluate(() => {

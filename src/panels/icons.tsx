@@ -71,6 +71,7 @@ export const Icons = {
   variable: I(<path d="M4 3c-2 3-2 7 0 10M12 3c2 3 2 7 0 10M6 6l4 4M10 6l-4 4" />),
   history: I(<><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9L2.5 5.7" /><path d="M2.5 2.5v3.2h3.2M8 5v3l2 1.5" /></>),
   search: I(<><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></>),
+  settings: I(<><path d="M3 4.5h10M3 11.5h10" /><circle cx="6" cy="4.5" r="1.6" /><circle cx="10" cy="11.5" r="1.6" /></>),
 };
 
 export type IconName = keyof typeof Icons;
