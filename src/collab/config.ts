@@ -30,6 +30,8 @@ export async function serverBase(): Promise<string | null> {
     params.get('server'),
     storedServer(),
     desktop ? await desktop.serverUrl?.() : null,
+    // set at build time for static hosting (e.g. Cloudflare Pages) that talks to a separate Figmy server
+    ((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_FIGMY_SERVER_URL || null),
     location.protocol.startsWith('http') ? location.origin : null,
   ].filter((x): x is string => !!x);
   for (const c of candidates) {

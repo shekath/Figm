@@ -82,6 +82,44 @@ FIGMY_GOOGLE_CLIENT_ID=1234.apps.googleusercontent.com FIGMY_REQUIRE_LOGIN=1 FIG
 - **Desktop app:** Google doesn't allow sign-in inside embedded app windows, so **Continue with Google** opens your normal browser at `http://localhost:4317/login`, and the app picks up the session when you're done. Configure it with the same environment variables, or with `<userData>/config.json`: `{ "googleClientId": "…", "requireLogin": true, "allowedDomains": ["example.com"] }`.
 - **GitHub Pages / static hosting:** set the repository variable `GOOGLE_CLIENT_ID` (Settings → Secrets and variables → Actions → Variables). The Pages workflows build it in as `VITE_GOOGLE_CLIENT_ID`. Without a server, sign-in only sets your name and avatar; it can't protect files.
 
+## Deploying on your own domain (Cloudflare)
+
+There are two options. You can use both together, for example `figmy.example.com` on Pages and `app.example.com` through a Tunnel.
+
+### A. Web app on Cloudflare Pages (static)
+
+`.github/workflows/cloudflare-pages.yml` builds the app and deploys it with Wrangler.
+
+1. Create an API token in Cloudflare (My Profile → API Tokens) with the **Cloudflare Pages: Edit** permission. Copy your **Account ID** from the dashboard.
+2. In GitHub, go to Settings → Secrets and variables → Actions. Add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Optionally add the variables `CLOUDFLARE_PAGES_PROJECT` (default `figmy`), `GOOGLE_CLIENT_ID` and `FIGMY_SERVER_URL`.
+3. Push, or run the workflow manually. The first run creates the Pages project.
+4. In Cloudflare, go to Workers & Pages → **figmy** → **Custom domains** → *Set up a custom domain* and enter e.g. `figmy.example.com`. Your DNS is already on Cloudflare, so the record and certificate are created automatically.
+
+The Pages site on its own has no server. To get collaboration, the AI connector and verified Google sign-in, also run option B, then set `FIGMY_SERVER_URL` to its address and redeploy.
+
+### B. Full server through a Cloudflare Tunnel
+
+This runs the complete app (editor, collaboration, MCP, Google sign-in) on any machine or VPS with Docker. No ports need opening.
+
+1. In Cloudflare, go to Zero Trust → Networks → **Tunnels** → *Create a tunnel* (Cloudflared) and copy the token.
+2. In the tunnel, add a **Public hostname**, e.g. `app.example.com`, pointing to service `HTTP` → `figmy:4317`. WebSockets work through tunnels with no extra settings.
+3. Copy the example env file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then fill in `CLOUDFLARE_TUNNEL_TOKEN`, `PUBLIC_URL=https://app.example.com` and a long random `FIGMY_TOKEN`. Optionally add the Google sign-in variables.
+4. Start it:
+
+   ```bash
+   docker compose up -d
+   ```
+
+5. AI connectors (Claude.ai, ChatGPT, Claude Code) use `https://app.example.com/mcp` with the header `Authorization: Bearer <FIGMY_TOKEN>`.
+
+For Google sign-in, add each domain (e.g. `https://figmy.example.com`, `https://app.example.com`) to the OAuth client's **Authorized JavaScript origins**.
+
 ## Real-time collaboration
 
 1. Open a file in an editor that can reach a Figmy server: the desktop app, or the web app served by `npm start`. It goes live automatically (green dot in the toolbar).
