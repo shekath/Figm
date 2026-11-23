@@ -881,6 +881,19 @@ export function Canvas() {
       return;
     }
     let ox = 0;
+    const fig = [...e.dataTransfer.files].find((f) => f.name.toLowerCase().endsWith('.fig'));
+    if (fig) {
+      try {
+        const { importFigFile } = await import('../lib/figFile');
+        const r = importFigFile(new Uint8Array(await fig.arrayBuffer()));
+        s.setDoc(r.doc);
+        setTimeout(() => useEditor.getState().zoomToFit(), 0);
+        s.notify(`Imported ${r.stats.nodes} layers${r.stats.warnings.length ? ` · ${r.stats.warnings.length} warning(s)` : ''}`);
+      } catch (err) {
+        s.notify(`Could not import ${fig.name}: ${(err as Error).message}`);
+      }
+      return;
+    }
     for (const f of [...e.dataTransfer.files]) {
       if (f.type === 'image/svg+xml' || f.name.endsWith('.svg')) {
         const res = importSvg(await f.text(), w.x + ox, w.y);

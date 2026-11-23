@@ -113,7 +113,18 @@ export function FigmaImportDialog() {
   const importFromJson = async () => {
     const f = await pickFile('.json,.fig');
     if (!f) return;
-    if (f.name.endsWith('.fig')) return setError('.fig files use Figma’s private binary format, which isn’t publicly documented. Import with a file link + access token instead — that uses Figma’s official REST API and keeps vectors, images, auto layout and prototype links.');
+    if (f.name.toLowerCase().endsWith('.fig')) {
+      try {
+        setBusy('Reading .fig file…');
+        const { importFigFile } = await import('../lib/figFile');
+        finish(importFigFile(new Uint8Array(await f.arrayBuffer())));
+      } catch (e) {
+        setError(`Could not import this .fig file: ${(e as Error).message}. Tip: importing with a file link + access token uses Figma’s official API and is the most faithful option.`);
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     try {
       setBusy('Converting…');
       const json = JSON.parse(await f.text());
@@ -163,7 +174,7 @@ export function FigmaImportDialog() {
             </label>
             <div className="row gap">
               <button className="btn primary" disabled={!!busy} onClick={importFromApi}>Import</button>
-              <button className="btn" disabled={!!busy} onClick={importFromJson}>Import REST API JSON file…</button>
+              <button className="btn" disabled={!!busy} onClick={importFromJson}>Import .fig or REST JSON file…</button>
             </div>
             {busy && <p className="muted">{busy}</p>}
             {error && <p className="error-text">{error}</p>}
