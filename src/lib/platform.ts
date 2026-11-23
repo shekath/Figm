@@ -12,6 +12,7 @@ export interface DesktopBridge {
   setTitle: (title: string, dirty: boolean) => void;
   confirmClose: (cb: () => boolean) => void;
   serverUrl?: () => Promise<string | null>;
+  openExternal?: (url: string) => Promise<boolean>;
 }
 
 declare global {

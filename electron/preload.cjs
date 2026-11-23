@@ -15,6 +15,7 @@ const subscribe = (channel) => (cb) => {
 contextBridge.exposeInMainWorld('figmyDesktop', {
   isDesktop: true,
   serverUrl: () => ipcRenderer.invoke('server-url'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   platform: process.platform,
   openFile: () => ipcRenderer.invoke('open-file'),
   readFile: (p) => ipcRenderer.invoke('read-file', p),

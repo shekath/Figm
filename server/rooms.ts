@@ -21,6 +21,9 @@ export interface Peer {
   color: string;
   kind: 'human' | 'ai';
   presence: Presence;
+  /** from Google sign-in, when the person is signed in */
+  avatar?: string;
+  email?: string;
 }
 
 interface Client {

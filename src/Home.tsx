@@ -3,6 +3,7 @@ import { libraryList, libraryLoad, libraryDelete, type LibraryEntry, isDesktop }
 import { useEditor } from './store/store';
 import { emptyDocument, sampleDocument } from './lib/factory';
 import { actions } from './actions';
+import { AccountBadge } from './auth/LoginUI';
 
 /** File browser shown on launch: recent local files plus create / open. */
 export function Home({ onOpen }: { onOpen: () => void }) {
@@ -31,6 +32,9 @@ export function Home({ onOpen }: { onOpen: () => void }) {
         <nav>
           <a className="active">Recents</a>
         </nav>
+        <div className="home-account">
+          <AccountBadge />
+        </div>
         <div className="home-foot muted">{isDesktop ? 'Desktop app' : 'Web app'} · files are stored locally on this device</div>
       </aside>
       <main className="home-main">

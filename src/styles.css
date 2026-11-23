@@ -375,3 +375,27 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .nested-inst > .swap-select { max-width: none; margin: 2px 0; }
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--select-bg); color: var(--select); }
 .text-override { display: flex; flex-direction: column; margin: 4px 0; }
+
+/* ---------- sign-in ---------- */
+.login-screen { min-height: 100vh; display: grid; place-items: center; background: var(--bg2); padding: 16px; }
+.login-card { background: var(--bg); border-radius: 16px; box-shadow: var(--shadow); padding: 36px 40px; text-align: center; max-width: 400px; width: 100%; }
+.login-card h1 { font-size: 22px; margin: 14px 0 6px; }
+.google-signin { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 16px; }
+.gis-slot { min-height: 44px; display: flex; justify-content: center; }
+.google-btn { background: var(--bg) !important; color: var(--fg) !important; border: 1px solid var(--line); border-radius: 22px; padding: 9px 18px; font-weight: 600; gap: 10px; }
+.col-center { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.small-note { font-size: 11px; max-width: 260px; text-align: center; }
+.home-account { margin-top: auto; }
+.home-account .google-signin { align-items: stretch; margin-top: 0; }
+.home-account + .home-foot { margin-top: 8px; }
+.account { position: relative; }
+.account-btn { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 8px; text-align: left; max-width: 100%; }
+.account-btn:hover { background: var(--bg3); }
+.account.compact .account-btn:hover { background: #3e3e48; }
+.account-text { display: flex; flex-direction: column; min-width: 0; }
+.account-text b, .account-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar-img { border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-img.fallback { display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 700; font-size: 12px; }
+.account-pop { position: absolute; z-index: 60; bottom: 110%; left: 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 12px; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
+.account.compact .account-pop { bottom: auto; top: 40px; left: auto; right: 0; }
+.account-head { display: flex; gap: 10px; align-items: center; }

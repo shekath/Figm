@@ -23,7 +23,22 @@ async function startEmbeddedServer() {
     /* not running */
   }
   const { startServer } = require(path.join(__dirname, '..', 'server-dist', 'app.cjs'));
-  const opts = { host: '127.0.0.1', dataDir: path.join(app.getPath('userData'), 'server'), staticDir: path.join(__dirname, '..', 'dist'), log: (m) => console.log(m) };
+  const dataDir = path.join(app.getPath('userData'), 'server');
+  // Google sign-in: FIGMY_GOOGLE_CLIENT_ID env var, or { "googleClientId": "…" } in <userData>/config.json
+  let fileCfg = {};
+  try {
+    fileCfg = JSON.parse(require('fs').readFileSync(path.join(app.getPath('userData'), 'config.json'), 'utf8'));
+  } catch {
+    /* no config file */
+  }
+  const list = (v) => (Array.isArray(v) ? v : String(v || '').split(',')).map((s) => String(s).trim().toLowerCase()).filter(Boolean);
+  const auth = {
+    googleClientId: process.env.FIGMY_GOOGLE_CLIENT_ID || fileCfg.googleClientId || null,
+    required: process.env.FIGMY_REQUIRE_LOGIN === '1' || fileCfg.requireLogin === true,
+    allowedDomains: list(process.env.FIGMY_ALLOWED_DOMAINS || fileCfg.allowedDomains),
+    allowedEmails: list(process.env.FIGMY_ALLOWED_EMAILS || fileCfg.allowedEmails),
+  };
+  const opts = { host: '127.0.0.1', dataDir, staticDir: path.join(__dirname, '..', 'dist'), log: (m) => console.log(m), auth };
   try {
     embedded = await startServer({ ...opts, port });
   } catch {
@@ -226,6 +241,21 @@ ipcMain.on('set-title', (_e, title, dirty) => {
 });
 
 ipcMain.handle('server-url', () => serverUrl);
+
+// Google sign-in must happen in the system browser; only our own local login page or https URLs may be opened
+ipcMain.handle('open-external', async (_e, url) => {
+  if (typeof url !== 'string') return false;
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  const local = u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1') && serverUrl && Number(u.port) === Number(new URL(serverUrl).port);
+  if (!local && u.protocol !== 'https:') return false;
+  await shell.openExternal(u.toString());
+  return true;
+});
 
 ipcMain.on('close-ok', () => {
   allowClose = true;

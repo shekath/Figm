@@ -21,7 +21,7 @@ const env = { ...process.env, FIGMY_URL: url };
     await new Promise((r) => setTimeout(r, 200));
   }
   let failed = false;
-  for (const suite of ['tests/e2e/ui.cjs', 'tests/e2e/variants.cjs', 'tests/e2e/collab-mcp.cjs', 'tests/e2e/stdio.mjs']) {
+  for (const suite of ['tests/e2e/ui.cjs', 'tests/e2e/variants.cjs', 'tests/e2e/collab-mcp.cjs', 'tests/e2e/stdio.mjs', 'tests/e2e/auth.cjs']) {
     console.log(`\n▶ ${suite}`);
     const r = spawnSync(process.execPath, [suite], { cwd: root, env, stdio: 'inherit', timeout: 180000 });
     if (r.status !== 0) failed = true;

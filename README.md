@@ -22,6 +22,7 @@ It was written from scratch. It contains no code, assets or branding from any pr
 | **Import** | Figma files through the official REST API (link + personal access token), or saved REST JSON: vectors, images, auto layout, text, effects, styles, prototype links. SVG and images by drag & drop or paste |
 | **Export** | PNG/JPG at any scale, SVG, multi-page PDF, and **design → HTML**: one self-contained file with flexbox for auto layout, real text, inline SVG, embedded images, plus an optional prototype runtime (navigation, transitions, overlays, hover/press/key/delay triggers) |
 | **Inspect / dev mode** | Measurements, CSS and JSX snippets |
+| **Accounts** | Sign in with Google (server-verified sessions, optional required login and domain/email allow-lists; desktop signs in through the system browser). Collaborators show your Google name |
 | **Files** | Home screen with recents, autosave (IndexedDB), `.figmy` files, native dialogs on desktop, version history, comments |
 
 ## Quick start
@@ -58,6 +59,28 @@ The desktop app starts the server automatically on `127.0.0.1:4317`, so collabor
 
 - `--token` (or `FIGMY_TOKEN`) requires `Authorization: Bearer <token>` (or `?token=`) for the API, MCP and WebSocket. Always set it when the server is reachable from other machines.
 - The server binds to `127.0.0.1` by default. Use `--host 0.0.0.0` to share it on your network.
+
+## Sign in with Google
+
+Figmy can sign people in with their Google account. On a Figmy server (`npm start`, Docker, or the desktop app's built-in server), the browser gets a Google-signed ID token. The server checks its signature against Google's published keys, then checks the audience, issuer, expiry, verified email and your allow-lists, and creates a 30-day session. No client secret is needed.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create **OAuth client ID → Web application**.
+2. Under **Authorized JavaScript origins**, add every address people open Figmy at, for example `http://localhost:4317`, `https://figmy.example.com` and `https://<user>.github.io`. Use `localhost`, not `127.0.0.1`.
+3. Start the server with the client ID:
+
+```bash
+FIGMY_GOOGLE_CLIENT_ID=1234.apps.googleusercontent.com FIGMY_REQUIRE_LOGIN=1 FIGMY_ALLOWED_DOMAINS=example.com npm start
+```
+
+| Variable | Meaning |
+| --- | --- |
+| `FIGMY_GOOGLE_CLIENT_ID` | Turns on "Sign in with Google" |
+| `FIGMY_REQUIRE_LOGIN=1` | The editor, API, collaboration and MCP need a signed-in user. `--token` / `FIGMY_TOKEN` still works for AI clients. |
+| `FIGMY_ALLOWED_DOMAINS` | Comma-separated list, e.g. `example.com`. Only these Google Workspace domains or email domains may sign in. |
+| `FIGMY_ALLOWED_EMAILS` | Comma-separated list of individual addresses that may sign in |
+
+- **Desktop app:** Google doesn't allow sign-in inside embedded app windows, so **Continue with Google** opens your normal browser at `http://localhost:4317/login`, and the app picks up the session when you're done. Configure it with the same environment variables, or with `<userData>/config.json`: `{ "googleClientId": "…", "requireLogin": true, "allowedDomains": ["example.com"] }`.
+- **GitHub Pages / static hosting:** set the repository variable `GOOGLE_CLIENT_ID` (Settings → Secrets and variables → Actions → Variables). The Pages workflows build it in as `VITE_GOOGLE_CLIENT_ID`. Without a server, sign-in only sets your name and avatar; it can't protect files.
 
 ## Real-time collaboration
 
@@ -114,8 +137,8 @@ Instances without overrides stay linked to their main component, including their
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | 69 unit tests: sync/repair, booleans, variables, variants/component properties/nested overrides, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
-| `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, variants and interactive components, two-browser collaboration, every kind of MCP edit, and the stdio bridge |
+| `npm test` | 79 unit tests: Google sign-in token checks and sessions, sync/repair, booleans, variables, variants/component properties/nested overrides, Figma conversion, node specs, HTML export, animation maths, store, MCP tools |
+| `npm run test:e2e` | Starts a temporary server and drives the real UI in Chromium: drawing, booleans, variables, overlays, export, variants and interactive components, two-browser collaboration, every kind of MCP edit, the stdio bridge, and the Google sign-in gate |
 
 CI (`.github/workflows/build.yml`) runs type-checks, the build, unit tests and e2e tests, and builds the Windows installer on a Windows runner.
 

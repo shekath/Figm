@@ -13,6 +13,9 @@ import { ExportDialog } from './panels/ExportDialog';
 import { ShareDialog } from './collab/CollabUI';
 import { goLive, leaveLive } from './collab/client';
 import { serverBase } from './collab/config';
+import { initAuth, useAuth } from './auth/auth';
+import { LoginScreen } from './auth/LoginUI';
+import { useCollab } from './collab/client';
 import { useShortcuts } from './useShortcuts';
 import { actions, saveToLibrary } from './actions';
 import { desktop, parseDocument } from './lib/platform';
@@ -41,7 +44,19 @@ export function App() {
   const presenting = useEditor((s) => s.presenting);
   const name = useEditor((s) => s.doc.name);
   const dirty = useEditor((s) => s.dirty);
-  useShortcuts(view === 'editor');
+  const authMode = useAuth((s) => s.mode);
+  const authRequired = useAuth((s) => s.required);
+  const account = useAuth((s) => s.user);
+  const gated = authRequired && !account;
+  useShortcuts(view === 'editor' && !gated);
+
+  useEffect(() => {
+    initAuth();
+  }, []);
+  // collaborators see your Google name
+  useEffect(() => {
+    if (account) useCollab.getState().setMe({ name: account.name });
+  }, [account]);
 
   // home navigation
   useEffect(() => {
@@ -140,6 +155,20 @@ export function App() {
     window.addEventListener('beforeunload', h);
     return () => window.removeEventListener('beforeunload', h);
   }, [view]);
+
+  if (authMode === 'loading')
+    return (
+      <div className="login-screen">
+        <p className="muted">Loading…</p>
+      </div>
+    );
+  if (gated)
+    return (
+      <>
+        <LoginScreen />
+        <Toast />
+      </>
+    );
 
   if (view === 'home')
     return (

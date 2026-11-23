@@ -4,6 +4,7 @@ import { actions } from '../actions';
 import { Icon, type IconName } from './icons';
 import type { Tool } from '../types';
 import { CollabBar } from '../collab/CollabUI';
+import { AccountBadge } from '../auth/LoginUI';
 
 const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'figmaImport', 'export', 'exportHtml', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
@@ -160,6 +161,7 @@ export function Toolbar({ theme, setTheme }: { theme: string; setTheme: (t: stri
           <Icon name="play" />
         </button>
         <CollabBar />
+        <AccountBadge compact />
         <button className="tool" onClick={() => actions.save.run()} title="Save (Ctrl+S)">
           <Icon name="download" />
         </button>

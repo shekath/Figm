@@ -10,6 +10,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { RoomManager, send, validRoomId, type Peer, type Presence } from './rooms';
 import { callTool, toolList, type ToolContext } from './tools';
 import { handleMcpHttp } from './mcp';
+import { Auth, authConfigFromEnv, loginPage, type AuthConfig, type User } from './auth';
 import type { DocPatch } from '../src/lib/docops';
 import type { DocumentData } from '../src/types';
 
@@ -21,6 +22,8 @@ export interface ServerOptions {
   token?: string | null;
   publicUrl?: string;
   log?: (msg: string) => void;
+  /** Google sign-in settings (defaults to FIGMY_GOOGLE_CLIENT_ID / FIGMY_REQUIRE_LOGIN / FIGMY_ALLOWED_* env vars) */
+  auth?: AuthConfig;
 }
 
 export interface RunningServer {
@@ -77,13 +80,22 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
   const token = opts.token || null;
   const ctx: ToolContext = { rooms, publicUrl: '' };
 
+  const auth = new Auth(opts.auth ?? authConfigFromEnv(), opts.dataDir ?? null);
+
+  /** Signed-in user for a request (session cookie or bearer), if any. */
+  const userOf = (req: IncomingMessage, url: URL): User | null => auth.session(auth.tokenFrom(req.headers, url))?.user ?? null;
+
+  /** Access check: the static server token, or (when login is configured) a valid session. */
   const authorized = (req: IncomingMessage, url: URL) => {
-    if (!token) return true;
+    const loginRequired = auth.publicConfig().required;
+    if (!token && !loginRequired) return true;
     const h = req.headers.authorization;
     const bearer = h?.startsWith('Bearer ') ? h.slice(7) : null;
     const q = url.searchParams.get('token');
-    return (!!bearer && safeEqual(bearer, token)) || (!!q && safeEqual(q, token));
+    if (token && ((!!bearer && safeEqual(bearer, token)) || (!!q && safeEqual(q, token)))) return true;
+    return auth.enabled && !!userOf(req, url);
   };
+  const secureReq = (req: IncomingMessage) => req.headers['x-forwarded-proto'] === 'https' || (opts.publicUrl ?? '').startsWith('https:');
 
   const cors = (req: IncomingMessage, res: ServerResponse) => {
     // The API is token-protected when exposed; allow browser clients (web app on another origin, MCP inspectors).
@@ -99,7 +111,47 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.writeHead(204).end();
     try {
-      if (url.pathname === '/api/health') return json(res, 200, { app: 'figmy', version: '1.1.0', auth: !!token, mcp: '/mcp' });
+      if (url.pathname === '/api/health') return json(res, 200, { app: 'figmy', version: '1.1.0', auth: !!token || auth.publicConfig().required, login: auth.enabled, mcp: '/mcp' });
+
+      /* ---------- Google sign-in ---------- */
+      if (url.pathname === '/api/auth/config') return json(res, 200, auth.publicConfig());
+      if (url.pathname === '/api/auth/google' && req.method === 'POST') {
+        let body: { credential?: string; handoff?: string | null };
+        try {
+          body = JSON.parse(await readBody(req));
+        } catch {
+          return json(res, 400, { error: 'Bad request' });
+        }
+        try {
+          const user = await auth.verifyIdToken(String(body.credential ?? ''));
+          const s = auth.createSession(user);
+          if (body.handoff) auth.handoffComplete(String(body.handoff), s);
+          res.setHeader('Set-Cookie', auth.cookie(s.token, secureReq(req), Math.floor((s.expiresAt - Date.now()) / 1000)));
+          log(`[figmy] ${user.email} signed in`);
+          return json(res, 200, { user, token: s.token, expiresAt: s.expiresAt });
+        } catch (e) {
+          return json(res, 401, { error: (e as Error).message });
+        }
+      }
+      if (url.pathname === '/api/auth/me') {
+        const s = auth.session(auth.tokenFrom(req.headers, url));
+        return s ? json(res, 200, { user: s.user, expiresAt: s.expiresAt }) : json(res, 401, { error: 'Not signed in' });
+      }
+      if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
+        auth.destroy(auth.tokenFrom(req.headers, url));
+        res.setHeader('Set-Cookie', auth.clearCookie(secureReq(req)));
+        return json(res, 200, { ok: true });
+      }
+      const hm = url.pathname.match(/^\/api\/auth\/handoff\/([A-Za-z0-9_-]{20,100})$/);
+      if (hm) {
+        const s = auth.takeHandoff(hm[1]);
+        return s ? json(res, 200, { user: s.user, token: s.token, expiresAt: s.expiresAt }) : json(res, 202, { pending: true });
+      }
+      if (url.pathname === '/login' && (req.method === 'GET' || req.method === 'HEAD')) {
+        if (!auth.config.googleClientId) return json(res, 404, { error: 'Google sign-in is not configured (set FIGMY_GOOGLE_CLIENT_ID)' });
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+        return res.end(loginPage(auth.config.googleClientId, url.searchParams.get('handoff')));
+      }
 
       if (url.pathname.startsWith('/api/') || url.pathname === '/mcp') {
         if (!authorized(req, url)) return json(res, 401, { error: 'Unauthorized: pass Authorization: Bearer <token>' });
@@ -185,10 +237,11 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
       socket.destroy();
       return;
     }
-    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws));
+    const user = userOf(req, url);
+    wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, user));
   });
 
-  const onConnection = (ws: WebSocket) => {
+  const onConnection = (ws: WebSocket, account: User | null) => {
     let roomId: string | null = null;
     let clientId: string | null = null;
     const alive = { ok: true };
@@ -209,7 +262,7 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
         const user = (msg.user ?? {}) as { name?: string; color?: string };
         clientId = crypto.randomUUID();
         roomId = id;
-        const peer: Peer = { id: clientId, name: String(user.name ?? 'Guest').slice(0, 40), color: /^#[0-9a-f]{6}$/i.test(String(user.color)) ? String(user.color) : '#0d99ff', kind: 'human', presence: {} };
+        const peer: Peer = { id: clientId, name: String(account?.name ?? user.name ?? 'Guest').slice(0, 40), avatar: account?.picture, email: account?.email, color: /^#[0-9a-f]{6}$/i.test(String(user.color)) ? String(user.color) : '#0d99ff', kind: 'human', presence: {} };
         rooms.join(room, ws, peer);
         log(`[figmy] ${peer.name} joined ${id} (${room.clients.size} online)`);
         return;

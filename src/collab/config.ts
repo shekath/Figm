@@ -1,5 +1,6 @@
 /** Locates the Figmy server (collaboration + MCP + Figma proxy). */
 import { desktop } from '../lib/platform';
+import { sessionToken } from '../auth/auth';
 
 const KEY = 'figmy:server';
 let cached: string | null | undefined;
@@ -52,6 +53,8 @@ export function resetServerCache() {
 }
 
 export function authToken(): string | null {
+  const session = sessionToken();
+  if (session) return session;
   try {
     return new URLSearchParams(location.search).get('token') ?? localStorage.getItem('figmy:token');
   } catch {
