@@ -100,5 +100,5 @@ export function ensureFont(family: string) {
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:ital,wght@0,100..900;1,100..900&display=swap`;
   document.head.appendChild(link);
   // re-render once fonts arrive so measurements are right
-  (document as Document & { fonts?: FontFaceSet }).fonts?.ready.then(() => window.dispatchEvent(new Event('vectura:fonts')));
+  (document as Document & { fonts?: FontFaceSet }).fonts?.ready.then(() => window.dispatchEvent(new Event('figmy:fonts')));
 }

@@ -11,8 +11,8 @@ export function VariablesModal() {
   const [colId, setColId] = useState<string | null>(null);
   useEffect(() => {
     const t = () => setOpen((o) => !o);
-    window.addEventListener('vectura:variables', t);
-    return () => window.removeEventListener('vectura:variables', t);
+    window.addEventListener('figmy:variables', t);
+    return () => window.removeEventListener('figmy:variables', t);
   }, []);
   if (!open) return null;
   const cols = st.doc.variables;
@@ -172,7 +172,7 @@ export function BindButton({ ids, prop }: { ids: string[]; prop: BindableProp })
           {options.length === 0 && (
             <div className="muted pad-s">
               No {type} variables.{' '}
-              <a className="clickable" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>Create one</a>
+              <a className="clickable" onClick={() => window.dispatchEvent(new Event('figmy:variables'))}>Create one</a>
             </div>
           )}
           {options.map(({ c, v }) => {

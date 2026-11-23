@@ -256,7 +256,7 @@ export interface Version {
 }
 
 export interface DocumentData {
-  format: 'vectura';
+  format: 'figmy';
   version: 1;
   name: string;
   pages: Page[];

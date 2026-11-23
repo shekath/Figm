@@ -3,12 +3,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { tools, type ToolContext } from './tools';
 
-export const MCP_INSTRUCTIONS = `Vectura is a collaborative vector design tool. These tools read and edit design files live: every change appears instantly in the editors of everyone who has the file open.
+export const MCP_INSTRUCTIONS = `Figmy is a collaborative vector design tool. These tools read and edit design files live: every change appears instantly in the editors of everyone who has the file open.
 Start with get_started (once), then list_files / get_file_outline to see the current design. Build screens with create_nodes using nested node specs (frames with auto layout and children). Use get_selection to act on what the user selected. Use add_interaction for prototypes and export_html to hand off code.`;
 
-/** Build an MCP server exposing all Vectura design tools. */
+/** Build an MCP server exposing all Figmy design tools. */
 export function createMcpServer(ctx: ToolContext): McpServer {
-  const server = new McpServer({ name: 'vectura', title: 'Vectura design', version: '1.1.0' }, { instructions: MCP_INSTRUCTIONS });
+  const server = new McpServer({ name: 'figmy', title: 'Figmy design', version: '1.1.0' }, { instructions: MCP_INSTRUCTIONS });
   for (const t of tools) {
     server.registerTool(
       t.name,

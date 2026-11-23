@@ -21,7 +21,7 @@ export function App() {
   const [view, setView] = useState<'home' | 'editor'>('home');
   const [theme, setThemeState] = useState(() => {
     try {
-      return localStorage.getItem('vectura:theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      return localStorage.getItem('figmy:theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     } catch {
       return 'light';
     }
@@ -29,7 +29,7 @@ export function App() {
   const setTheme = (t: string) => {
     setThemeState(t);
     try {
-      localStorage.setItem('vectura:theme', t);
+      localStorage.setItem('figmy:theme', t);
     } catch {
       /* ignore */
     }
@@ -47,11 +47,11 @@ export function App() {
   useEffect(() => {
     const h = () => setView('home');
     const e = () => setView('editor');
-    window.addEventListener('vectura:home', h);
-    window.addEventListener('vectura:open-editor', e);
+    window.addEventListener('figmy:home', h);
+    window.addEventListener('figmy:open-editor', e);
     return () => {
-      window.removeEventListener('vectura:home', h);
-      window.removeEventListener('vectura:open-editor', e);
+      window.removeEventListener('figmy:home', h);
+      window.removeEventListener('figmy:open-editor', e);
     };
   }, []);
 
@@ -64,7 +64,7 @@ export function App() {
     }
   }, []);
 
-  // auto-connect the open file to a reachable Vectura server (collaboration + AI connector)
+  // auto-connect the open file to a reachable Figmy server (collaboration + AI connector)
   const fileId = useEditor((s) => s.fileId);
   useEffect(() => {
     if (view !== 'editor') {
@@ -73,7 +73,7 @@ export function App() {
     }
     let auto = true;
     try {
-      auto = localStorage.getItem('vectura:autolive') !== 'off';
+      auto = localStorage.getItem('figmy:autolive') !== 'off';
     } catch {
       /* ignore */
     }
@@ -89,8 +89,8 @@ export function App() {
 
   // window title
   useEffect(() => {
-    document.title = view === 'home' ? 'Vectura' : `${dirty ? '● ' : ''}${name} — Vectura`;
-    desktop?.setTitle(view === 'home' ? 'Vectura' : name, dirty);
+    document.title = view === 'home' ? 'Figmy' : `${dirty ? '● ' : ''}${name} — Figmy`;
+    desktop?.setTitle(view === 'home' ? 'Figmy' : name, dirty);
   }, [name, dirty, view]);
 
   // autosave to the local library every 5 seconds when dirty

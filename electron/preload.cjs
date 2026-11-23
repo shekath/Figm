@@ -12,7 +12,7 @@ const subscribe = (channel) => (cb) => {
   return () => ipcRenderer.removeListener(channel, h);
 };
 
-contextBridge.exposeInMainWorld('vecturaDesktop', {
+contextBridge.exposeInMainWorld('figmyDesktop', {
   isDesktop: true,
   serverUrl: () => ipcRenderer.invoke('server-url'),
   platform: process.platform,

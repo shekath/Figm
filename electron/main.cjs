@@ -1,4 +1,4 @@
-// Vectura desktop shell (Electron main process).
+// Figmy desktop shell (Electron main process).
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
@@ -10,12 +10,12 @@ let allowClose = false;
 let serverUrl = null;
 let embedded = null;
 
-/** Start (or reuse) the local Vectura server: collaboration + MCP connector for AI assistants. */
+/** Start (or reuse) the local Figmy server: collaboration + MCP connector for AI assistants. */
 async function startEmbeddedServer() {
-  const port = Number(process.env.VECTURA_PORT || 4317);
+  const port = Number(process.env.FIGMY_PORT || 4317);
   try {
     const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(800) });
-    if (r.ok && (await r.json()).app === 'vectura') {
+    if (r.ok && (await r.json()).app === 'figmy') {
       serverUrl = `http://127.0.0.1:${port}`;
       return;
     }
@@ -32,8 +32,8 @@ async function startEmbeddedServer() {
   serverUrl = embedded.url;
 }
 
-/** Only .vectura / .json files may be read through the bridge. */
-const allowedDoc = (p) => typeof p === 'string' && /\.(vectura|json)$/i.test(p);
+/** Only .figmy / .json files may be read through the bridge. */
+const allowedDoc = (p) => typeof p === 'string' && /\.(figmy|vectura|json)$/i.test(p);
 
 function fileFromArgv(argv) {
   return argv.slice(isDev ? 2 : 1).find((a) => allowedDoc(a) && !a.startsWith('-')) || null;
@@ -45,7 +45,7 @@ function createWindow() {
     height: 900,
     minWidth: 800,
     minHeight: 560,
-    title: 'Vectura',
+    title: 'Figmy',
     backgroundColor: '#1e1e24',
     icon: path.join(__dirname, '..', 'public', 'icon.png'),
     autoHideMenuBar: false,
@@ -169,7 +169,7 @@ function buildMenu() {
         item('Share / Collaborate…', 'share'),
         item('Connect Claude / ChatGPT (MCP)…', 'connectAI'),
         { type: 'separator' },
-        item('Keyboard Shortcuts', 'shortcuts'), { label: 'About Vectura', click: () => dialog.showMessageBox(win, { message: `Vectura ${app.getVersion()}`, detail: `Open-source vector design and prototyping tool.\n\nLocal server: ${serverUrl ?? 'not running'}\nMCP endpoint: ${serverUrl ? serverUrl + '/mcp' : '—'}` }) },
+        item('Keyboard Shortcuts', 'shortcuts'), { label: 'About Figmy', click: () => dialog.showMessageBox(win, { message: `Figmy ${app.getVersion()}`, detail: `Open-source vector design and prototyping tool.\n\nLocal server: ${serverUrl ?? 'not running'}\nMCP endpoint: ${serverUrl ? serverUrl + '/mcp' : '—'}` }) },
       ],
     },
   ];
@@ -178,7 +178,7 @@ function buildMenu() {
 
 /* ---------- IPC bridge ---------- */
 
-const docFilters = [{ name: 'Vectura design', extensions: ['vectura'] }, { name: 'JSON', extensions: ['json'] }];
+const docFilters = [{ name: 'Figmy design', extensions: ['figmy', 'vectura'] }, { name: 'JSON', extensions: ['json'] }];
 
 ipcMain.handle('open-file', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: docFilters });
@@ -220,7 +220,7 @@ ipcMain.handle('export-file', async (_e, suggestedName, data, ext) => {
 
 ipcMain.on('set-title', (_e, title, dirty) => {
   if (win) {
-    win.setTitle(`${dirty ? '● ' : ''}${title}${title === 'Vectura' ? '' : ' — Vectura'}`);
+    win.setTitle(`${dirty ? '● ' : ''}${title}${title === 'Figmy' ? '' : ' — Figmy'}`);
     win.setDocumentEdited(!!dirty);
   }
 });
@@ -248,7 +248,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     pendingOpen = fileFromArgv(process.argv);
-    await startEmbeddedServer().catch((e) => console.error('[vectura] embedded server failed:', e));
+    await startEmbeddedServer().catch((e) => console.error('[figmy] embedded server failed:', e));
     buildMenu();
     createWindow();
     app.on('activate', () => BrowserWindow.getAllWindows().length === 0 && createWindow());

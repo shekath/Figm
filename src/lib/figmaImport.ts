@@ -1,6 +1,6 @@
 /**
  * Converts the JSON returned by Figma's public REST API (GET /v1/files/:key?geometry=paths)
- * into a Vectura document. Only the documented REST format is supported; the binary .fig
+ * into a Figmy document. Only the documented REST format is supported; the binary .fig
  * format is proprietary and undocumented.
  */
 import type { BlendMode, DocumentData, Effect, Paint, PrototypeLink, SceneNode, Stroke, TextStyle } from '../types';

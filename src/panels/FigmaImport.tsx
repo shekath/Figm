@@ -5,7 +5,7 @@ import { pickFile } from '../lib/platform';
 import { serverBase, authToken } from '../collab/config';
 import { blobToDataUrl } from '../lib/exporter';
 
-/** Fetch through the Vectura server when the browser can't reach Figma directly (CORS / desktop). */
+/** Fetch through the Figmy server when the browser can't reach Figma directly (CORS / desktop). */
 async function figmaGet(path: string, token: string): Promise<unknown> {
   try {
     const r = await fetch(`https://api.figma.com${path}`, { headers: { 'X-Figma-Token': token } });
@@ -15,7 +15,7 @@ async function figmaGet(path: string, token: string): Promise<unknown> {
     if ((e as Error).message.startsWith('Figma API')) throw e;
   }
   const base = await serverBase();
-  if (!base) throw new Error('Could not reach the Figma API from this browser. Start the Vectura server (npm start) or use the desktop app.');
+  if (!base) throw new Error('Could not reach the Figma API from this browser. Start the Figmy server (npm start) or use the desktop app.');
   const r = await fetch(`${base}/api/figma${path}`, { headers: { 'X-Figma-Token': token, ...(authToken() ? { Authorization: `Bearer ${authToken()}` } : {}) } });
   if (!r.ok) throw new Error(`Figma API: ${r.status} ${(await r.text()).slice(0, 200)}`);
   return r.json();
@@ -43,7 +43,7 @@ export function FigmaImportDialog() {
   const [url, setUrl] = useState('');
   const [token, setToken] = useState(() => {
     try {
-      return sessionStorage.getItem('vectura:figma-token') ?? '';
+      return sessionStorage.getItem('figmy:figma-token') ?? '';
     } catch {
       return '';
     }
@@ -58,8 +58,8 @@ export function FigmaImportDialog() {
       setError(null);
       setResult(null);
     };
-    window.addEventListener('vectura:figma-import', t);
-    return () => window.removeEventListener('vectura:figma-import', t);
+    window.addEventListener('figmy:figma-import', t);
+    return () => window.removeEventListener('figmy:figma-import', t);
   }, []);
   if (!open) return null;
 
@@ -67,7 +67,7 @@ export function FigmaImportDialog() {
     const st = useEditor.getState();
     st.setDoc(r.doc);
     setResult(r);
-    window.dispatchEvent(new Event('vectura:open-editor'));
+    window.dispatchEvent(new Event('figmy:open-editor'));
     setTimeout(() => useEditor.getState().zoomToFit(), 50);
   };
 
@@ -76,7 +76,7 @@ export function FigmaImportDialog() {
     if (!key) return setError('Paste a figma.com/design/… link or a file key.');
     if (!token.trim()) return setError('A Figma personal access token is required (Figma → Settings → Security → Personal access tokens, scope “file content: read”).');
     try {
-      sessionStorage.setItem('vectura:figma-token', token.trim());
+      sessionStorage.setItem('figmy:figma-token', token.trim());
     } catch {
       /* ignore */
     }
@@ -159,7 +159,7 @@ export function FigmaImportDialog() {
             <label className="field">
               <span>Personal access token</span>
               <input className="text-input" type="password" placeholder="figd_…" value={token} onChange={(e) => setToken(e.target.value)} onKeyDown={stop} />
-              <small className="muted">Kept for this browser session only and sent only to Figma (or your own Vectura server as a proxy).</small>
+              <small className="muted">Kept for this browser session only and sent only to Figma (or your own Figmy server as a proxy).</small>
             </label>
             <div className="row gap">
               <button className="btn primary" disabled={!!busy} onClick={importFromApi}>Import</button>

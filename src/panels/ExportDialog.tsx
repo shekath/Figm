@@ -26,8 +26,8 @@ export function ExportDialog() {
       setScope(s.selection.length ? 'selection' : 'frames');
       setOpen(true);
     };
-    window.addEventListener('vectura:export', t);
-    return () => window.removeEventListener('vectura:export', t);
+    window.addEventListener('figmy:export', t);
+    return () => window.removeEventListener('figmy:export', t);
   }, []);
 
   const page = st.page();

@@ -247,7 +247,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   past: [],
   future: [],
   toast: null,
-  userName: (typeof localStorage !== 'undefined' && localStorage.getItem('vectura:user')) || 'You',
+  userName: (typeof localStorage !== 'undefined' && localStorage.getItem('figmy:user')) || 'You',
 
   setDoc: (doc, meta) =>
     set({
@@ -900,7 +900,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     }
     // include referenced components so instances paste correctly across files
     for (const n of Object.values(nodes)) if (n.componentId && doc.nodes[n.componentId] && !nodes[n.componentId]) { /* referenced by id */ }
-    const payload = JSON.stringify({ vecturaClipboard: true, roots: ids, nodes });
+    const payload = JSON.stringify({ figmyClipboard: true, roots: ids, nodes });
     clipboardMemory = payload;
     try {
       await navigator.clipboard.writeText(payload);
@@ -923,14 +923,14 @@ export const useEditor = create<EditorState>((set, get) => ({
       }
     }
     if (!raw) return;
-    let data: { vecturaClipboard?: boolean; roots: string[]; nodes: Record<string, SceneNode> } | null = null;
+    let data: { figmyClipboard?: boolean; roots: string[]; nodes: Record<string, SceneNode> } | null = null;
     try {
       data = JSON.parse(raw);
     } catch {
       data = null;
     }
     const { pageId, selection, doc } = get();
-    if (!data?.vecturaClipboard) {
+    if (!data?.figmyClipboard) {
       // paste plain text / svg as text layer
       if (raw.trim().startsWith('<svg')) {
         const { importSvg } = await import('../lib/svgImport');

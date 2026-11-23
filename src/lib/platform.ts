@@ -16,18 +16,20 @@ export interface DesktopBridge {
 
 declare global {
   interface Window {
-    vecturaDesktop?: DesktopBridge;
+    figmyDesktop?: DesktopBridge;
     showOpenFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle[]>;
     showSaveFilePicker?: (o?: unknown) => Promise<FileSystemFileHandle>;
   }
 }
 
-export const desktop = typeof window !== 'undefined' ? window.vecturaDesktop : undefined;
+export const desktop = typeof window !== 'undefined' ? window.figmyDesktop : undefined;
 export const isDesktop = !!desktop;
 
 export function parseDocument(text: string): DocumentData {
   const d = JSON.parse(text);
-  if (d?.format !== 'vectura' || !Array.isArray(d.pages) || typeof d.nodes !== 'object') throw new Error('Not a Vectura file');
+  // 'vectura' is the format id used before the app was renamed to Figmy
+  if ((d?.format !== 'figmy' && d?.format !== 'vectura') || !Array.isArray(d.pages) || typeof d.nodes !== 'object') throw new Error('Not a Figmy file');
+  d.format = 'figmy';
   d.comments ??= [];
   d.colorStyles ??= [];
   d.textStyles ??= [];
@@ -49,7 +51,7 @@ export async function openDocumentFile(): Promise<{ doc: DocumentData; path: str
   }
   if (window.showOpenFilePicker) {
     try {
-      const [h] = await window.showOpenFilePicker({ types: [{ description: 'Vectura design', accept: { 'application/json': ['.vectura', '.json'] } }] });
+      const [h] = await window.showOpenFilePicker({ types: [{ description: 'Figmy design', accept: { 'application/json': ['.figmy', '.vectura', '.json'] } }] });
       const f = await h.getFile();
       webHandle = h;
       return { doc: parseDocument(await f.text()), path: null };
@@ -58,17 +60,17 @@ export async function openDocumentFile(): Promise<{ doc: DocumentData; path: str
       throw e;
     }
   }
-  const file = await pickFile('.vectura,.json');
+  const file = await pickFile('.figmy,.vectura,.json');
   return file ? { doc: parseDocument(await file.text()), path: null } : null;
 }
 
 export async function saveDocumentFile(doc: DocumentData, path: string | null, saveAs = false): Promise<string | null | true> {
   const content = serialize(doc);
-  const name = `${doc.name || 'Untitled'}.vectura`;
+  const name = `${doc.name || 'Untitled'}.figmy`;
   if (desktop) return desktop.saveFile(saveAs ? null : path, content, name);
   if (window.showSaveFilePicker) {
     try {
-      if (!webHandle || saveAs) webHandle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Vectura design', accept: { 'application/json': ['.vectura'] } }] });
+      if (!webHandle || saveAs) webHandle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Figmy design', accept: { 'application/json': ['.figmy'] } }] });
       const w = await (webHandle as FileSystemFileHandle & { createWritable: () => Promise<FileSystemWritableFileStream> }).createWritable();
       await w.write(content);
       await w.close();
@@ -125,7 +127,7 @@ export interface LibraryEntry {
   path?: string | null;
 }
 
-const DB = 'vectura';
+const DB = 'figmy';
 let dbPromise: Promise<IDBDatabase> | null = null;
 function idb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;

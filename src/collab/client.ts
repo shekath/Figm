@@ -39,7 +39,7 @@ interface CollabState {
 const COLORS = ['#f24822', '#0fa958', '#9747ff', '#ff8a00', '#0d99ff', '#e5258c', '#14b8a6', '#d97706'];
 const loadMe = () => {
   try {
-    const raw = localStorage.getItem('vectura:me');
+    const raw = localStorage.getItem('figmy:me');
     if (raw) return JSON.parse(raw) as { name: string; color: string };
   } catch {
     /* ignore */
@@ -59,7 +59,7 @@ export const useCollab = create<CollabState>((set, get) => ({
     const me = { ...get().me, ...p };
     set({ me });
     try {
-      localStorage.setItem('vectura:me', JSON.stringify(me));
+      localStorage.setItem('figmy:me', JSON.stringify(me));
     } catch {
       /* ignore */
     }
@@ -278,7 +278,7 @@ export async function goLive(opts: { room?: string; seed?: boolean } = {}): Prom
 async function connectTo(opts: { room?: string; seed?: boolean }): Promise<boolean> {
   const base = await serverBase();
   if (!base) {
-    useCollab.setState({ status: 'error', error: 'No Vectura server reachable. Start one with “npm start” or set its address in Share.' });
+    useCollab.setState({ status: 'error', error: 'No Figmy server reachable. Start one with “npm start” or set its address in Share.' });
     return false;
   }
   const ed = useEditor.getState();

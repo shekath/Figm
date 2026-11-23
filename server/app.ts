@@ -1,5 +1,5 @@
 /**
- * Vectura server: real-time collaboration (WebSocket), MCP connector for AI assistants,
+ * Figmy server: real-time collaboration (WebSocket), MCP connector for AI assistants,
  * REST tool API, Figma REST proxy and (optionally) the built web app.
  */
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
@@ -99,7 +99,7 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.writeHead(204).end();
     try {
-      if (url.pathname === '/api/health') return json(res, 200, { app: 'vectura', version: '1.1.0', auth: !!token, mcp: '/mcp' });
+      if (url.pathname === '/api/health') return json(res, 200, { app: 'figmy', version: '1.1.0', auth: !!token, mcp: '/mcp' });
 
       if (url.pathname.startsWith('/api/') || url.pathname === '/mcp') {
         if (!authorized(req, url)) return json(res, 401, { error: 'Unauthorized: pass Authorization: Bearer <token>' });
@@ -170,7 +170,7 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
       }
       json(res, 404, { error: 'Not found' });
     } catch (e) {
-      log(`[vectura] ${req.method} ${url.pathname} failed: ${(e as Error).message}`);
+      log(`[figmy] ${req.method} ${url.pathname} failed: ${(e as Error).message}`);
       if (!res.headersSent) json(res, 500, { error: 'Internal error' });
       else res.end();
     }
@@ -211,7 +211,7 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
         roomId = id;
         const peer: Peer = { id: clientId, name: String(user.name ?? 'Guest').slice(0, 40), color: /^#[0-9a-f]{6}$/i.test(String(user.color)) ? String(user.color) : '#0d99ff', kind: 'human', presence: {} };
         rooms.join(room, ws, peer);
-        log(`[vectura] ${peer.name} joined ${id} (${room.clients.size} online)`);
+        log(`[figmy] ${peer.name} joined ${id} (${room.clients.size} online)`);
         return;
       }
       if (!roomId || !clientId) return;

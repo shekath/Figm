@@ -1,6 +1,6 @@
-# Vectura
+# Figmy
 
-Vectura is an open-source vector design and prototyping tool. It runs in the browser, as a Windows desktop app (Electron), and as a self-hostable server. The server adds real-time multiplayer and an MCP connector, so Claude, ChatGPT or any MCP client can design inside your files while you watch.
+Figmy is an open-source vector design and prototyping tool. It runs in the browser, as a Windows desktop app (Electron), and as a self-hostable server. The server adds real-time multiplayer and an MCP connector, so Claude, ChatGPT or any MCP client can design inside your files while you watch.
 
 It was written from scratch. It contains no code, assets or branding from any proprietary design product. Figma files can be imported through Figma's public REST API.
 
@@ -21,7 +21,7 @@ It was written from scratch. It contains no code, assets or branding from any pr
 | **Import** | Figma files through the official REST API (link + personal access token), or saved REST JSON: vectors, images, auto layout, text, effects, styles, prototype links. SVG and images by drag & drop or paste |
 | **Export** | PNG/JPG at any scale, SVG, multi-page PDF, and **design → HTML**: one self-contained file with flexbox for auto layout, real text, inline SVG, embedded images, plus an optional prototype runtime (navigation, transitions, overlays, hover/press/key/delay triggers) |
 | **Inspect / dev mode** | Measurements, CSS and JSX snippets |
-| **Files** | Home screen with recents, autosave (IndexedDB), `.vectura` files, native dialogs on desktop, version history, comments |
+| **Files** | Home screen with recents, autosave (IndexedDB), `.figmy` files, native dialogs on desktop, version history, comments |
 
 ## Quick start
 
@@ -37,7 +37,7 @@ npm run build
 npm start
 ```
 
-Then open http://localhost:4317. `npm start` serves the web app, collaboration (`/collab`) and the MCP connector (`/mcp`) from one process, and saves files in `~/.vectura`.
+Then open http://localhost:4317. `npm start` serves the web app, collaboration (`/collab`) and the MCP connector (`/mcp`) from one process, and saves files in `~/.figmy`.
 
 Other ways to run it:
 
@@ -47,7 +47,7 @@ Other ways to run it:
 | `npm run dev:server` | Server with auto-reload; run alongside `npm run dev` |
 | `npm run electron:dev` | Desktop app with hot reload |
 | `npm run electron:build` | Windows installer + portable `.exe` in `release/` (run on Windows; CI builds it too) |
-| `docker build -t vectura . && docker run -p 4317:4317 -v vectura:/data -e VECTURA_TOKEN=secret vectura` | Host the server |
+| `docker build -t figmy . && docker run -p 4317:4317 -v figmy:/data -e FIGMY_TOKEN=secret figmy` | Host the server |
 
 The desktop app starts the server automatically on `127.0.0.1:4317`, so collaboration on your machine and the AI connector work with no setup.
 
@@ -55,12 +55,12 @@ The desktop app starts the server automatically on `127.0.0.1:4317`, so collabor
 
 `node server-dist/server.cjs [--port 4317] [--host 127.0.0.1] [--data DIR] [--static dist] [--token SECRET] [--public-url URL]`
 
-- `--token` (or `VECTURA_TOKEN`) requires `Authorization: Bearer <token>` (or `?token=`) for the API, MCP and WebSocket. Always set it when the server is reachable from other machines.
+- `--token` (or `FIGMY_TOKEN`) requires `Authorization: Bearer <token>` (or `?token=`) for the API, MCP and WebSocket. Always set it when the server is reachable from other machines.
 - The server binds to `127.0.0.1` by default. Use `--host 0.0.0.0` to share it on your network.
 
 ## Real-time collaboration
 
-1. Open a file in an editor that can reach a Vectura server: the desktop app, or the web app served by `npm start`. It goes live automatically (green dot in the toolbar).
+1. Open a file in an editor that can reach a Figmy server: the desktop app, or the web app served by `npm start`. It goes live automatically (green dot in the toolbar).
 2. Click **Share** and copy the link (`…/?room=<id>`). Everyone who opens it edits the same file live.
 3. Click an avatar to follow that person's viewport.
 
@@ -73,7 +73,7 @@ The MCP endpoint is `http://localhost:4317/mcp` (Streamable HTTP, stateless). In
 **Claude Code:**
 
 ```bash
-claude mcp add --transport http vectura http://localhost:4317/mcp
+claude mcp add --transport http figmy http://localhost:4317/mcp
 ```
 
 **Claude Desktop:** add this to `claude_desktop_config.json`. The stdio bridge uses a running server, or starts one if none is reachable.
@@ -81,7 +81,7 @@ claude mcp add --transport http vectura http://localhost:4317/mcp
 ```json
 {
   "mcpServers": {
-    "vectura": { "command": "node", "args": ["/path/to/vectura/server-dist/server.cjs", "--stdio"] }
+    "figmy": { "command": "node", "args": ["/path/to/figmy/server-dist/server.cjs", "--stdio"] }
   }
 }
 ```
@@ -93,7 +93,7 @@ claude mcp add --transport http vectura http://localhost:4317/mcp
 
 Example prompt:
 
-> In my open Vectura file, design a mobile sign-in screen with an email field, password field and gradient button using auto layout, add a Home screen, and link the button to it with smart animate.
+> In my open Figmy file, design a mobile sign-in screen with an email field, password field and gradient button using auto layout, add a Home screen, and link the button to it with smart animate.
 
 Main tools: `get_started`, `list_files`, `create_file`, `get_file_outline`, `get_nodes`, `get_selection`, `create_nodes`, `update_nodes`, `delete_nodes`, `duplicate_nodes`, `group_nodes`, `boolean_operation`, `create_component`, `create_instance`, `create_page`, `set_variables`, `bind_variable`, `set_variable_mode`, `add_interaction`, `export_html`, `export_svg`, `focus_nodes`.
 
@@ -103,7 +103,7 @@ The same tools are available as REST for scripts: `GET /api/tools`, and `POST /a
 
 **Home → Import from Figma** (or **File → Import from Figma…**):
 1. Paste a `figma.com/design/…` link.
-2. Paste a personal access token (Figma → Settings → Security, with the `file_content:read` scope). The token stays in the browser session; when the browser can't reach Figma directly, the request goes through your own Vectura server.
+2. Paste a personal access token (Figma → Settings → Security, with the `file_content:read` scope). The token stays in the browser session; when the browser can't reach Figma directly, the request goes through your own Figmy server.
 
 The import covers vector geometry, image fills, gradients, effects, text styles, auto layout, constraints, components, fill styles, scroll behaviour and prototype interactions. You can also import a saved REST API JSON response.
 

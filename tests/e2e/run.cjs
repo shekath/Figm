@@ -1,4 +1,4 @@
-// Starts a throwaway Vectura server (data in the OS temp folder) and runs every end-to-end suite against it.
+// Starts a throwaway Figmy server (data in the OS temp folder) and runs every end-to-end suite against it.
 const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -7,9 +7,9 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const port = process.env.E2E_PORT || '4390';
 const url = `http://127.0.0.1:${port}`;
-const data = fs.mkdtempSync(path.join(os.tmpdir(), 'vectura-e2e-'));
+const data = fs.mkdtempSync(path.join(os.tmpdir(), 'figmy-e2e-'));
 const server = spawn(process.execPath, ['server-dist/server.cjs', '--port', port, '--data', data, '--static', 'dist'], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
-const env = { ...process.env, VECTURA_URL: url };
+const env = { ...process.env, FIGMY_URL: url };
 
 (async () => {
   for (let i = 0; i < 50; i++) {

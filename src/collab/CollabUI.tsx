@@ -75,7 +75,7 @@ export function CollabBar() {
           {list.length > 5 && <span className="avatar more">+{list.length - 5}</span>}
         </div>
       )}
-      <button className="btn share-btn" onClick={() => window.dispatchEvent(new Event('vectura:share'))}>
+      <button className="btn share-btn" onClick={() => window.dispatchEvent(new Event('figmy:share'))}>
         Share
       </button>
     </div>
@@ -89,7 +89,7 @@ export function ShareDialog() {
   const [server, setServer] = useState(storedServer() ?? '');
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem('vectura:token') ?? '';
+      return localStorage.getItem('figmy:token') ?? '';
     } catch {
       return '';
     }
@@ -103,8 +103,8 @@ export function ShareDialog() {
       setTab((e as CustomEvent).detail?.tab ?? 'share');
       serverBase().then(setDetected);
     };
-    window.addEventListener('vectura:share', t);
-    return () => window.removeEventListener('vectura:share', t);
+    window.addEventListener('figmy:share', t);
+    return () => window.removeEventListener('figmy:share', t);
   }, []);
   if (!open) return null;
 
@@ -121,9 +121,9 @@ export function ShareDialog() {
   const desktopCfg = JSON.stringify(
     {
       mcpServers: {
-        vectura: base && !base.includes('localhost') && !base.includes('127.0.0.1')
+        figmy: base && !base.includes('localhost') && !base.includes('127.0.0.1')
           ? { command: 'npx', args: ['-y', 'mcp-remote', mcpUrl, ...(tok ? ['--header', `Authorization: Bearer ${tok}`] : [])] }
-          : { command: 'node', args: ['<path-to-vectura>/server-dist/server.cjs', '--stdio'] },
+          : { command: 'node', args: ['<path-to-figmy>/server-dist/server.cjs', '--stdio'] },
       },
     },
     null,
@@ -164,7 +164,7 @@ export function ShareDialog() {
               </>
             ) : (
               <>
-                <p className="muted">Real-time collaboration and the AI connector run through a Vectura server — the desktop app includes one; for the web run <code>npm start</code> (or host it).</p>
+                <p className="muted">Real-time collaboration and the AI connector run through a Figmy server — the desktop app includes one; for the web run <code>npm start</code> (or host it).</p>
                 <div className="field">
                   <span>Server address</span>
                   <input className="text-input" placeholder={detected ?? 'http://localhost:4317'} value={server} onChange={(e) => setServer(e.target.value)} onKeyDown={stop} />
@@ -179,8 +179,8 @@ export function ShareDialog() {
                   onClick={async () => {
                     setStoredServer(server || null);
                     try {
-                      if (token) localStorage.setItem('vectura:token', token);
-                      else localStorage.removeItem('vectura:token');
+                      if (token) localStorage.setItem('figmy:token', token);
+                      else localStorage.removeItem('figmy:token');
                     } catch {
                       /* ignore */
                     }
@@ -211,12 +211,12 @@ export function ShareDialog() {
             <p className="muted">Add to <code>claude_desktop_config.json</code> (Settings → Developer → Edit config), then restart Claude:</p>
             <pre className="code">{desktopCfg}</pre>
             <button className="btn small" onClick={() => copy(desktopCfg, 'cfg')}>{copied === 'cfg' ? 'Copied' : 'Copy config'}</button>
-            <p className="muted">Claude Code: <code>claude mcp add --transport http vectura {mcpUrl}</code></p>
+            <p className="muted">Claude Code: <code>claude mcp add --transport http figmy {mcpUrl}</code></p>
             <h4>Claude.ai (custom connector) and ChatGPT (connectors / developer mode)</h4>
             <p className="muted">
               These run in the cloud, so they need a public HTTPS address: host the server, or expose a local one with a tunnel (e.g. <code>cloudflared tunnel --url http://localhost:4317</code>), start it with <code>--token &lt;secret&gt;</code>, then add <code>https://&lt;your-host&gt;/mcp</code> as a custom connector and supply the token as a Bearer header if your client supports it.
             </p>
-            <p className="muted">Try asking: “Design a mobile login screen in my open Vectura file with an email field, password field and a primary button, then link the button to a new Home screen with smart animate.”</p>
+            <p className="muted">Try asking: “Design a mobile login screen in my open Figmy file with an email field, password field and a primary button, then link the button to a new Home screen with smart animate.”</p>
           </div>
         )}
       </div>

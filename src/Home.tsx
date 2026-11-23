@@ -26,7 +26,7 @@ export function Home({ onOpen }: { onOpen: () => void }) {
     <div className="home">
       <aside className="home-side">
         <div className="home-brand">
-          <img src="./icon.svg" width={28} height={28} alt="" /> <b>Vectura</b>
+          <img src="./icon.svg" width={28} height={28} alt="" /> <b>Figmy</b>
         </div>
         <nav>
           <a className="active">Recents</a>
@@ -47,9 +47,9 @@ export function Home({ onOpen }: { onOpen: () => void }) {
           <button className="home-card-action" onClick={async () => { await actions.open.run(); onOpen(); }}>
             <span className="big">⤒</span>
             <b>Open file…</b>
-            <small>Open a .vectura file from disk</small>
+            <small>Open a .figmy file from disk</small>
           </button>
-          <button className="home-card-action" onClick={() => window.dispatchEvent(new Event('vectura:figma-import'))}>
+          <button className="home-card-action" onClick={() => window.dispatchEvent(new Event('figmy:figma-import'))}>
             <span className="big">◈</span>
             <b>Import from Figma</b>
             <small>Via file link + access token</small>

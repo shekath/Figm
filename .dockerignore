@@ -2,5 +2,5 @@ node_modules
 dist
 server-dist
 release
-.vectura-data
+.figmy-data
 .git

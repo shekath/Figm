@@ -1,15 +1,15 @@
 {
-  "name": "vectura",
-  "productName": "Vectura",
+  "name": "figmy",
+  "productName": "Figmy",
   "version": "1.0.0",
-  "description": "Vectura - an open-source vector design and prototyping tool for web and desktop",
+  "description": "Figmy - an open-source vector design, prototyping and real-time collaboration tool for web and desktop",
   "license": "MIT",
-  "author": "Vectura contributors",
+  "author": "Figmy contributors",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "tsx watch server/index.ts --data ./.vectura-data",
+    "dev:server": "tsx watch server/index.ts --data ./.figmy-data",
     "build": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build && npm run build:server",
     "build:server": "esbuild server/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=server-dist/server.cjs --external:bufferutil --external:utf-8-validate --log-level=warning && esbuild server/app.ts --bundle --platform=node --target=node20 --format=cjs --outfile=server-dist/app.cjs --external:bufferutil --external:utf-8-validate --log-level=warning",
     "start": "node server-dist/server.cjs --static dist",
@@ -23,8 +23,8 @@
     "electron:dir": "npm run build && electron-builder --dir"
   },
   "build": {
-    "appId": "app.vectura.desktop",
-    "productName": "Vectura",
+    "appId": "app.figmy.desktop",
+    "productName": "Figmy",
     "directories": {
       "output": "release"
     },
@@ -36,8 +36,13 @@
     ],
     "fileAssociations": [
       {
+        "ext": "figmy",
+        "name": "Figmy Design",
+        "role": "Editor"
+      },
+      {
         "ext": "vectura",
-        "name": "Vectura Design",
+        "name": "Figmy Design (legacy)",
         "role": "Editor"
       }
     ],
@@ -94,6 +99,6 @@
     "wait-on": "^8.0.1"
   },
   "bin": {
-    "vectura-server": "server-dist/server.cjs"
+    "figmy-server": "server-dist/server.cjs"
   }
 }

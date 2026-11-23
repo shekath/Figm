@@ -129,7 +129,7 @@ export function createNode(type: NodeType, props: Partial<SceneNode> = {}): Scen
 export function emptyDocument(name = 'Untitled'): DocumentData {
   const pageId = uid();
   return {
-    format: 'vectura',
+    format: 'figmy',
     version: 1,
     name,
     pages: [{ id: pageId, name: 'Page 1', children: [], background: '#f5f5f5' }],
@@ -145,7 +145,7 @@ export function emptyDocument(name = 'Untitled'): DocumentData {
 
 /** A small starter document so a first-time visitor sees something on the canvas. */
 export function sampleDocument(): DocumentData {
-  const doc = emptyDocument('Welcome to Vectura');
+  const doc = emptyDocument('Welcome to Figmy');
   const page = doc.pages[0];
   const add = (n: SceneNode, parent?: SceneNode) => {
     doc.nodes[n.id] = n;

@@ -1,6 +1,6 @@
 /**
  * MCP stdio transport for desktop AI clients. Tools are fetched from (and calls forwarded to)
- * the Vectura HTTP server so the AI edits the same live files as the editors.
+ * the Figmy HTTP server so the AI edits the same live files as the editors.
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -15,7 +15,7 @@ export async function runStdioBridge(o: { url: string; token: string | null; sta
   const reachable = async () => {
     try {
       const r = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(1500) });
-      return r.ok && (await r.json()).app === 'vectura';
+      return r.ok && (await r.json()).app === 'figmy';
     } catch {
       return false;
     }
@@ -24,14 +24,14 @@ export async function runStdioBridge(o: { url: string; token: string | null; sta
     try {
       const s = await startServer({ ...o.start, log: (m) => process.stderr.write(m + '\n') });
       base = s.url;
-      process.stderr.write(`[vectura] started server at ${s.url} (open it in a browser to watch the AI design live)\n`);
+      process.stderr.write(`[figmy] started server at ${s.url} (open it in a browser to watch the AI design live)\n`);
     } catch (e) {
-      process.stderr.write(`[vectura] could not reach or start a server at ${base}: ${(e as Error).message}\n`);
+      process.stderr.write(`[figmy] could not reach or start a server at ${base}: ${(e as Error).message}\n`);
       throw e;
     }
   }
 
-  const server = new Server({ name: 'vectura', version: '1.1.0' }, { capabilities: { tools: {} }, instructions: MCP_INSTRUCTIONS });
+  const server = new Server({ name: 'figmy', version: '1.1.0' }, { capabilities: { tools: {} }, instructions: MCP_INSTRUCTIONS });
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const r = await fetch(`${base}/api/tools`, { headers: headers() });
     const { tools } = (await r.json()) as { tools: { name: string; title: string; description: string; inputSchema: Record<string, unknown>; readOnly: boolean }[] };

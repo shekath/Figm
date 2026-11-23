@@ -14,6 +14,6 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => undefined));
 }
 
-// Scripting / test hook: window.vectura.store is the editor store (zustand)
+// Scripting / test hook: window.figmy.store is the editor store (zustand)
 import { useEditor } from './store/store';
-(window as unknown as { vectura: unknown }).vectura = { store: useEditor };
+(window as unknown as { figmy: unknown }).figmy = { store: useEditor };

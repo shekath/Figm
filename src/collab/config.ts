@@ -1,7 +1,7 @@
-/** Locates the Vectura server (collaboration + MCP + Figma proxy). */
+/** Locates the Figmy server (collaboration + MCP + Figma proxy). */
 import { desktop } from '../lib/platform';
 
-const KEY = 'vectura:server';
+const KEY = 'figmy:server';
 let cached: string | null | undefined;
 
 export function storedServer(): string | null {
@@ -35,7 +35,7 @@ export async function serverBase(): Promise<string | null> {
     const base = c.replace(/\/$/, '').replace(/^ws/, 'http');
     try {
       const r = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(1500) });
-      if (r.ok && (await r.json()).app === 'vectura') {
+      if (r.ok && (await r.json()).app === 'figmy') {
         cached = base;
         return base;
       }
@@ -53,7 +53,7 @@ export function resetServerCache() {
 
 export function authToken(): string | null {
   try {
-    return new URLSearchParams(location.search).get('token') ?? localStorage.getItem('vectura:token');
+    return new URLSearchParams(location.search).get('token') ?? localStorage.getItem('figmy:token');
   } catch {
     return null;
   }

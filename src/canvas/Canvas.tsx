@@ -51,10 +51,10 @@ export function Canvas() {
     // center first time
     useEditor.getState().zoomToFit();
     const fonts = () => force((x) => x + 1);
-    window.addEventListener('vectura:fonts', fonts);
+    window.addEventListener('figmy:fonts', fonts);
     return () => {
       ro.disconnect();
-      window.removeEventListener('vectura:fonts', fonts);
+      window.removeEventListener('figmy:fonts', fonts);
     };
   }, []);
 
@@ -860,7 +860,7 @@ export function Canvas() {
     e.preventDefault();
     const s = useEditor.getState();
     const w = toWorld(e.clientX, e.clientY);
-    const comp = e.dataTransfer.getData('application/x-vectura-component');
+    const comp = e.dataTransfer.getData('application/x-figmy-component');
     if (comp) {
       const c = s.doc.nodes[comp];
       if (c) s.createInstance(comp, Math.round(w.x - c.w / 2), Math.round(w.y - c.h / 2));
@@ -900,7 +900,7 @@ export function Canvas() {
         return;
       }
       const text = e.clipboardData?.getData('text/plain');
-      if (text) s.paste(text.includes('vecturaClipboard') ? undefined : center, text);
+      if (text) s.paste(text.includes('figmyClipboard') ? undefined : center, text);
       else s.paste();
     };
     window.addEventListener('paste', onPaste);
@@ -933,7 +933,7 @@ export function Canvas() {
         const path = hitPath(s.doc.nodes, s.page().children, w.x, w.y, 2 / s.zoom);
         const picked = pickFromPath(s.doc.nodes, path, { focusId: s.focusId, selection: s.selection });
         if (picked && !s.selection.includes(picked)) s.select([picked]);
-        window.dispatchEvent(new CustomEvent('vectura:context', { detail: { x: e.clientX, y: e.clientY, wx: w.x, wy: w.y } }));
+        window.dispatchEvent(new CustomEvent('figmy:context', { detail: { x: e.clientX, y: e.clientY, wx: w.x, wy: w.y } }));
       }}
     >
       {st.showGrid && zoom >= 4 && <PixelGrid zoom={zoom} panX={panX} panY={panY} />}

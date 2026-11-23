@@ -11,11 +11,11 @@ export function ContextMenu() {
   useEffect(() => {
     const open = (e: Event) => setPos((e as CustomEvent).detail);
     const close = () => setPos(null);
-    window.addEventListener('vectura:context', open);
+    window.addEventListener('figmy:context', open);
     window.addEventListener('pointerdown', close);
     window.addEventListener('blur', close);
     return () => {
-      window.removeEventListener('vectura:context', open);
+      window.removeEventListener('figmy:context', open);
       window.removeEventListener('pointerdown', close);
       window.removeEventListener('blur', close);
     };
@@ -50,8 +50,8 @@ export function ShortcutsDialog() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const t = () => setOpen((o) => !o);
-    window.addEventListener('vectura:shortcuts', t);
-    return () => window.removeEventListener('vectura:shortcuts', t);
+    window.addEventListener('figmy:shortcuts', t);
+    return () => window.removeEventListener('figmy:shortcuts', t);
   }, []);
   if (!open) return null;
   const tools = [

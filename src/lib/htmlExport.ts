@@ -409,7 +409,7 @@ export function generateHtml(doc: Pick<DocumentData, 'nodes' | 'name' | 'pages'>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(opts.title ?? doc.name ?? 'Design')}</title>
-  <meta name="generator" content="Vectura">
+  <meta name="generator" content="Figmy">
 ${fontLink}  <style>${base}
 ${flexCss}${ctx.rules.join('\n')}
   </style>

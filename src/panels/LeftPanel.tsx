@@ -250,7 +250,7 @@ function Assets() {
               className="comp-tile"
               draggable
               title={`${c.name} — drag to canvas`}
-              onDragStart={(e) => e.dataTransfer.setData('application/x-vectura-component', c.id)}
+              onDragStart={(e) => e.dataTransfer.setData('application/x-figmy-component', c.id)}
               onDoubleClick={() => {
                 const s = useEditor.getState();
                 const vp = { x: (innerWidth / 2 - s.panX) / s.zoom, y: (innerHeight / 2 - s.panY) / s.zoom };
@@ -364,18 +364,18 @@ function Variables() {
     <div className="asset-section">
       <header>
         <span>Variables</span>
-        <button className="icon-btn" title="Open variables editor" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>
+        <button className="icon-btn" title="Open variables editor" onClick={() => window.dispatchEvent(new Event('figmy:variables'))}>
           <Icon name="variable" />
         </button>
       </header>
       {cols.length === 0 && (
         <div className="empty">
           Design tokens with modes (e.g. Light / Dark).{' '}
-          <a className="clickable" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>Open the editor</a>
+          <a className="clickable" onClick={() => window.dispatchEvent(new Event('figmy:variables'))}>Open the editor</a>
         </div>
       )}
       {cols.map((c) => (
-        <div key={c.id} className="style-row" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>
+        <div key={c.id} className="style-row" onClick={() => window.dispatchEvent(new Event('figmy:variables'))}>
           <Icon name="variable" size={12} />
           <span className="grow">{c.name} <small className="muted">· {c.variables.length}</small></span>
           {c.modes.length > 1 && (

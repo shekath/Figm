@@ -4,4 +4,4 @@ release
 *.log
 .DS_Store
 server-dist
-.vectura-data
+.figmy-data

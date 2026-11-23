@@ -99,13 +99,13 @@ const focusIds = (ctx: ToolContext, room: Room, ids: string[]) => {
 export const tools: ToolDef[] = [
   {
     name: 'get_started',
-    title: 'How to design with Vectura',
-    description: 'Read this first. Explains the coordinate system, node specs and a recommended workflow for designing in Vectura.',
+    title: 'How to design with Figmy',
+    description: 'Read this first. Explains the coordinate system, node specs and a recommended workflow for designing in Figmy.',
     schema: {},
     readOnly: true,
     run: (_a, ctx) => ({
       guide: [
-        'Vectura is a vector design tool; files contain pages, pages contain top-level frames (screens/artboards), frames contain layers.',
+        'Figmy is a vector design tool; files contain pages, pages contain top-level frames (screens/artboards), frames contain layers.',
         'Workflow: list_files → get_file_outline → create_nodes / update_nodes → (optional) add_interaction for prototypes → export_html.',
         'Coordinates in tool arguments are relative to the parent node (top-level nodes are relative to the page). Units are CSS pixels.',
         'Prefer one create_nodes call with a nested spec tree (a frame with children) over many small calls.',
@@ -121,7 +121,7 @@ export const tools: ToolDef[] = [
   {
     name: 'list_files',
     title: 'List files',
-    description: 'List design files on this Vectura server with page/layer counts and how many people have them open.',
+    description: 'List design files on this Figmy server with page/layer counts and how many people have them open.',
     schema: {},
     readOnly: true,
     run: (_a, ctx) => ({ files: ctx.rooms.list().map((r) => ({ ...r, url: `${ctx.publicUrl}/?room=${r.id}` })) }),

@@ -32,7 +32,7 @@ jobs:
         run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         with:
-          name: vectura-web
+          name: figmy-web
           path: |
             dist
             server-dist
@@ -52,7 +52,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: vectura-windows
+          name: figmy-windows
           path: |
             release/*.exe
             release/*.blockmap
