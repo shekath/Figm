@@ -629,7 +629,7 @@ function FillSection({ sel }: { sel: SceneNode[] }) {
           <PaintRow
             key={p.id}
             p={p}
-            onChange={(np) => st.updateNodes(ids, (x) => ({ fills: x.fills.map((f, j) => (j === i ? { ...np, id: f.id } : f)), styleRefs: { ...x.styleRefs, fill: undefined } }))}
+            onChange={(np) => st.updateNodes(ids, (x) => ({ fills: x.fills.map((f, j) => (j === i ? { ...np, id: f.id } : f)), styleRefs: { ...x.styleRefs, fill: undefined }, ...(i === 0 && x.bindings?.fill ? { bindings: { ...x.bindings, fill: undefined } } : {}) }))}
             onRemove={() => st.updateNodes(ids, (x) => ({ fills: x.fills.filter((_, j) => j !== i) }))}
           />
         ))
@@ -658,7 +658,7 @@ function StrokeSection({ sel }: { sel: SceneNode[] }) {
       {strokes.map((s, i) => (
         <div key={i} className="paint">
           <div className="row">
-            <ColorField value={s.color} opacity={s.opacity} onChange={(c) => upd(i, { color: c })} onOpacity={(o) => upd(i, { opacity: o })} />
+            <ColorField value={s.color} opacity={s.opacity} onChange={(c) => st.updateNodes(ids, (x) => ({ strokes: x.strokes.map((k, j) => (j === i ? { ...k, color: c } : k)), ...(i === 0 && x.bindings?.stroke ? { bindings: { ...x.bindings, stroke: undefined } } : {}) }))} onOpacity={(o) => upd(i, { opacity: o })} />
             <IconButton title={s.visible ? 'Hide' : 'Show'} onClick={() => upd(i, { visible: !s.visible })}>
               <Icon name={s.visible ? 'eye' : 'eyeOff'} size={12} />
             </IconButton>

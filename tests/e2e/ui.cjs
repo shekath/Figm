@@ -75,6 +75,24 @@ const assert = (c, m) => {
   assert(await p.evaluate(() => { const v = window.figmy.store.getState().doc.variables[0].variables[1]; return typeof Object.values(v.values)[0] === 'object'; }), 'variables editor links a variable to another (alias)');
   await p.click('.vx button[title="Close (Esc)"]');
 
+  // colour picker: a drag in the colour square sticks after release; gradient stops take their own colours
+  await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => (n.type === 'rect' || n.type === 'ellipse') && n.fills[0]?.kind === 'solid').id; s.select([id]); s.set({ mode: 'design' }); });
+  await p.click('.paint .swatch');
+  const sv = await p.locator('.cp-sv').boundingBox();
+  await p.mouse.move(sv.x + sv.width * 0.8, sv.y + sv.height * 0.2);
+  await p.mouse.down();
+  await p.mouse.move(sv.x + sv.width * 0.9, sv.y + sv.height * 0.1, { steps: 3 });
+  await p.mouse.up();
+  const picked = await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]].fills[0].color; });
+  assert(/^#[0-9a-f]{6}$/.test(picked) && parseInt(picked.slice(1, 3), 16) > 150 && parseInt(picked.slice(5, 7), 16) < 120, `picked colour is kept after releasing the drag (${picked})`);
+  await p.click('.cp-kinds button[title="Linear"]');
+  await p.click('.cp-stop >> nth=1');
+  const sv2 = await p.locator('.cp-sv').boundingBox();
+  await p.mouse.click(sv2.x + sv2.width - 2, sv2.y + sv2.height - 2);
+  const stops = await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]].fills[0].stops.map((x) => x.color); });
+  assert(stops.length === 2 && stops[0] !== stops[1] && parseInt(stops[1].slice(1, 3), 16) < 16 && parseInt(stops[0].slice(1, 3), 16) > 150, `gradient stop colours are independent (${stops.join(', ')})`);
+  await p.keyboard.press('Escape');
+
   // motion mode: drag at the playhead records a position keyframe; presets add tracks
   await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
   await p.click('.mode-btn[title^="Motion"]');

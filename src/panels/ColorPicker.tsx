@@ -197,7 +197,7 @@ const KINDS: { kind: Paint['kind']; title: string; css: string }[] = [
 const stopsCss = (stops: GradientStop[]) => stops.map((s) => `${s.color} ${s.offset * 100}%`).join(', ');
 
 /** Figma-style paint popover: type tabs, gradient stop bar, colour editor, document colours & styles. */
-export function PaintPicker({ paint, onChange, onClose, anchor, solidOnly = false, title }: { paint: Paint; onChange: (p: Paint, live?: boolean) => void; onClose: () => void; anchor: DOMRect; solidOnly?: boolean; title?: string }) {
+export function PaintPicker({ paint, onChange, onClose, anchor, solidOnly = false, title, placement = 'left' }: { paint: Paint; onChange: (p: Paint, live?: boolean) => void; onClose: () => void; anchor: DOMRect; solidOnly?: boolean; title?: string; placement?: 'left' | 'below' }) {
   const st = useEditor();
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: anchor.left - 260, top: anchor.top });
@@ -209,8 +209,9 @@ export function PaintPicker({ paint, onChange, onClose, anchor, solidOnly = fals
     const el = ref.current;
     if (!el) return;
     const h = el.offsetHeight, w = el.offsetWidth;
-    setPos({ left: Math.max(8, Math.min(anchor.left - w - 12, window.innerWidth - w - 8)), top: Math.max(8, Math.min(anchor.top - 40, window.innerHeight - h - 8)) });
-  }, [anchor, paint.kind, tab]);
+    if (placement === 'below') setPos({ left: Math.max(8, Math.min(anchor.left, window.innerWidth - w - 8)), top: anchor.bottom + 4 + h > window.innerHeight ? Math.max(8, anchor.top - h - 4) : anchor.bottom + 4 });
+    else setPos({ left: Math.max(8, Math.min(anchor.left - w - 12, window.innerWidth - w - 8)), top: Math.max(8, Math.min(anchor.top - 40, window.innerHeight - h - 8)) });
+  }, [anchor, paint.kind, tab, placement]);
   useEffect(() => {
     const down = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -223,7 +224,8 @@ export function PaintPicker({ paint, onChange, onClose, anchor, solidOnly = fals
     if (!committed.current) { st.checkpoint(); committed.current = true; }
     onChange(p, true);
   };
-  const commit = () => onChange({ ...paint }, true);
+  // end of a drag/edit: nothing to re-apply (each move already applied the latest value)
+  const commit = () => undefined;
 
   const gradient = paint.kind === 'linear' || paint.kind === 'radial';
   const stops = paint.stops?.length ? paint.stops : [{ offset: 0, color: paint.color }, { offset: 1, color: '#ffffff' }];
@@ -234,7 +236,14 @@ export function PaintPicker({ paint, onChange, onClose, anchor, solidOnly = fals
       if (f) live({ ...paint, kind, src: await blobToDataUrl(f) });
       return;
     }
-    live({ ...paint, kind, stops: kind === 'solid' ? paint.stops : stops, angle: paint.angle ?? 180 });
+    // solid → gradient starts from the current colour, fading to a lighter tint of it
+    const fromSolid = paint.kind === 'solid' || paint.kind === 'image';
+    const c = hexToRgb(paint.color);
+    const tint = rgbToHex(c.r + (255 - c.r) * 0.7, c.g + (255 - c.g) * 0.7, c.b + (255 - c.b) * 0.7);
+    const nextStops = fromSolid ? [{ offset: 0, color: paint.color }, { offset: 1, color: tint }] : stops;
+    if (kind === 'solid') live({ ...paint, kind, color: paint.kind === 'solid' ? paint.color : stops[0].color });
+    else live({ ...paint, kind, stops: nextStops, angle: paint.angle ?? 180 });
+    setStopIdx(0);
   };
   const barDrag = (i: number) => (e: React.PointerEvent) => {
     e.stopPropagation();

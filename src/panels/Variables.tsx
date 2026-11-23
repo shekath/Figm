@@ -3,6 +3,7 @@ import { useEditor } from '../store/store';
 import { Icon } from './icons';
 import type { BindableProp, Variable, VariableScope, VariableValue } from '../types';
 import { pickFile } from '../lib/platform';
+import { PaintPicker } from './ColorPicker';
 import { BIND_TYPES, aliasCreatesCycle, defaultValue, exportTokens, findVariable, inScope, isAlias, resolveInMode, resolveMode, SCOPES_BY_TYPE, splitName, variableValue } from '../lib/variables';
 
 /** Variables editor: collection switcher, group tree, mode columns, aliases, scopes and code syntax. */
@@ -386,6 +387,7 @@ function ValueCell({ v, modeId, onChange }: { v: Variable; modeId: string; onCha
 
 function ValueEditor({ v, value, onChange }: { v: Variable; value: string | number | boolean | undefined; onChange: (val: string | number | boolean) => void }) {
   const [text, setText] = useState(String(value ?? ''));
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
   useEffect(() => setText(String(value ?? '')), [value]);
   if (v.type === 'color') {
     const base = String(value ?? '#000000');
@@ -394,9 +396,22 @@ function ValueEditor({ v, value, onChange }: { v: Variable; value: string | numb
     const withAlpha = (h: string, a: number) => (a >= 0.999 ? h.toLowerCase() : h.toLowerCase() + Math.round(a * 255).toString(16).padStart(2, '0'));
     return (
       <div className="var-color">
-        <span className="vx-swatch"><i style={{ background: hex6, opacity: alpha }} /><input type="color" value={hex6} onChange={(e) => onChange(withAlpha(e.target.value, alpha))} /></span>
+        <button className="vx-swatch" title="Edit colour" onClick={(e) => setAnchor(anchor ? null : (e.currentTarget.closest('td') as HTMLElement).getBoundingClientRect())}>
+          <i style={{ background: hex6, opacity: alpha }} />
+        </button>
         <input value={text.slice(0, 7).replace('#', '').toUpperCase()} onChange={(e) => setText('#' + e.target.value.replace('#', ''))} onBlur={() => /^#[0-9a-f]{6}$/i.test(text.slice(0, 7)) ? onChange(withAlpha(text.slice(0, 7), alpha)) : setText(base)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
         <AlphaInput alpha={alpha} onChange={(a) => onChange(withAlpha(hex6, a))} />
+        {anchor && (
+          <PaintPicker
+            solidOnly
+            placement="below"
+            title={v.name.split('/').pop()}
+            anchor={anchor}
+            paint={{ id: 'var', kind: 'solid', color: hex6, opacity: alpha, visible: true }}
+            onClose={() => setAnchor(null)}
+            onChange={(p) => onChange(withAlpha(p.color, p.opacity))}
+          />
+        )}
       </div>
     );
   }
