@@ -106,6 +106,12 @@ const assert = (c, m) => {
   await p.click('.sizing-menu >> text=Add min width');
   assert(await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]].minW > 0; }), 'sizing menu adds a min width');
 
+  // Escape closes the export dialog
+  await p.keyboard.press('Control+Shift+e');
+  await p.waitForSelector('.modal-backdrop');
+  await p.keyboard.press('Escape');
+  assert((await p.locator('.modal-backdrop').count()) === 0, 'Escape closes dialogs');
+
   // motion mode: drag at the playhead records a position keyframe; presets add tracks
   await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
   await p.click('.mode-btn[title^="Motion"]');

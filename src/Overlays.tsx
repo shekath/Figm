@@ -22,7 +22,9 @@ export function ContextMenu() {
   }, []);
   if (!pos) return null;
   const items = sel.length ? CTX_ITEMS : CTX_EMPTY;
-  const top = Math.min(pos.y, innerHeight - items.length * 26 - 20);
+  // estimate height (items ~29px, separators ~11px); keep the menu fully on screen, scrolling if needed
+  const est = items.reduce((h, id) => h + (id === '-' ? 11 : 29), 12);
+  const top = Math.min(pos.y, innerHeight - Math.min(est, innerHeight - 16) - 8);
   return (
     <div className="context-menu" style={{ left: Math.min(pos.x, innerWidth - 240), top: Math.max(8, top) }} onPointerDown={(e) => e.stopPropagation()}>
       {items.map((id, i) =>

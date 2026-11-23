@@ -106,7 +106,7 @@ body.hide-ui .toolbar, body.hide-ui .panel { display: none; }
 .menu-tabs { display: flex; gap: 2px; border-bottom: 1px solid #3a3a44; padding-bottom: 6px; margin-bottom: 4px; }
 .menu-tabs button { padding: 4px 8px; border-radius: 4px; color: #bbb; }
 .menu-tabs button.active { background: #3a3a44; color: #fff; }
-.context-menu { position: fixed; min-width: 230px; }
+.context-menu { position: fixed; min-width: 230px; max-height: calc(100vh - 16px); overflow-y: auto; }
 
 /* ---------- panels ---------- */
 .panel { width: 248px; background: var(--bg); display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; user-select: none; }

@@ -267,6 +267,7 @@ function NameInput({ value, display, onCommit }: { value: string; display: strin
   return (
     <input
       autoFocus
+      onFocus={(e) => e.target.select()}
       className="vx-nameinput"
       value={text}
       onChange={(e) => setText(e.target.value)}

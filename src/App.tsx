@@ -22,7 +22,27 @@ import { useShortcuts } from './useShortcuts';
 import { actions, saveToLibrary } from './actions';
 import { desktop, parseDocument } from './lib/platform';
 
+/** Escape closes the topmost dialog (as clicking its dimmed background would), before any canvas shortcut runs. */
+function useEscapeClosesDialogs() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || document.querySelector('.cp, .vx-menu, .sizing-menu, .palette')) return;
+      const backs = document.querySelectorAll<HTMLElement>('.modal-backdrop');
+      const top = backs[backs.length - 1];
+      if (!top) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const close = top.querySelector<HTMLElement>('header button.btn, header .icon-btn[title^="Close"], button[title^="Close"]');
+      if (close && /close|done/i.test(close.textContent + ' ' + (close.title ?? ''))) close.click();
+      else top.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
+}
+
 export function App() {
+  useEscapeClosesDialogs();
   const [view, setView] = useState<'home' | 'editor'>('home');
   const [theme, setThemeState] = useState(() => {
     try {
@@ -111,12 +131,12 @@ export function App() {
     desktop?.setTitle(view === 'home' ? 'Figmy' : name, dirty);
   }, [name, dirty, view]);
 
-  // autosave to the local library every 5 seconds when dirty
+  // autosave to the local library shortly after changes (every 1.5 s while dirty)
   useEffect(() => {
     if (view !== 'editor') return;
     const t = setInterval(() => {
       if (useEditor.getState().dirty) saveToLibrary();
-    }, 5000);
+    }, 1500);
     return () => clearInterval(t);
   }, [view]);
 

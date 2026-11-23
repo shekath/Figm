@@ -62,6 +62,7 @@ function Pages() {
             {editing === p.id ? (
               <input
                 autoFocus
+                onFocus={(e) => e.target.select()}
                 defaultValue={p.name}
                 onKeyDown={(e) => {
                   e.stopPropagation();
@@ -184,6 +185,7 @@ function Layers() {
               {renaming === n.id ? (
                 <input
                   autoFocus
+                  onFocus={(e) => e.target.select()}
                   defaultValue={n.name}
                   onKeyDown={(e) => {
                     e.stopPropagation();

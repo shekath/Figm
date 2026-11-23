@@ -332,7 +332,11 @@ function SizeFields({ sel, parent, geo }: { sel: SceneNode[]; parent: SceneNode 
     else if (m === 'add-max') st.updateNodes(ids, { [maxKey]: Math.round(size) });
     else if (m === 'rm-min') st.updateNodes(ids, { [minKey]: undefined });
     else if (m === 'rm-max') st.updateNodes(ids, { [maxKey]: undefined });
-    else st.updateNodes(ids, (x) => sizingPatch(x, axis, m));
+    else {
+      // Fill inside a parent that hugs on the same axis: the parent becomes fixed (as Figma does)
+      if (m === 'fill' && parent?.autoLayout && (axis === 'h' ? parent.autoLayout.hugW : parent.autoLayout.hugH)) st.setAutoLayout(parent.id, axis === 'h' ? { hugW: false } : { hugH: false });
+      st.updateNodes(ids, (x) => sizingPatch(x, axis, m));
+    }
   };
   const limits = (['minW', 'maxW', 'minH', 'maxH'] as const).filter((k) => single && n[k] != null);
   return (
