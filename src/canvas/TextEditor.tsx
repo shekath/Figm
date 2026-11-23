@@ -13,10 +13,11 @@ export function TextEditor({ id, onDone }: { id: string; onDone: (id: string) =>
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // focus after the browser's own mousedown focus handling has run
+    el.focus();
+    el.select();
+    // re-focus if the browser's own mousedown handling stole focus (without wiping anything typed since)
     const t = setTimeout(() => {
-      el.focus();
-      el.select();
+      if (document.activeElement !== el) el.focus();
     }, 30);
     return () => {
       clearTimeout(t);

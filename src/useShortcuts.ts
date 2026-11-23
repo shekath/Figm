@@ -45,6 +45,12 @@ export function useShortcuts(enabled: boolean) {
       if (isTyping(e)) return;
       const s = useEditor.getState();
       if (s.presenting) return;
+      // a text box is opening: route the keystroke into it instead of firing a tool shortcut
+      if (s.editingTextId && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const ta = document.querySelector<HTMLTextAreaElement>('.text-editor textarea, textarea.text-editor');
+        if (ta) { ta.focus(); return; }
+        if (e.key.length === 1) { e.preventDefault(); return; }
+      }
       const c = combo(e);
       if (c === 'Ctrl+V' || c === 'Ctrl+Shift+V') return; // handled by paste event
       if (c === 'Ctrl+Shift+=' ) { e.preventDefault(); return actions.zoomIn.run(); }

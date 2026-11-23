@@ -27,7 +27,8 @@ type Drag =
   | { kind: 'pen-handle'; id: string; index: number }
   | { kind: 'point'; id: string; index: number; part: 'p' | 'cin' | 'cout'; wx: number; wy: number; orig: PathPoint }
   | { kind: 'proto'; fromId: string; x: number; y: number }
-  | { kind: 'radius'; id: string; startR: number; wx: number; wy: number };
+  | { kind: 'radius'; id: string; startR: number; wx: number; wy: number }
+  | { kind: 'textbox'; wx: number; wy: number; parentId: string | null; r: Rect | null };
 
 const SNAP = 6;
 
@@ -228,11 +229,8 @@ export function Canvas() {
         return;
       }
       case 'text': {
-        const parent = frameAt(w.x, w.y);
-        const t = createNode('text', { x: snapV(w.x), y: snapV(w.y), w: 20, h: 21, name: 'Text' });
-        t.text!.content = '';
-        s.addNode(t, parent);
-        s.set({ selection: [t.id], editingTextId: t.id, tool: 'move' });
+        // click = auto-width text; drag = fixed-size text box (like a text area)
+        setDrag({ kind: 'textbox', wx: snapV(w.x), wy: snapV(w.y), parentId: frameAt(w.x, w.y), r: null });
         return;
       }
       case 'pencil':
@@ -379,6 +377,13 @@ export function Canvas() {
         drag.lastDx = dx;
         drag.lastDy = dy;
         s.set({ guides: snapped.guides });
+        break;
+      }
+      case 'textbox': {
+        const r = normalizeRect(drag.wx, drag.wy, snapV(w.x), snapV(w.y));
+        if (Math.max(r.w, r.h) * s.zoom < 4) break;
+        drag.r = r;
+        s.set({ marquee: r });
         break;
       }
       case 'marquee': {
@@ -635,6 +640,15 @@ export function Canvas() {
     const w = toWorld(e.clientX, e.clientY);
     if (!drag) return;
     switch (drag.kind) {
+      case 'textbox': {
+        const r = drag.r;
+        const t = createNode('text', r ? { x: r.x, y: r.y, w: Math.max(20, r.w), h: Math.max(21, r.h), name: 'Text' } : { x: drag.wx, y: drag.wy, w: 20, h: 21, name: 'Text' });
+        t.text!.content = '';
+        if (r) t.text!.autoResize = 'fixed';
+        s.addNode(t, drag.parentId);
+        s.set({ selection: [t.id], editingTextId: t.id, tool: 'move', marquee: null });
+        break;
+      }
       case 'move': {
         if (!drag.started) {
           // plain click: select only the clicked item if it was part of a multi-selection

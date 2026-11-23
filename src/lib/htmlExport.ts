@@ -144,7 +144,7 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
   const cls = `${slug(n.name)}-${(ctx.count++).toString(36)}`;
   const pad = '  '.repeat(depth);
   const css: string[] = [];
-  const flexParent = ctx.opts.layout === 'flex' && !!parent?.autoLayout;
+  const flexParent = ctx.opts.layout === 'flex' && !!parent?.autoLayout && !raw.layoutAbsolute;
   const positioned = !(flexParent && inFlow);
   if (positioned && parent) css.push('position: absolute', `left: ${px(n.x - parent.x)}`, `top: ${px(n.y - parent.y)}`);
   else if (!parent) css.push('position: relative');
@@ -173,6 +173,18 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
     css.push(flexSelf && al!.hugH && parent ? 'height: max-content' : `height: ${px(n.h)}`);
   }
   if (!parent) css.push('flex-shrink: 0');
+  const inFlex = ctx.opts.layout === 'flex' && !!parent?.autoLayout && !n.layoutAbsolute;
+  if (inFlex) {
+    const ph = parent!.autoLayout!.direction === 'horizontal';
+    const main = ph ? n.layoutSizing?.h : n.layoutSizing?.v, cross = ph ? n.layoutSizing?.v : n.layoutSizing?.h;
+    if (main === 'fill') css.push('flex: 1 1 0', ph ? 'min-width: 0' : 'min-height: 0');
+    else css.push('flex-shrink: 0');
+    if (cross === 'fill') css.push('align-self: stretch', ph ? 'height: auto' : 'width: auto');
+    if (n.minW) css.push(`min-width: ${px(n.minW)}`);
+    if (n.maxW) css.push(`max-width: ${px(n.maxW)}`);
+    if (n.minH) css.push(`min-height: ${px(n.minH)}`);
+    if (n.maxH) css.push(`max-height: ${px(n.maxH)}`);
+  }
   if (flexSelf) {
     css.push(
       'display: flex',
@@ -183,7 +195,8 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
       `justify-content: ${al!.justify === 'start' ? 'flex-start' : al!.justify === 'end' ? 'flex-end' : al!.justify}`,
       'box-sizing: border-box',
     );
-    if (al!.wrap) css.push('flex-wrap: wrap');
+    if (al!.wrap) css.push('flex-wrap: wrap', `row-gap: ${px(al!.counterGap ?? al!.gap)}`);
+    if (n.children.some((c) => ctx.nodes[c]?.layoutAbsolute)) css.push('position: relative');
   }
   css.push(...visualCss(n));
   if (n.text?.fontFamily && !SYSTEM_FONTS.has(n.text.fontFamily)) ctx.fonts.add(n.text.fontFamily);

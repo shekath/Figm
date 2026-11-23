@@ -321,7 +321,7 @@ export function RenderNode({ id, ctx }: { id: string; ctx: RenderCtx }): React.R
             <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children.filter((c) => ctx.nodes[c]?.fixed), ctx)}</g>
           </>
         ) : (
-          <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children, ctx)}</g>
+          <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.autoLayout?.reverseZ ? [...n.children].reverse() : n.children, ctx)}</g>
         )}
       </g>
     ) : null;

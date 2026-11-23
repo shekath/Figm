@@ -161,7 +161,19 @@ async function importDoc(doc, newPages) {
     const horiz = al.direction === 'horizontal';
     f.primaryAxisSizingMode = (horiz ? al.hugW : al.hugH) ? 'AUTO' : 'FIXED';
     f.counterAxisSizingMode = (horiz ? al.hugH : al.hugW) ? 'AUTO' : 'FIXED';
-    if (al.wrap && horiz) f.layoutWrap = 'WRAP';
+    if (al.wrap && horiz) { f.layoutWrap = 'WRAP'; if (al.counterGap != null) f.counterAxisSpacing = al.counterGap; }
+    if (al.strokesIncluded) f.strokesIncludedInLayout = true;
+    if (al.reverseZ) f.itemReverseZIndex = true;
+  }
+  function childLayout(f, n) {
+    const p = n.parentId ? nodes[n.parentId] : null;
+    if (!p || !p.autoLayout || !('layoutPositioning' in f)) return;
+    try {
+      if (n.layoutAbsolute) { f.layoutPositioning = 'ABSOLUTE'; return; }
+      if (n.layoutSizing && n.layoutSizing.h === 'fill') f.layoutSizingHorizontal = 'FILL';
+      if (n.layoutSizing && n.layoutSizing.v === 'fill') f.layoutSizingVertical = 'FILL';
+      for (const k of ['minW', 'maxW', 'minH', 'maxH']) if (n[k]) f[{ minW: 'minWidth', maxW: 'maxWidth', minH: 'minHeight', maxH: 'maxHeight' }[k]] = n[k];
+    } catch (e) { /* not supported for this layer */ }
   }
 
   async function build(id, parent) {
@@ -240,7 +252,10 @@ async function importDoc(doc, newPages) {
     if (n.prototype && n.prototype.length) protos.push(id);
 
     if (n.type !== 'instance') for (const c of n.children || []) await build(c, f);
-    if (n.type === 'frame' || n.type === 'component') autoLayout(f, n);
+    if (n.type === 'frame' || n.type === 'component') {
+      autoLayout(f, n);
+      if (n.autoLayout) for (const c of n.children || []) if (made[c]) childLayout(made[c], nodes[c]);
+    }
     if (n.isComponentSet) sets.push(id);
 
     if (n.type === 'group') {
@@ -438,7 +453,7 @@ async function importDoc(doc, newPages) {
           if (!modeMap[mid]) continue;
           if (val && typeof val === 'object' && val.alias) {
             if (vars[val.alias]) vars[v.id].setValueForMode(modeMap[mid], figma.variables.createVariableAlias(vars[val.alias]));
-          } else vars[v.id].setValueForMode(modeMap[mid], v.type === 'color' ? Object.assign(hexToRgb(val), { a: 1 }) : v.type === 'number' ? Number(val) : v.type === 'boolean' ? val === true || val === 'true' : String(val));
+          } else vars[v.id].setValueForMode(modeMap[mid], v.type === 'color' ? Object.assign(hexToRgb(val), { a: String(val).length === 9 ? parseInt(String(val).slice(7, 9), 16) / 255 : 1 }) : v.type === 'number' ? Number(val) : v.type === 'boolean' ? val === true || val === 'true' : String(val));
         }
     // bindings on layers
     const FIELD = { radius: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'], opacity: ['opacity'], gap: ['itemSpacing'], padding: ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'], width: ['width'], height: ['height'], strokeWidth: ['strokeWeight'], fontSize: ['fontSize'], text: ['characters'], visible: ['visible'] };

@@ -17,6 +17,11 @@ export const BIND_TYPES: Record<BindableProp, Variable['type']> = {
   visible: 'boolean',
 };
 
+/** "#rrggbbaa" → { hex: "#rrggbb", a: 0..1 }. */
+export function splitAlpha(v: string): { hex: string; a: number } {
+  return v.length === 9 ? { hex: v.slice(0, 7), a: Math.round((parseInt(v.slice(7, 9), 16) / 255) * 1000) / 1000 } : { hex: v, a: 1 };
+}
+
 export function findVariable(doc: DocumentData, id: string): { col: VariableCollection; v: Variable } | null {
   for (const col of doc.variables) {
     const v = col.variables.find((x) => x.id === id);
@@ -152,7 +157,7 @@ export function importTokens(doc: DocumentData, json: Record<string, unknown>): 
             if (child.$description) v.description = child.$description;
             const val = child.$value;
             if (typeof val === 'string' && /^\{.+\}$/.test(val)) pending.push({ v, modeId: mode!.id, ref: val.slice(1, -1) });
-            else v.values[mode!.id] = type === 'number' ? parseFloat(String(val)) || 0 : type === 'boolean' ? val === true || val === 'true' : type === 'color' ? String(val).toLowerCase().slice(0, 7) : String(val);
+            else v.values[mode!.id] = type === 'number' ? parseFloat(String(val)) || 0 : type === 'boolean' ? val === true || val === 'true' : type === 'color' ? String(val).toLowerCase().slice(0, 9) : String(val);
           } else if (child && typeof child === 'object') walk(child as Record<string, unknown>, [...path, k]);
         }
       };
@@ -179,14 +184,18 @@ export function applyBindingsToNode(doc: DocumentData, n: SceneNode) {
     if (val === undefined) continue;
     const num = Number(val);
     switch (prop) {
-      case 'fill':
-        if (n.fills[0]) n.fills[0] = { ...n.fills[0], kind: 'solid', color: String(val) };
-        else n.fills = [solid(String(val))];
+      case 'fill': {
+        const { hex, a } = splitAlpha(String(val));
+        if (n.fills[0]) n.fills[0] = { ...n.fills[0], kind: 'solid', color: hex, opacity: a };
+        else n.fills = [solid(hex, a)];
         break;
-      case 'stroke':
-        if (n.strokes[0]) n.strokes[0] = { ...n.strokes[0], color: String(val) };
-        else n.strokes = [defaultStroke(String(val))];
+      }
+      case 'stroke': {
+        const { hex, a } = splitAlpha(String(val));
+        if (n.strokes[0]) n.strokes[0] = { ...n.strokes[0], color: hex, opacity: a };
+        else n.strokes = [{ ...defaultStroke(hex), opacity: a }];
         break;
+      }
       case 'strokeWidth':
         if (n.strokes[0]) n.strokes[0] = { ...n.strokes[0], width: num };
         break;

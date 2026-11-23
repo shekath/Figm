@@ -72,6 +72,7 @@ export const Icons = {
   history: I(<><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9L2.5 5.7" /><path d="M2.5 2.5v3.2h3.2M8 5v3l2 1.5" /></>),
   search: I(<><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></>),
   settings: I(<><path d="M3 4.5h10M3 11.5h10" /><circle cx="6" cy="4.5" r="1.6" /><circle cx="10" cy="11.5" r="1.6" /></>),
+  padSides: I(<><rect x="3" y="3" width="10" height="10" rx="1" /><path d="M3 6h10M3 10h10M6 3v10M10 3v10" opacity=".5" /></>),
 };
 
 export type IconName = keyof typeof Icons;

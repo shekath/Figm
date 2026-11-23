@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useEditor } from '../store/store';
 import { ColorField, IconButton, NumberField, Section, Select } from './controls';
 import { Icon } from './icons';
-import type { BlendMode, Effect, Paint, SceneNode, Stroke, TextStyle, PrototypeLink, ExportSetting } from '../types';
+import { PaintPicker } from './ColorPicker';
+import { FramePresetPanel, FrameTypeHeader } from './FramePresets';
+import type { BlendMode, Effect, Paint, SceneNode, Stroke, TextStyle, PrototypeLink, ExportSetting, AutoLayout, LayoutSizing } from '../types';
 import { defaultEffect, defaultStroke, solid, uid } from '../lib/factory';
 import { FONTS, ensureFont, textBoxSize } from '../lib/text';
 import { cssFor, exportNodes, jsxFor } from '../lib/exporter';
 import { saveBlob } from '../lib/platform';
-import { blobToDataUrl } from '../lib/exporter';
-import { pickFile } from '../lib/platform';
 import { BindButton, ModeOverrides } from './Variables';
 import { ComponentPanel } from './ComponentPanel';
 import { setOf, variantsOf } from '../lib/components';
@@ -29,7 +29,7 @@ export function RightPanel() {
         ))}
       </div>
       <div className="panel-scroll">
-        {st.mode === 'design' && (sel.length ? <DesignProps sel={sel} /> : <PageProps />)}
+        {st.mode === 'design' && (st.tool === 'frame' ? <FramePresetPanel /> : sel.length ? <DesignProps sel={sel} /> : <PageProps />)}
         {st.mode === 'prototype' && <PrototypeProps sel={sel} />}
         {st.mode === 'dev' && <DevProps sel={sel} />}
       </div>
@@ -117,43 +117,60 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
 
   return (
     <>
+      {single && (n.type === 'frame' || n.type === 'component') && !n.isComponentSet && <FrameTypeHeader id={n.id} />}
       {single && <ComponentPanel n={n} />}
 
-      <Section title="Alignment">
-        <div className="row icons">
-          <IconButton title="Align left (Alt+A)" onClick={() => st.align('left')}><Icon name="alignLeft" /></IconButton>
-          <IconButton title="Align horizontal centres (Alt+H)" onClick={() => st.align('hcenter')}><Icon name="alignHCenter" /></IconButton>
-          <IconButton title="Align right (Alt+D)" onClick={() => st.align('right')}><Icon name="alignRight" /></IconButton>
-          <IconButton title="Align top (Alt+W)" onClick={() => st.align('top')}><Icon name="alignTop" /></IconButton>
-          <IconButton title="Align vertical centres (Alt+V)" onClick={() => st.align('vcenter')}><Icon name="alignVCenter" /></IconButton>
-          <IconButton title="Align bottom (Alt+S)" onClick={() => st.align('bottom')}><Icon name="alignBottom" /></IconButton>
-          <IconButton title="Distribute horizontally" onClick={() => st.distribute('h')} disabled={sel.length < 3}><Icon name="distH" /></IconButton>
-          <IconButton title="Distribute vertically" onClick={() => st.distribute('v')} disabled={sel.length < 3}><Icon name="distV" /></IconButton>
+      <Section title="Position">
+        <div className="sub-label">Alignment</div>
+        <div className="row icons align-row">
+          <div className="seg-group">
+            <IconButton title="Align left (Alt+A)" onClick={() => st.align('left')}><Icon name="alignLeft" /></IconButton>
+            <IconButton title="Align horizontal centres (Alt+H)" onClick={() => st.align('hcenter')}><Icon name="alignHCenter" /></IconButton>
+            <IconButton title="Align right (Alt+D)" onClick={() => st.align('right')}><Icon name="alignRight" /></IconButton>
+          </div>
+          <div className="seg-group">
+            <IconButton title="Align top (Alt+W)" onClick={() => st.align('top')}><Icon name="alignTop" /></IconButton>
+            <IconButton title="Align vertical centres (Alt+V)" onClick={() => st.align('vcenter')}><Icon name="alignVCenter" /></IconButton>
+            <IconButton title="Align bottom (Alt+S)" onClick={() => st.align('bottom')}><Icon name="alignBottom" /></IconButton>
+          </div>
+          {sel.length >= 3 && (
+            <div className="seg-group">
+              <IconButton title="Distribute horizontally" onClick={() => st.distribute('h')}><Icon name="distH" /></IconButton>
+              <IconButton title="Distribute vertically" onClick={() => st.distribute('v')}><Icon name="distV" /></IconButton>
+            </div>
+          )}
         </div>
-        <div className="row icons boolean-row">
-          <IconButton title="Union (Ctrl+Alt+U)" onClick={() => st.booleanOp('union')} disabled={sel.length < 2}><BoolIcon op="union" /></IconButton>
-          <IconButton title="Subtract (Ctrl+Alt+S)" onClick={() => st.booleanOp('subtract')} disabled={sel.length < 2}><BoolIcon op="subtract" /></IconButton>
-          <IconButton title="Intersect (Ctrl+Alt+I)" onClick={() => st.booleanOp('intersect')} disabled={sel.length < 2}><BoolIcon op="intersect" /></IconButton>
-          <IconButton title="Exclude (Ctrl+Alt+X)" onClick={() => st.booleanOp('exclude')} disabled={sel.length < 2}><BoolIcon op="exclude" /></IconButton>
-          <IconButton title="Flatten (Ctrl+E)" onClick={() => st.booleanOp('flatten')}><Icon name="vector" /></IconButton>
-        </div>
-      </Section>
-
-      <Section title={single ? typeLabel(n) : `${sel.length} layers`}>
+        {sel.length >= 2 && (
+          <>
+            <div className="sub-label">Boolean</div>
+            <div className="row icons seg-group boolean-row">
+              <IconButton title="Union (Ctrl+Alt+U)" onClick={() => st.booleanOp('union')}><BoolIcon op="union" /></IconButton>
+              <IconButton title="Subtract (Ctrl+Alt+S)" onClick={() => st.booleanOp('subtract')}><BoolIcon op="subtract" /></IconButton>
+              <IconButton title="Intersect (Ctrl+Alt+I)" onClick={() => st.booleanOp('intersect')}><BoolIcon op="intersect" /></IconButton>
+              <IconButton title="Exclude (Ctrl+Alt+X)" onClick={() => st.booleanOp('exclude')}><BoolIcon op="exclude" /></IconButton>
+              <IconButton title="Flatten (Ctrl+E)" onClick={() => st.booleanOp('flatten')}><Icon name="vector" /></IconButton>
+            </div>
+          </>
+        )}
+        <div className="sub-label">Position</div>
         <div className="grid2">
           <NumberField label="X" {...mv(sel, (x) => (parent && single ? x.x - parent.x : x.x))} onCommitStart={st.checkpoint} onChange={(v, live) => geo('x', single && parent ? v + parent.x : v, live)} />
           <NumberField label="Y" {...mv(sel, (x) => (parent && single ? x.y - parent.y : x.y))} onCommitStart={st.checkpoint} onChange={(v, live) => geo('y', single && parent ? v + parent.y : v, live)} />
-          <NumberField label="W" {...mv(sel, (x) => x.w)} min={0} onCommitStart={st.checkpoint} onChange={(v, live) => geo('w', v, live)} />
-          <NumberField label="H" {...mv(sel, (x) => x.h)} min={0} onCommitStart={st.checkpoint} onChange={(v, live) => geo('h', v, live)} />
-          <NumberField label="↻" title="Rotation" suffix="°" {...mv(sel, (x) => x.rotation)} onCommitStart={st.checkpoint} onChange={(v, live) => geo('rotation', v, live)} />
-          <div className="row icons">
+        </div>
+        <div className="sub-label">Rotation</div>
+        <div className="grid2">
+          <NumberField label="∟" title="Rotation" suffix="°" {...mv(sel, (x) => x.rotation)} onCommitStart={st.checkpoint} onChange={(v, live) => geo('rotation', v, live)} />
+          <div className="row icons seg-group">
+            <IconButton title="Rotate 90°" onClick={() => apply(ids, { rotation: ((n.rotation + 90 + 180) % 360) - 180 })}><span className="ico-txt">⟳</span></IconButton>
             <IconButton title="Flip horizontal (Shift+H)" onClick={() => st.flip('x')}><Icon name="flipH" /></IconButton>
             <IconButton title="Flip vertical (Shift+V)" onClick={() => st.flip('y')}><Icon name="flipV" /></IconButton>
-            {(n.type === 'frame' || n.type === 'component') && (
-              <IconButton title="Clip content" active={!!n.clip} onClick={() => st.updateNodes(ids, { clip: !n.clip })}><Icon name="clip" /></IconButton>
-            )}
           </div>
         </div>
+        {single && parent?.autoLayout && (
+          <label className="check abs-toggle" title="Ignore the parent's auto layout and position freely">
+            <input type="checkbox" checked={!!n.layoutAbsolute} onChange={(e) => st.updateNodes(ids, { layoutAbsolute: e.target.checked || undefined })} /> Absolute position
+          </label>
+        )}
         {(n.type === 'polygon' || n.type === 'star') && (
           <div className="grid2">
             <NumberField label="▲" title="Count" value={n.sides ?? 5} min={3} max={60} onCommitStart={st.checkpoint} onChange={(v, live) => apply(ids, { sides: Math.round(v) }, live)} />
@@ -162,7 +179,14 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
         )}
       </Section>
 
-      {single && (n.type === 'frame' || n.type === 'component') && <AutoLayoutSection n={n} />}
+      {single && (n.type === 'frame' || n.type === 'component') ? (
+        <AutoLayoutSection n={n} size={<SizeFields sel={sel} parent={parent} geo={geo} />} />
+      ) : (
+        <Section title="Layout">
+          <div className="sub-label">Dimensions</div>
+          <SizeFields sel={sel} parent={parent} geo={geo} />
+        </Section>
+      )}
       {(n.type === 'frame' || n.type === 'component' || n.type === 'instance' || n.type === 'group') && st.doc.variables.some((c) => c.modes.length > 1) && (
         <Section title="Variable modes" collapsible>
           <ModeOverrides ids={ids} />
@@ -226,6 +250,7 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
       <FillSection sel={sel} />
       {n.type !== 'group' && <StrokeSection sel={sel} />}
       <EffectSection sel={sel} />
+      <SelectionColors sel={sel} />
       {single && <ExportSection n={n} />}
     </>
   );
@@ -240,45 +265,231 @@ function mv(sel: SceneNode[], get: (n: SceneNode) => number) {
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ');
 const typeLabel = (n: SceneNode) => (n.type === 'rect' ? 'Rectangle' : cap(n.type === 'path' ? 'vector' : n.type));
 
-function AutoLayoutSection({ n }: { n: SceneNode }) {
+type Axis = 'h' | 'v';
+/** Current sizing mode of a node on an axis (Figma: Fixed / Hug contents / Fill container). */
+function sizingOf(n: SceneNode, axis: Axis): LayoutSizing {
+  if (n.layoutSizing?.[axis] === 'fill') return 'fill';
+  if (n.autoLayout && (axis === 'h' ? n.autoLayout.hugW : n.autoLayout.hugH)) return 'hug';
+  if (n.text) return n.text.autoResize === 'width' || (axis === 'v' && n.text.autoResize === 'height') ? 'hug' : 'fixed';
+  return 'fixed';
+}
+function sizingPatch(n: SceneNode, axis: Axis, mode: LayoutSizing): Partial<SceneNode> {
+  const patch: Partial<SceneNode> = { layoutSizing: { ...n.layoutSizing, [axis]: mode === 'fill' ? 'fill' : undefined } };
+  if (n.autoLayout) patch.autoLayout = { ...n.autoLayout, [axis === 'h' ? 'hugW' : 'hugH']: mode === 'hug' };
+  if (n.text) {
+    const otherHug = sizingOf(n, axis === 'h' ? 'v' : 'h') === 'hug';
+    let ar = n.text.autoResize;
+    if (axis === 'h') ar = mode === 'hug' ? 'width' : otherHug || ar === 'width' ? 'height' : 'fixed';
+    else ar = mode === 'hug' ? (sizingOf(n, 'h') === 'hug' ? 'width' : 'height') : ar === 'width' ? 'fixed' : 'fixed';
+    patch.text = { ...n.text, autoResize: ar };
+  }
+  return patch;
+}
+const canHug = (n: SceneNode) => !!n.autoLayout || !!n.text;
+
+/** W and H fields with inline Fixed / Hug / Fill sizing, as in Figma's Resizing row. */
+function SizeFields({ sel, parent, geo }: { sel: SceneNode[]; parent: SceneNode | null; geo: (k: 'w' | 'h', v: number, live?: boolean) => void }) {
+  const st = useEditor();
+  const n = sel[0];
+  const single = sel.length === 1;
+  const inAL = single && !!parent?.autoLayout && !n.layoutAbsolute;
+  const showSizing = single && (inAL || canHug(n));
+  const opts = (axis: Axis) => [
+    { value: 'fixed' as LayoutSizing, label: `Fixed ${axis === 'h' ? 'width' : 'height'}` },
+    ...(canHug(n) ? [{ value: 'hug' as LayoutSizing, label: 'Hug contents' }] : []),
+    ...(inAL ? [{ value: 'fill' as LayoutSizing, label: 'Fill container' }] : []),
+  ];
+  const set = (axis: Axis, mode: LayoutSizing) => st.updateNodes(sel.map((x) => x.id), (x) => sizingPatch(x, axis, mode));
+  return (
+    <>
+      <div className="grid2">
+        {(['h', 'v'] as Axis[]).map((axis) => {
+          const mode = single ? sizingOf(n, axis) : 'fixed';
+          return (
+            <div key={axis} className={`size-field m-${mode}`}>
+              <NumberField label={axis === 'h' ? 'W' : 'H'} {...mv(sel, (x) => (axis === 'h' ? x.w : x.h))} min={0} onCommitStart={st.checkpoint} onChange={(v, live) => geo(axis === 'h' ? 'w' : 'h', v, live)} />
+              {showSizing && (
+                <label className="size-mode" title={axis === 'h' ? 'Horizontal resizing' : 'Vertical resizing'}>
+                  <span>{mode === 'fixed' ? '' : mode === 'hug' ? 'Hug' : 'Fill'}</span>
+                  <span className="caret">⌄</span>
+                  <select value={mode} onChange={(e) => set(axis, e.target.value as LayoutSizing)} onKeyDown={(e) => e.stopPropagation()}>
+                    {opts(axis).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {inAL && (
+        <details className="minmax">
+          <summary>Min / max size</summary>
+          <div className="grid2">
+            {(['minW', 'maxW', 'minH', 'maxH'] as const).map((k) => (
+              <NumberField key={k} label={k.replace('W', ' W').replace('H', ' H')} value={n[k] ?? 0} min={0} onChange={(v) => st.updateNodes(sel.map((x) => x.id), { [k]: v || undefined })} />
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  );
+}
+
+/** Figma/Framer-style auto layout: direction & wrap, 3×3 alignment pad, gap (or Auto), padding, sizing. */
+function AutoLayoutSection({ n, size }: { n: SceneNode; size: React.ReactNode }) {
   const st = useEditor();
   const al = n.autoLayout;
+  const [sides, setSides] = useState(false);
+  const set = (patch: Partial<AutoLayout>) => st.setAutoLayout(n.id, patch);
+  const horiz = al?.direction === 'horizontal';
+  const pad = al?.padding;
+  const uniformPad = pad && pad.l === pad.r && pad.t === pad.b;
+  const showSides = sides || (pad ? !uniformPad : false);
+  const POS: AutoLayout['align'][] = ['start', 'center', 'end'];
   return (
     <Section
       title="Auto layout"
       actions={
-        <IconButton title={al ? 'Remove auto layout' : 'Add auto layout (Shift+A)'} onClick={() => { st.select([n.id]); st.toggleAutoLayout(); }}>
+        <IconButton title={al ? 'Remove auto layout (Shift+Alt+A)' : 'Add auto layout (Shift+A)'} onClick={() => { st.select([n.id]); st.toggleAutoLayout(); }}>
           <Icon name={al ? 'minus' : 'plus'} />
         </IconButton>
       }
     >
-      {al && (
+      {!al ? (
         <>
-          <div className="row icons">
-            <IconButton title="Horizontal" active={al.direction === 'horizontal'} onClick={() => st.setAutoLayout(n.id, { direction: 'horizontal' })}><Icon name="autoH" /></IconButton>
-            <IconButton title="Vertical" active={al.direction === 'vertical'} onClick={() => st.setAutoLayout(n.id, { direction: 'vertical' })}><Icon name="autoV" /></IconButton>
-            <label className="check"><input type="checkbox" checked={al.hugW} onChange={(e) => st.setAutoLayout(n.id, { hugW: e.target.checked })} /> Hug W</label>
-            <label className="check"><input type="checkbox" checked={al.hugH} onChange={(e) => st.setAutoLayout(n.id, { hugH: e.target.checked })} /> Hug H</label>
-          </div>
-          <div className="grid2">
-            <div className="row"><NumberField label="Gap" value={al.gap} onChange={(v) => st.setAutoLayout(n.id, { gap: v })} /><BindButton ids={[n.id]} prop="gap" /></div>
-            <Select
-              value={al.justify}
-              title="Distribution"
-              options={[{ value: 'start', label: 'Packed start' }, { value: 'center', label: 'Packed centre' }, { value: 'end', label: 'Packed end' }, { value: 'space-between', label: 'Space between' }]}
-              onChange={(v) => st.setAutoLayout(n.id, { justify: v })}
-            />
-            <NumberField label="Pad ↔" value={al.padding.l} min={0} onChange={(v) => st.setAutoLayout(n.id, { padding: { ...al.padding, l: v, r: v } })} />
-            <NumberField label="Pad ↕" value={al.padding.t} min={0} onChange={(v) => st.setAutoLayout(n.id, { padding: { ...al.padding, t: v, b: v } })} />
-          </div>
-          <div className="row icons">
-            {(['start', 'center', 'end'] as const).map((a) => (
-              <IconButton key={a} title={`Align ${a}`} active={al.align === a} onClick={() => st.setAutoLayout(n.id, { align: a })}>
-                <Icon name={al.direction === 'horizontal' ? (a === 'start' ? 'alignTop' : a === 'center' ? 'alignVCenter' : 'alignBottom') : a === 'start' ? 'alignLeft' : a === 'center' ? 'alignHCenter' : 'alignRight'} />
-              </IconButton>
-            ))}
-          </div>
+          <div className="sub-label">Dimensions</div>
+          {size}
+          <label className="check al-clip"><input type="checkbox" checked={!!n.clip} onChange={(e) => st.updateNodes([n.id], { clip: e.target.checked })} /> Clip content</label>
         </>
+      ) : (
+        <div className="al">
+          <div className="sub-label">Flow</div>
+          <div className="al-dir seg">
+            <button className={!horiz ? 'on' : ''} title="Vertical layout" onClick={() => set({ direction: 'vertical', wrap: false })}>↓</button>
+            <button className={horiz && !al.wrap ? 'on' : ''} title="Horizontal layout" onClick={() => set({ direction: 'horizontal', wrap: false })}>→</button>
+            <button className={horiz && al.wrap ? 'on' : ''} title="Wrap" onClick={() => set({ direction: 'horizontal', wrap: true, hugW: false })}>↩</button>
+          </div>
+
+          <div className="sub-label">Resizing</div>
+          {size}
+          <div className="sub-label two"><span>Alignment</span><span>Gap</span></div>
+          <div className="al-main">
+            <div className="al-pad" title="Alignment">
+              {POS.map((rowPos) =>
+                POS.map((colPos) => {
+                  const mainPos = horiz ? colPos : rowPos;
+                  const crossPos = horiz ? rowPos : colPos;
+                  const auto = al.justify === 'space-between';
+                  const on = (auto || al.justify === mainPos) && al.align === crossPos;
+                  return (
+                    <button
+                      key={rowPos + colPos}
+                      className={`al-cell ${on ? 'on' : ''} ${auto ? 'auto' : ''}`}
+                      title={`${horiz ? 'Horizontal' : 'Vertical'} ${mainPos}, ${horiz ? 'vertical' : 'horizontal'} ${crossPos}`}
+                      onClick={() => set(auto ? { align: crossPos } : { justify: mainPos, align: crossPos })}
+                      onDoubleClick={() => set({ justify: auto ? mainPos : 'space-between', align: crossPos })}
+                    >
+                      {on ? <span className={`al-bars ${horiz ? 'h' : 'v'} c-${crossPos}`}><i /><i /><i /></span> : <span className="dot" />}
+                    </button>
+                  );
+                }),
+              )}
+            </div>
+            <div className="al-gaps">
+              <label className="al-field" title={horiz ? 'Horizontal gap between items' : 'Vertical gap between items'}>
+                <span className="al-ico">{horiz ? '⇿' : '⇳'}</span>
+                {al.justify === 'space-between' ? (
+                  <span className="al-auto">Auto</span>
+                ) : (
+                  <NumberField value={al.gap} onCommitStart={st.checkpoint} onChange={(v) => set({ gap: v })} />
+                )}
+                <select className="al-gapmode" value={al.justify === 'space-between' ? 'auto' : 'fixed'} onChange={(e) => set({ justify: e.target.value === 'auto' ? 'space-between' : 'start' })} title="Gap mode" onKeyDown={(e) => e.stopPropagation()}>
+                  <option value="fixed">Fixed</option>
+                  <option value="auto">Auto</option>
+                </select>
+              </label>
+              {al.wrap && (
+                <label className="al-field" title="Vertical gap between rows">
+                  <span className="al-ico">⇳</span>
+                  <NumberField value={al.counterGap ?? al.gap} onChange={(v) => set({ counterGap: v })} />
+                </label>
+              )}
+              <BindButton ids={[n.id]} prop="gap" />
+            </div>
+          </div>
+
+          <div className="sub-label">Padding</div>
+          <div className="al-padding">
+            {!showSides ? (
+              <>
+                <label className="al-field" title="Horizontal padding"><span className="al-ico">◫</span><NumberField value={pad!.l} min={0} onCommitStart={st.checkpoint} onChange={(v) => set({ padding: { ...pad!, l: v, r: v } })} /></label>
+                <label className="al-field" title="Vertical padding"><span className="al-ico rot">◫</span><NumberField value={pad!.t} min={0} onCommitStart={st.checkpoint} onChange={(v) => set({ padding: { ...pad!, t: v, b: v } })} /></label>
+              </>
+            ) : (
+              (['l', 't', 'r', 'b'] as const).map((k) => (
+                <label key={k} className="al-field small" title={{ l: 'Left', t: 'Top', r: 'Right', b: 'Bottom' }[k] + ' padding'}>
+                  <span className="al-ico">{{ l: '⇤', t: '⤒', r: '⇥', b: '⤓' }[k]}</span>
+                  <NumberField value={pad![k]} min={0} onChange={(v) => set({ padding: { ...pad!, [k]: v } })} />
+                </label>
+              ))
+            )}
+            <IconButton title="Individual padding" active={showSides} onClick={() => { if (showSides && !uniformPad) set({ padding: { t: pad!.t, b: pad!.t, l: pad!.l, r: pad!.l } }); setSides(!showSides); }}>
+              <Icon name="padSides" size={12} />
+            </IconButton>
+          </div>
+
+          <div className="al-opts">
+            <label className="check"><input type="checkbox" checked={!!n.clip} onChange={(e) => st.updateNodes([n.id], { clip: e.target.checked })} /> Clip content</label>
+            <label className="check"><input type="checkbox" checked={!!al.strokesIncluded} onChange={(e) => set({ strokesIncluded: e.target.checked })} /> Include strokes</label>
+            <label className="check"><input type="checkbox" checked={!!al.reverseZ} onChange={(e) => set({ reverseZ: e.target.checked })} /> First on top</label>
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/** Every solid colour used in the selection (and inside it); edit one to replace it everywhere. */
+function SelectionColors({ sel }: { sel: SceneNode[] }) {
+  const st = useEditor();
+  const [edit, setEdit] = useState<{ color: string; anchor: DOMRect } | null>(null);
+  const [all, setAll] = useState(false);
+  const ids: string[] = [];
+  const walk = (id: string) => { ids.push(id); for (const c of st.doc.nodes[id]?.children ?? []) walk(c); };
+  sel.forEach((n) => walk(n.id));
+  const colors = new Map<string, number>();
+  for (const id of ids) {
+    const n = st.doc.nodes[id];
+    if (!n) continue;
+    for (const p of n.fills) if (p.kind === 'solid' && p.visible) colors.set(p.color.toLowerCase(), (colors.get(p.color.toLowerCase()) ?? 0) + 1);
+    for (const k of n.strokes) if (k.visible) colors.set(k.color.toLowerCase(), (colors.get(k.color.toLowerCase()) ?? 0) + 1);
+  }
+  const list = [...colors.keys()];
+  if (list.length < 2 && !(sel.length === 1 && sel[0].children.length)) return null;
+  if (!list.length) return null;
+  const shown = all ? list : list.slice(0, 6);
+  const replace = (from: string, to: string) =>
+    st.updateNodes(ids, (n) => ({
+      fills: n.fills.map((p) => (p.kind === 'solid' && p.color.toLowerCase() === from ? { ...p, color: to } : p)),
+      strokes: n.strokes.map((k) => (k.color.toLowerCase() === from ? { ...k, color: to } : k)),
+    }));
+  return (
+    <Section title="Selection colors">
+      <div className="sel-colors">
+        {shown.map((c) => (
+          <button key={c} className="swatch" style={{ background: c }} title={`${c.toUpperCase()} · used ${colors.get(c)}×`} onClick={(e) => setEdit({ color: c, anchor: (e.currentTarget.closest('.section') as HTMLElement).getBoundingClientRect() })} />
+        ))}
+        {list.length > 6 && <button className="more" onClick={() => setAll(!all)}>{all ? 'Less' : `+${list.length - 6}`}</button>}
+      </div>
+      {edit && (
+        <PaintPicker
+          solidOnly
+          title="Replace colour"
+          anchor={edit.anchor}
+          paint={{ id: 'sc', kind: 'solid', color: edit.color, opacity: 1, visible: true }}
+          onClose={() => setEdit(null)}
+          onChange={(p) => { if (p.color !== edit.color) { replace(edit.color, p.color); setEdit({ ...edit, color: p.color }); } }}
+        />
       )}
     </Section>
   );
@@ -352,18 +563,20 @@ function TextSection({ sel }: { sel: SceneNode[] }) {
 }
 
 function PaintRow({ p, onChange, onRemove }: { p: Paint; onChange: (p: Paint, live?: boolean) => void; onRemove: () => void }) {
-  const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  const open = (e: React.MouseEvent) => setAnchor(anchor ? null : (e.currentTarget as HTMLElement).closest('.paint')!.getBoundingClientRect());
   return (
     <div className="paint">
       <div className="row">
-        <button className="swatch big" onClick={() => setOpen(!open)} style={{ background: paintCss(p) }} title="Edit paint" />
-        {p.kind === 'solid' ? (
-          <ColorField value={p.color} opacity={p.opacity} onChange={(c) => onChange({ ...p, color: c })} onOpacity={(o) => onChange({ ...p, opacity: o })} />
-        ) : (
-          <span className="grow muted" onClick={() => setOpen(!open)}>
-            {cap(p.kind)} {p.kind !== 'image' ? 'gradient' : ''}
-          </span>
-        )}
+        <div className="paint-chip">
+          <button className="swatch big checker" onClick={open} title="Edit paint"><i style={{ background: paintCss(p), opacity: p.opacity }} /></button>
+          {p.kind === 'solid' ? (
+            <ColorField value={p.color} onChange={(c) => onChange({ ...p, color: c })} noSwatch />
+          ) : (
+            <span className="grow paint-label" onClick={open}>{p.kind === 'image' ? 'Image' : `${cap(p.kind)} gradient`}</span>
+          )}
+          <NumberField value={Math.round(p.opacity * 100)} suffix="%" min={0} max={100} width={52} onChange={(v, live) => onChange({ ...p, opacity: v / 100 }, live)} />
+        </div>
         <IconButton title={p.visible ? 'Hide' : 'Show'} onClick={() => onChange({ ...p, visible: !p.visible })}>
           <Icon name={p.visible ? 'eye' : 'eyeOff'} size={12} />
         </IconButton>
@@ -371,51 +584,7 @@ function PaintRow({ p, onChange, onRemove }: { p: Paint; onChange: (p: Paint, li
           <Icon name="minus" size={12} />
         </IconButton>
       </div>
-      {open && (
-        <div className="paint-editor">
-          <Select
-            value={p.kind}
-            options={[{ value: 'solid', label: 'Solid' }, { value: 'linear', label: 'Linear gradient' }, { value: 'radial', label: 'Radial gradient' }, { value: 'image', label: 'Image' }]}
-            onChange={async (kind) => {
-              if (kind === 'image') {
-                const f = await pickFile('image/*');
-                if (f) onChange({ ...p, kind, src: await blobToDataUrl(f) });
-                return;
-              }
-              onChange({ ...p, kind, stops: p.stops?.length ? p.stops : [{ offset: 0, color: p.color }, { offset: 1, color: '#ffffff' }] });
-            }}
-            width="100%"
-          />
-          {(p.kind === 'linear' || p.kind === 'radial') && (
-            <>
-              <div className="gradient-bar" style={{ background: `linear-gradient(90deg, ${(p.stops ?? []).map((s) => `${s.color} ${s.offset * 100}%`).join(',')})` }} />
-              {(p.stops ?? []).map((s, i) => (
-                <div className="row" key={i}>
-                  <ColorField value={s.color} onChange={(c) => onChange({ ...p, stops: p.stops!.map((x, j) => (j === i ? { ...x, color: c } : x)) })} />
-                  <NumberField value={Math.round(s.offset * 100)} suffix="%" min={0} max={100} width={60} onChange={(v) => onChange({ ...p, stops: p.stops!.map((x, j) => (j === i ? { ...x, offset: v / 100 } : x)) })} />
-                  {p.stops!.length > 2 && (
-                    <IconButton title="Remove stop" onClick={() => onChange({ ...p, stops: p.stops!.filter((_, j) => j !== i) })}>
-                      <Icon name="minus" size={12} />
-                    </IconButton>
-                  )}
-                </div>
-              ))}
-              <div className="row gap">
-                <button className="btn small" onClick={() => onChange({ ...p, stops: [...p.stops!, { offset: 0.5, color: '#888888' }].sort((a, b) => a.offset - b.offset) })}>
-                  + Stop
-                </button>
-                {p.kind === 'linear' && <NumberField label="∠" suffix="°" value={p.angle ?? 90} onChange={(v) => onChange({ ...p, angle: v })} />}
-              </div>
-            </>
-          )}
-          {p.kind === 'image' && (
-            <button className="btn small" onClick={async () => { const f = await pickFile('image/*'); if (f) onChange({ ...p, src: await blobToDataUrl(f) }); }}>
-              Choose image…
-            </button>
-          )}
-          <NumberField label="Opacity" suffix="%" value={Math.round(p.opacity * 100)} min={0} max={100} onChange={(v) => onChange({ ...p, opacity: v / 100 })} />
-        </div>
-      )}
+      {anchor && <PaintPicker paint={p} anchor={anchor} onChange={onChange} onClose={() => setAnchor(null)} title="Fill" />}
     </div>
   );
 }

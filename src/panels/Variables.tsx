@@ -100,29 +100,12 @@ export function VariablesModal() {
     <div className="modal-backdrop" onPointerDown={() => setOpen(false)}>
       <div className="modal vx" tabIndex={-1} onKeyDown={onKey} onPointerDown={(e) => { e.stopPropagation(); setMenu(null); }}>
         <header className="vx-head">
-          <div className="vx-colpick">
-            <button className="vx-colbtn" onPointerDown={(e) => { e.stopPropagation(); setMenu(menu === 'collection' ? null : 'collection'); }}>
-              {col ? col.name : 'No collections'} <span className="caret">▾</span>
-            </button>
-            {menu === 'collection' && (
-              <div className="vx-menu" onPointerDown={(e) => e.stopPropagation()}>
-                {cols.map((c) => (
-                  <button key={c.id} className={c.id === col?.id ? 'on' : ''} onClick={() => { setColId(c.id); setGroup(null); setSel([]); setMenu(null); }}>
-                    <span className="check">{c.id === col?.id ? '✓' : ''}</span>{c.name}<small>{c.variables.length}</small>
-                  </button>
-                ))}
-                <hr />
-                <button onClick={() => { const id = st.addCollection(); setColId(id); setGroup(null); setMenu(null); }}>Create collection</button>
-                {col && <button onClick={() => { const n = prompt('Rename collection', col.name); if (n) st.renameCollection(col.id, n); setMenu(null); }}>Rename “{col.name}”</button>}
-                {col && <button className="danger" onClick={() => { if (confirm(`Delete collection “${col.name}”? Bound layers keep their current values.`)) { st.deleteCollection(col.id); setColId(null); } setMenu(null); }}>Delete collection</button>}
-              </div>
-            )}
-          </div>
+          <h2 className="vx-title">{col ? col.name : 'Variables'}{col && group ? <span className="muted"> / {group.split('/').join(' / ')}</span> : null}</h2>
+          <div className="grow" />
           <div className="vx-search">
             <Icon name="search" size={12} />
             <input placeholder="Search variables" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={stop} />
           </div>
-          <div className="grow" />
           <button className="btn small ghost" title="Import design tokens (W3C DTCG JSON)" onClick={importJson}>Import tokens</button>
           <button className="btn small ghost" title="Export design tokens (W3C DTCG JSON)" onClick={exportJson} disabled={!cols.length}>Export tokens</button>
           <button className="icon-btn" title="Close (Esc)" onClick={() => setOpen(false)}><Icon name="close" /></button>
@@ -130,8 +113,22 @@ export function VariablesModal() {
 
         <div className="vx-body">
           <aside className="vx-groups">
+            <div className="vx-side-head">
+              <span>Collections</span>
+              <button className="icon-btn ghost tiny" title="Create collection" onClick={() => { const id = st.addCollection(); setColId(id); setGroup(null); }}><Icon name="plus" size={12} /></button>
+            </div>
+            {cols.map((c) => (
+              <div key={c.id} className={`vx-group vx-colitem ${c.id === col?.id ? 'on' : ''}`} onClick={() => { setColId(c.id); setGroup(null); setSel([]); }} onDoubleClick={() => { const n = prompt('Rename collection', c.name); if (n) st.renameCollection(c.id, n); }} title="Double-click to rename">
+                <span>{c.name}</span>
+                <small>{c.variables.length}</small>
+                <button className="icon-btn ghost tiny vx-coldel" title="Delete collection" onClick={(e) => { e.stopPropagation(); if (confirm(`Delete collection “${c.name}”? Bound layers keep their current values.`)) { st.deleteCollection(c.id); setColId(null); } }}><Icon name="trash" size={11} /></button>
+              </div>
+            ))}
+            {!cols.length && <div className="muted vx-side-empty">No collections yet</div>}
+            <div className="vx-side-sep" />
+            <div className="vx-side-head"><span>Groups</span></div>
             <button className={`vx-group ${group == null ? 'on' : ''}`} onClick={() => setGroup(null)}>
-              <span>All variables</span><small>{col?.variables.length ?? 0}</small>
+              <span>All</span><small>{col?.variables.length ?? 0}</small>
             </button>
             {groupList.map((g) => {
               const depth = g.split('/').length - 1;
@@ -390,13 +387,19 @@ function ValueCell({ v, modeId, onChange }: { v: Variable; modeId: string; onCha
 function ValueEditor({ v, value, onChange }: { v: Variable; value: string | number | boolean | undefined; onChange: (val: string | number | boolean) => void }) {
   const [text, setText] = useState(String(value ?? ''));
   useEffect(() => setText(String(value ?? '')), [value]);
-  if (v.type === 'color')
+  if (v.type === 'color') {
+    const base = String(value ?? '#000000');
+    const hex6 = base.slice(0, 7);
+    const alpha = base.length === 9 ? parseInt(base.slice(7, 9), 16) / 255 : 1;
+    const withAlpha = (h: string, a: number) => (a >= 0.999 ? h.toLowerCase() : h.toLowerCase() + Math.round(a * 255).toString(16).padStart(2, '0'));
     return (
       <div className="var-color">
-        <input type="color" value={String(value ?? '#000000').slice(0, 7)} onChange={(e) => onChange(e.target.value)} />
-        <input value={text.replace('#', '').toUpperCase()} onChange={(e) => setText('#' + e.target.value.replace('#', ''))} onBlur={() => /^#[0-9a-f]{6}$/i.test(text) ? onChange(text.toLowerCase()) : setText(String(value))} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+        <span className="vx-swatch"><i style={{ background: hex6, opacity: alpha }} /><input type="color" value={hex6} onChange={(e) => onChange(withAlpha(e.target.value, alpha))} /></span>
+        <input value={text.slice(0, 7).replace('#', '').toUpperCase()} onChange={(e) => setText('#' + e.target.value.replace('#', ''))} onBlur={() => /^#[0-9a-f]{6}$/i.test(text.slice(0, 7)) ? onChange(withAlpha(text.slice(0, 7), alpha)) : setText(base)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+        <AlphaInput alpha={alpha} onChange={(a) => onChange(withAlpha(hex6, a))} />
       </div>
     );
+  }
   if (v.type === 'boolean')
     return (
       <label className="vx-bool"><input type="checkbox" checked={value === true || value === 'true'} onChange={(e) => onChange(e.target.checked)} /> {value === true || value === 'true' ? 'True' : 'False'}</label>
@@ -418,6 +421,18 @@ function ValueEditor({ v, value, onChange }: { v: Variable; value: string | numb
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
       }}
     />
+  );
+}
+
+function AlphaInput({ alpha, onChange }: { alpha: number; onChange: (a: number) => void }) {
+  const fmt = (a: number) => `${Math.round(a * 1000) / 10}%`;
+  const [t, setT] = useState(fmt(alpha));
+  useEffect(() => setT(fmt(alpha)), [alpha]);
+  return (
+    <label className={`vx-alpha ${alpha < 0.999 ? 'set' : ''}`} title="Opacity">
+      <span className="vx-alpha-ico" />
+      <input value={t} onChange={(e) => setT(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const n = parseFloat(t); if (Number.isFinite(n)) onChange(Math.max(0, Math.min(100, n)) / 100); else setT(fmt(alpha)); }} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+    </label>
   );
 }
 

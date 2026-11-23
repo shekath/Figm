@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { PaintPicker } from './ColorPicker';
 
 /** Number field with drag-to-scrub label, arrow-key nudging and expression support (e.g. "100/2"). */
 export function NumberField({
@@ -108,18 +109,19 @@ function evalExpr(s: string, cur: number): number | null {
   }
 }
 
-export function ColorField({ value, opacity, onChange, onOpacity }: { value: string; opacity?: number; onChange: (hex: string) => void; onOpacity?: (o: number) => void }) {
+export function ColorField({ value, opacity, onChange, onOpacity, noSwatch }: { value: string; opacity?: number; onChange: (hex: string) => void; onOpacity?: (o: number) => void; noSwatch?: boolean }) {
   const [hex, setHex] = useState(value.replace('#', '').toUpperCase());
-  const ref = useRef<HTMLInputElement>(null);
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
   useEffect(() => setHex(value.replace('#', '').toUpperCase()), [value]);
+  const paint = { id: 'cf', kind: 'solid' as const, color: normHex(value), opacity: opacity ?? 1, visible: true };
   return (
     <div className="color-field">
-      <button className="swatch" style={{ background: value }} onClick={() => ref.current?.click()} title="Pick colour" />
-      <input ref={ref} type="color" value={normHex(value)} onChange={(e) => onChange(e.target.value)} className="hidden-color" />
+      {!noSwatch && <button className="swatch checker" onClick={(e) => setAnchor(anchor ? null : (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect())} title="Pick colour"><i style={{ background: value, opacity: opacity ?? 1 }} /></button>}
       <input
         className="hex"
         value={hex}
         onChange={(e) => setHex(e.target.value)}
+        onFocus={(e) => e.target.select()}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
@@ -131,7 +133,16 @@ export function ColorField({ value, opacity, onChange, onOpacity }: { value: str
         }}
       />
       {onOpacity && opacity !== undefined && (
-        <NumberField value={Math.round(opacity * 100)} onChange={(v) => onOpacity(Math.max(0, Math.min(100, v)) / 100)} suffix="%" width={54} />
+        <NumberField value={Math.round(opacity * 100)} onChange={(v) => onOpacity(Math.max(0, Math.min(100, v)) / 100)} suffix="%" width={52} />
+      )}
+      {anchor && (
+        <PaintPicker
+          paint={paint}
+          solidOnly
+          anchor={anchor}
+          onClose={() => setAnchor(null)}
+          onChange={(p) => { if (p.color !== normHex(value)) onChange(p.color); if (onOpacity && p.opacity !== opacity) onOpacity(p.opacity); }}
+        />
       )}
     </div>
   );

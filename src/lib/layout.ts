@@ -116,45 +116,105 @@ export function fitGroup(nodes: Nodes, id: string) {
   g.h = y2 - y1;
 }
 
+const clampSize = (c: SceneNode, axis: 'w' | 'h', v: number) => {
+  const mn = axis === 'w' ? c.minW : c.minH, mx = axis === 'w' ? c.maxW : c.maxH;
+  if (mx != null && mx > 0) v = Math.min(v, mx);
+  if (mn != null) v = Math.max(v, mn);
+  return Math.max(0.01, v);
+};
+
+/** Resize a child to an exact box, keeping nested layout correct (mutates). */
+function setChildSize(nodes: Nodes, c: SceneNode, w: number, h: number) {
+  if (Math.abs(w - c.w) < 0.001 && Math.abs(h - c.h) < 0.001) return;
+  if (c.type === 'text' && c.text && Math.abs(w - c.w) > 0.001 && c.text.autoResize === 'width') c.text = { ...c.text, autoResize: 'height' };
+  if (c.autoLayout) {
+    // fill overrides hug on that axis
+    c.w = w;
+    c.h = h;
+    applyAutoLayout(nodes, c.id, true);
+  } else resizeTree(nodes, c.id, c.x, c.y, w, h);
+}
+
 /** Apply auto layout to a frame (mutates), recursing into nested auto-layout frames first. */
-export function applyAutoLayout(nodes: Nodes, id: string) {
+export function applyAutoLayout(nodes: Nodes, id: string, skipChildren = false) {
   const f = nodes[id];
   if (!f) return;
-  for (const cid of f.children) if (nodes[cid]?.autoLayout) applyAutoLayout(nodes, cid);
+  if (!skipChildren) for (const cid of f.children) if (nodes[cid]?.autoLayout) applyAutoLayout(nodes, cid);
   const al = f.autoLayout;
   if (!al) return;
-  const kids = f.children.map((c) => nodes[c]).filter((c): c is SceneNode => !!c && c.visible);
+  const kids = f.children.map((c) => nodes[c]).filter((c): c is SceneNode => !!c && c.visible && !c.layoutAbsolute);
   const { t, r, b, l } = al.padding;
   const horiz = al.direction === 'horizontal';
-  const mainSize = (c: SceneNode) => (horiz ? c.w : c.h);
-  const crossSize = (c: SceneNode) => (horiz ? c.h : c.w);
-  const total = kids.reduce((s, c) => s + mainSize(c), 0) + al.gap * Math.max(0, kids.length - 1);
-  const maxCross = kids.reduce((m, c) => Math.max(m, crossSize(c)), 0);
+  const fillMain = (c: SceneNode) => (horiz ? c.layoutSizing?.h : c.layoutSizing?.v) === 'fill';
+  const fillCross = (c: SceneNode) => (horiz ? c.layoutSizing?.v : c.layoutSizing?.h) === 'fill';
+  const sw = (c: SceneNode) => (al.strokesIncluded ? (c.strokes?.find((s) => s.visible)?.width ?? 0) : 0);
+  const mainSize = (c: SceneNode) => (horiz ? c.w : c.h) + sw(c) * 2;
+  const crossSize = (c: SceneNode) => (horiz ? c.h : c.w) + sw(c) * 2;
+  const hugMain = horiz ? al.hugW && f.layoutSizing?.h !== 'fill' : al.hugH && f.layoutSizing?.v !== 'fill';
+  const hugCross = horiz ? al.hugH && f.layoutSizing?.v !== 'fill' : al.hugW && f.layoutSizing?.h !== 'fill';
+  const auto = al.justify === 'space-between';
 
-  if (horiz) {
-    if (al.hugW) f.w = total + l + r;
-    if (al.hugH) f.h = maxCross + t + b;
-  } else {
-    if (al.hugH) f.h = total + t + b;
-    if (al.hugW) f.w = maxCross + l + r;
+  // split into lines (wrap only for horizontal, like Figma)
+  const wrap = al.wrap && horiz && !hugMain;
+  const innerMainFixed = (horiz ? f.w - l - r : f.h - t - b);
+  const lines: SceneNode[][] = [];
+  if (wrap) {
+    let cur: SceneNode[] = [], used = 0;
+    for (const c of kids) {
+      const m = fillMain(c) ? 0 : mainSize(c);
+      if (cur.length && used + al.gap + m > innerMainFixed + 0.01) { lines.push(cur); cur = []; used = 0; }
+      used += (cur.length ? al.gap : 0) + m;
+      cur.push(c);
+    }
+    if (cur.length) lines.push(cur);
+  } else lines.push(kids);
+
+  // hug sizes (fill children count as their current size when the container hugs)
+  if (hugMain) {
+    const total = kids.reduce((s, c) => s + mainSize(c), 0) + al.gap * Math.max(0, kids.length - 1);
+    if (horiz) f.w = clampSize(f, 'w', total + l + r);
+    else f.h = clampSize(f, 'h', total + t + b);
+  }
+  const counterGap = al.counterGap ?? al.gap;
+  const lineCross = (line: SceneNode[]) => line.reduce((m, c) => Math.max(m, fillCross(c) && !hugCross ? 0 : crossSize(c)), 0);
+  if (hugCross) {
+    const total = lines.reduce((s, ln) => s + lineCross(ln), 0) + counterGap * Math.max(0, lines.length - 1);
+    if (horiz) f.h = clampSize(f, 'h', total + t + b);
+    else f.w = clampSize(f, 'w', total + l + r);
   }
   const innerMain = horiz ? f.w - l - r : f.h - t - b;
   const innerCross = horiz ? f.h - t - b : f.w - l - r;
-  let gap = al.gap;
-  let cursor = 0;
-  if (al.justify === 'center') cursor = (innerMain - total) / 2;
-  else if (al.justify === 'end') cursor = innerMain - total;
-  else if (al.justify === 'space-between' && kids.length > 1) {
-    gap = (innerMain - (total - al.gap * (kids.length - 1))) / (kids.length - 1);
-  }
-  for (const c of kids) {
-    let cross = 0;
-    if (al.align === 'center') cross = (innerCross - crossSize(c)) / 2;
-    else if (al.align === 'end') cross = innerCross - crossSize(c);
-    const nx = horiz ? f.x + l + cursor : f.x + l + cross;
-    const ny = horiz ? f.y + t + cross : f.y + t + cursor;
-    translateTree(nodes, c.id, nx - c.x, ny - c.y);
-    cursor += mainSize(c) + gap;
+
+  let crossCursor = 0;
+  for (const line of lines) {
+    const lc = lines.length > 1 ? lineCross(line) : innerCross;
+    // fill along main axis shares leftover space
+    const fills = line.filter(fillMain);
+    if (fills.length && !hugMain) {
+      const fixed = line.filter((c) => !fillMain(c)).reduce((s, c) => s + mainSize(c), 0);
+      const free = innerMain - fixed - al.gap * Math.max(0, line.length - 1);
+      const each = Math.max(0.01, free / fills.length);
+      for (const c of fills) setChildSize(nodes, c, horiz ? clampSize(c, 'w', each) : c.w, horiz ? c.h : clampSize(c, 'h', each));
+    }
+    for (const c of line) if (fillCross(c)) setChildSize(nodes, c, horiz ? c.w : clampSize(c, 'w', lc), horiz ? clampSize(c, 'h', lc) : c.h);
+
+    const total = line.reduce((s, c) => s + mainSize(c), 0) + al.gap * Math.max(0, line.length - 1);
+    let gap = al.gap;
+    let cursor = 0;
+    if (auto && line.length > 1) gap = (innerMain - (total - al.gap * (line.length - 1))) / (line.length - 1);
+    else if (auto && line.length === 1) cursor = (innerMain - total) / 2;
+    else if (al.justify === 'center') cursor = (innerMain - total) / 2;
+    else if (al.justify === 'end') cursor = innerMain - total;
+    for (const c of line) {
+      let cross = 0;
+      if (al.align === 'center') cross = (lc - crossSize(c)) / 2;
+      else if (al.align === 'end') cross = lc - crossSize(c);
+      const nx = horiz ? f.x + l + cursor + sw(c) : f.x + l + crossCursor + cross + sw(c);
+      const ny = horiz ? f.y + t + crossCursor + cross + sw(c) : f.y + t + cursor + sw(c);
+      translateTree(nodes, c.id, nx - c.x, ny - c.y);
+      cursor += mainSize(c) + gap;
+    }
+    crossCursor += lc + counterGap;
   }
 }
 

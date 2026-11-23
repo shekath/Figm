@@ -76,7 +76,15 @@ export interface AutoLayout {
   hugW: boolean; // hug contents horizontally
   hugH: boolean;
   wrap: boolean;
+  /** Spacing between wrapped rows/columns (defaults to gap). */
+  counterGap?: number;
+  /** Include stroke widths in layout (Figma "strokes included in layout"). */
+  strokesIncluded?: boolean;
+  /** Draw first child on top. */
+  reverseZ?: boolean;
 }
+
+export type LayoutSizing = 'fixed' | 'hug' | 'fill';
 
 export interface Constraints {
   h: 'left' | 'right' | 'left-right' | 'center' | 'scale';
@@ -168,6 +176,14 @@ export interface SceneNode {
   clip?: boolean; // frames clip content
   autoLayout?: AutoLayout | null;
   constraints?: Constraints;
+  /** Sizing inside an auto-layout parent: fill the container on an axis. Hug lives on autoLayout.hugW/H or text autoResize. */
+  layoutSizing?: { h?: LayoutSizing; v?: LayoutSizing };
+  /** Ignore auto layout of the parent and keep a free position. */
+  layoutAbsolute?: boolean;
+  minW?: number;
+  maxW?: number;
+  minH?: number;
+  maxH?: number;
   text?: TextStyle;
   points?: PathPoint[];
   closed?: boolean;
