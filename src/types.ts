@@ -107,12 +107,33 @@ export interface PathPoint {
   cout?: { x: number; y: number };
 }
 
+export type Easing = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'ease-in-back' | 'ease-out-back' | 'spring' | 'gentle' | 'bouncy';
+export type Animation =
+  | 'instant'
+  | 'dissolve'
+  | 'smart-animate'
+  | 'move-in'
+  | 'move-out'
+  | 'push'
+  | 'slide-in'
+  | 'slide-out'
+  // legacy aliases (kept for older files)
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up';
+
 export interface PrototypeLink {
-  trigger: 'click' | 'hover' | 'after-delay';
-  targetId: string; // frame id or 'back'
-  animation: 'instant' | 'dissolve' | 'slide-left' | 'slide-right' | 'slide-up' | 'push';
+  trigger: 'click' | 'hover' | 'press' | 'mouse-enter' | 'mouse-leave' | 'after-delay' | 'key';
+  action?: 'navigate' | 'back' | 'overlay' | 'swap-overlay' | 'close-overlay' | 'scroll-to' | 'url';
+  targetId: string; // frame / node id, or 'back'
+  animation: Animation;
+  direction?: 'left' | 'right' | 'up' | 'down';
+  easing?: Easing;
   delay?: number;
   duration: number;
+  key?: string; // for key trigger
+  url?: string;
+  overlay?: { position: 'center' | 'top' | 'bottom' | 'left' | 'right'; closeOnOutside: boolean; background: string };
 }
 
 export interface ExportSetting {
@@ -160,7 +181,19 @@ export interface SceneNode {
   description?: string;
   isMask?: boolean;
   styleRefs?: { fill?: string; text?: string; effect?: string };
+  /** boolean / flattened vector geometry: closed rings in node-local coords (evenodd) */
+  rings?: { x: number; y: number }[][];
+  /** variable bindings: property -> variable id */
+  bindings?: Partial<Record<BindableProp, string>>;
+  /** per-frame variable mode overrides: collection id -> mode id */
+  modeOverrides?: Record<string, string>;
+  /** prototype scrolling for frames */
+  overflow?: 'none' | 'vertical' | 'horizontal' | 'both';
+  /** stays fixed while the parent frame scrolls (prototype) */
+  fixed?: boolean;
 }
+
+export type BindableProp = 'fill' | 'stroke' | 'radius' | 'opacity' | 'gap' | 'padding' | 'width' | 'height' | 'text' | 'fontSize' | 'visible' | 'strokeWidth';
 
 export interface Page {
   id: string;
@@ -205,6 +238,7 @@ export interface Variable {
   name: string;
   type: 'color' | 'number' | 'string' | 'boolean';
   values: Record<string, string | number | boolean>; // modeId -> value
+  description?: string;
 }
 
 export interface VariableCollection {
@@ -232,6 +266,8 @@ export interface DocumentData {
   textStyles: TextStyleDef[];
   effectStyles: EffectStyle[];
   variables: VariableCollection[];
+  /** active mode per variable collection (collection id -> mode id) */
+  activeModes?: Record<string, string>;
   versions: Version[];
 }
 

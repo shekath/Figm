@@ -2,6 +2,7 @@ import React from 'react';
 import type { Paint, SceneNode, Stroke } from '../types';
 import { pathData, polygonPoints, roundedRectPath, starPoints } from '../lib/geometry';
 import { FONT_STACK, layoutLines, transformText } from '../lib/text';
+import { ringsPath } from '../lib/boolean';
 
 type Nodes = Record<string, SceneNode>;
 
@@ -12,6 +13,8 @@ export interface RenderCtx {
   prefix?: string;
   overrides?: Record<string, Partial<SceneNode>>;
   hideIds?: Set<string>; // e.g. text being edited
+  /** prototype scroll offsets per frame id */
+  scroll?: Record<string, { x: number; y: number }>;
 }
 
 const safe = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -121,7 +124,7 @@ function geometry(n: SceneNode, props: React.SVGProps<SVGElement>, inset = 0): R
     case 'line':
       return <line x1={0} y1={0} x2={n.w} y2={n.h} {...p} />;
     case 'path':
-      return <path d={pathData(n.points ?? [], !!n.closed)} {...p} />;
+      return <path d={n.rings?.length ? ringsPath(n.rings) : pathData(n.points ?? [], !!n.closed)} fillRule="evenodd" {...p} />;
     default: {
       const r = Math.max(0, (n.radius ?? 0) - inset);
       if (n.radii && n.radii.some((v) => v !== n.radii![0]))
@@ -307,7 +310,14 @@ export function RenderNode({ id, ctx }: { id: string; ctx: RenderCtx }): React.R
   const childEls =
     n.type === 'group' || isContainer ? (
       <g key="kids" clipPath={isContainer && n.clip && !outline ? `url(#${pre}clip)` : undefined}>
-        <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children, ctx)}</g>
+        {ctx.scroll?.[n.id] ? (
+          <>
+            <g transform={`translate(${-n.x - ctx.scroll[n.id].x},${-n.y - ctx.scroll[n.id].y})`}>{renderChildren(n.children.filter((c) => !ctx.nodes[c]?.fixed), ctx)}</g>
+            <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children.filter((c) => ctx.nodes[c]?.fixed), ctx)}</g>
+          </>
+        ) : (
+          <g transform={`translate(${-n.x},${-n.y})`}>{renderChildren(n.children, ctx)}</g>
+        )}
       </g>
     ) : null;
 

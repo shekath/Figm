@@ -11,6 +11,7 @@ export interface DesktopBridge {
   onOpenPath: (cb: (path: string) => void) => () => void;
   setTitle: (title: string, dirty: boolean) => void;
   confirmClose: (cb: () => boolean) => void;
+  serverUrl?: () => Promise<string | null>;
 }
 
 declare global {

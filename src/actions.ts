@@ -102,9 +102,12 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
       }
     },
   },
+  figmaImport: { label: 'Import from Figma…', run: () => { window.dispatchEvent(new Event('vectura:figma-import')); } },
+  export: { label: 'Export…', shortcut: 'Ctrl+Shift+E', run: () => { window.dispatchEvent(new CustomEvent('vectura:export')); } },
+  exportHtml: { label: 'Export design to HTML…', run: () => { window.dispatchEvent(new CustomEvent('vectura:export', { detail: { format: 'html' } })); } },
   exportSelection: {
-    label: 'Export selection as PNG',
-    shortcut: 'Ctrl+Shift+E',
+    label: 'Quick export PNG @2x',
+    shortcut: 'Ctrl+Alt+E',
     run: async () => {
       const s = S();
       const ids = s.selection.length ? s.selection : s.page().children;
@@ -146,6 +149,11 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   component: { label: 'Create component', shortcut: 'Ctrl+Alt+K', run: () => S().makeComponent() },
   detach: { label: 'Detach instance', shortcut: 'Ctrl+Alt+B', run: () => S().detachInstance() },
   mask: { label: 'Use as mask', shortcut: 'Ctrl+Alt+M', run: () => S().useAsMask() },
+  union: { label: 'Union selection', shortcut: 'Ctrl+Alt+U', run: () => S().booleanOp('union') },
+  subtract: { label: 'Subtract selection', shortcut: 'Ctrl+Alt+S', run: () => S().booleanOp('subtract') },
+  intersect: { label: 'Intersect selection', shortcut: 'Ctrl+Alt+I', run: () => S().booleanOp('intersect') },
+  exclude: { label: 'Exclude selection', shortcut: 'Ctrl+Alt+X', run: () => S().booleanOp('exclude') },
+  flatten: { label: 'Flatten', shortcut: 'Ctrl+E', run: () => S().booleanOp('flatten') },
   bringFront: { label: 'Bring to front', shortcut: 'Ctrl+Alt+]', run: () => S().reorder('front') },
   bringForward: { label: 'Bring forward', shortcut: 'Ctrl+]', run: () => S().reorder('forward') },
   sendBackward: { label: 'Send backward', shortcut: 'Ctrl+[', run: () => S().reorder('backward') },
@@ -174,7 +182,8 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   toggleUI: { label: 'Show / hide UI', shortcut: 'Ctrl+\\', run: () => { document.body.classList.toggle('hide-ui'); } },
   present: { label: 'Present prototype', shortcut: 'Ctrl+Alt+Enter', run: () => S().set({ presenting: true }) },
   addPage: { label: 'New page', run: () => S().addPage() },
-  saveVersion: { label: 'Save version to history…', shortcut: 'Ctrl+Alt+S', run: () => { const n = prompt('Version name', new Date().toLocaleString()); if (n !== null) S().saveVersion(n); } },
+  saveVersion: { label: 'Save version to history…', shortcut: 'Ctrl+Alt+H', run: () => { const n = prompt('Version name', new Date().toLocaleString()); if (n !== null) S().saveVersion(n); } },
+  variables: { label: 'Variables…', shortcut: 'Ctrl+Alt+V', run: () => { window.dispatchEvent(new Event('vectura:variables')); } },
   shortcuts: { label: 'Keyboard shortcuts', shortcut: 'Ctrl+Shift+?', run: () => { window.dispatchEvent(new Event('vectura:shortcuts')); } },
   home: { label: 'Back to files', run: async () => { await saveToLibrary(); window.dispatchEvent(new Event('vectura:home')); } },
   newFromTemplate: { label: 'Duplicate file', run: () => { S().set({ fileId: uid(), filePath: null }); S().mutate((d) => (d.name = d.name + ' copy'), false); } },

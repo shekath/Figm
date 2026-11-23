@@ -77,13 +77,14 @@ export function resizeTree(nodes: Nodes, id: string, nx: number, ny: number, nw:
         ch = (c.h / oh) * nh;
         break;
     }
-    if (c.type === 'path' && c.points && (cw !== c.w || ch !== c.h)) scalePoints(c, cw / (c.w || 1), ch / (c.h || 1));
+    if (c.type === 'path' && (c.points || c.rings) && (cw !== c.w || ch !== c.h)) scalePoints(c, cw / (c.w || 1), ch / (c.h || 1));
     if (c.type === 'text' && c.text && isGroup && ch !== c.h) c.text = { ...c.text, fontSize: Math.max(1, c.text.fontSize * (ch / (c.h || 1))) };
     resizeTree(nodes, cid, cx, cy, cw, ch);
   }
 }
 
 export function scalePoints(n: SceneNode, sx: number, sy: number) {
+  if (n.rings) n.rings = n.rings.map((r) => r.map((p) => ({ x: p.x * sx, y: p.y * sy })));
   if (!n.points) return;
   n.points = n.points.map((p) => ({
     x: p.x * sx,

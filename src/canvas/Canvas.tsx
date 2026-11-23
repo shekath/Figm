@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useEditor, setViewportSize, type Guide } from '../store/store';
+import { useEditor, setViewportSize, deepCopy, type Guide } from '../store/store';
 import { RenderNode } from './render';
 import { hitPath, pickFromPath } from './hit';
 import { createNode, solid } from '../lib/factory';
@@ -957,7 +957,7 @@ function restoreSubtree(nodes: Record<string, SceneNode>, snap: Record<string, S
     const desc: Record<string, SceneNode> = {};
     const walk = (i: string) => {
       for (const c of nodes[i]?.children ?? []) {
-        desc[c] = structuredClone(nodes[c]);
+        desc[c] = deepCopy(nodes[c]);
         walk(c);
       }
     };

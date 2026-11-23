@@ -9,6 +9,8 @@ import { cssFor, exportNodes, jsxFor } from '../lib/exporter';
 import { saveBlob } from '../lib/platform';
 import { blobToDataUrl } from '../lib/exporter';
 import { pickFile } from '../lib/platform';
+import { BindButton, ModeOverrides } from './Variables';
+import { EASINGS } from '../lib/proto';
 
 const BLENDS: BlendMode[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
 
@@ -152,6 +154,13 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
           <IconButton title="Distribute horizontally" onClick={() => st.distribute('h')} disabled={sel.length < 3}><Icon name="distH" /></IconButton>
           <IconButton title="Distribute vertically" onClick={() => st.distribute('v')} disabled={sel.length < 3}><Icon name="distV" /></IconButton>
         </div>
+        <div className="row icons boolean-row">
+          <IconButton title="Union (Ctrl+Alt+U)" onClick={() => st.booleanOp('union')} disabled={sel.length < 2}><BoolIcon op="union" /></IconButton>
+          <IconButton title="Subtract (Ctrl+Alt+S)" onClick={() => st.booleanOp('subtract')} disabled={sel.length < 2}><BoolIcon op="subtract" /></IconButton>
+          <IconButton title="Intersect (Ctrl+Alt+I)" onClick={() => st.booleanOp('intersect')} disabled={sel.length < 2}><BoolIcon op="intersect" /></IconButton>
+          <IconButton title="Exclude (Ctrl+Alt+X)" onClick={() => st.booleanOp('exclude')} disabled={sel.length < 2}><BoolIcon op="exclude" /></IconButton>
+          <IconButton title="Flatten (Ctrl+E)" onClick={() => st.booleanOp('flatten')}><Icon name="vector" /></IconButton>
+        </div>
       </Section>
 
       <Section title={single ? typeLabel(n) : `${sel.length} layers`}>
@@ -178,6 +187,11 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
       </Section>
 
       {single && (n.type === 'frame' || n.type === 'component') && <AutoLayoutSection n={n} />}
+      {(n.type === 'frame' || n.type === 'component' || n.type === 'instance' || n.type === 'group') && st.doc.variables.some((c) => c.modes.length > 1) && (
+        <Section title="Variable modes" collapsible>
+          <ModeOverrides ids={ids} />
+        </Section>
+      )}
 
       {single && parent && (parent.type === 'frame' || parent.type === 'component') && !parent.autoLayout && (
         <Section title="Constraints" collapsible>
@@ -223,6 +237,9 @@ function DesignProps({ sel }: { sel: SceneNode[] }) {
             </div>
           </details>
         )}
+        <div className="row gap bind-row">
+          <span className="muted">Bind</span> opacity <BindButton ids={ids} prop="opacity" /> radius <BindButton ids={ids} prop="radius" /> visible <BindButton ids={ids} prop="visible" />
+        </div>
         <div className="row">
           <Select value={n.blend} options={BLENDS.map((b) => ({ value: b, label: cap(b) }))} onChange={(v) => st.updateNodes(ids, { blend: v })} title="Blend mode" width="100%" />
         </div>
@@ -300,7 +317,7 @@ function AutoLayoutSection({ n }: { n: SceneNode }) {
             <label className="check"><input type="checkbox" checked={al.hugH} onChange={(e) => st.setAutoLayout(n.id, { hugH: e.target.checked })} /> Hug H</label>
           </div>
           <div className="grid2">
-            <NumberField label="Gap" value={al.gap} onChange={(v) => st.setAutoLayout(n.id, { gap: v })} />
+            <div className="row"><NumberField label="Gap" value={al.gap} onChange={(v) => st.setAutoLayout(n.id, { gap: v })} /><BindButton ids={[n.id]} prop="gap" /></div>
             <Select
               value={al.justify}
               title="Distribution"
@@ -373,6 +390,9 @@ function TextSection({ sel }: { sel: SceneNode[] }) {
           options={[{ value: 'none', label: 'Aa as typed' }, { value: 'uppercase', label: 'AA upper' }, { value: 'lowercase', label: 'aa lower' }, { value: 'capitalize', label: 'Aa title' }]}
           onChange={(v) => set({ transform: v })}
         />
+      </div>
+      <div className="row gap bind-row">
+        <span className="muted">Bind</span> text <BindButton ids={ids} prop="text" /> size <BindButton ids={ids} prop="fontSize" />
       </div>
       <div className="row">
         <Select
@@ -473,9 +493,12 @@ function FillSection({ sel }: { sel: SceneNode[] }) {
     <Section
       title="Fill"
       actions={
+        <>
+        <BindButton ids={ids} prop="fill" />
         <IconButton title="Add fill" onClick={() => st.updateNodes(ids, (x) => ({ fills: [...x.fills, solid(x.fills.length ? '#000000' : '#d9d9d9', x.fills.length ? 0.2 : 1)] }))}>
           <Icon name="plus" />
         </IconButton>
+        </>
       }
     >
       {mixed ? (
@@ -505,9 +528,12 @@ function StrokeSection({ sel }: { sel: SceneNode[] }) {
     <Section
       title="Stroke"
       actions={
-        <IconButton title="Add stroke" onClick={() => st.updateNodes(ids, (x) => ({ strokes: [...x.strokes, defaultStroke()] }))}>
-          <Icon name="plus" />
-        </IconButton>
+        <>
+          <BindButton ids={ids} prop="stroke" />
+          <IconButton title="Add stroke" onClick={() => st.updateNodes(ids, (x) => ({ strokes: [...x.strokes, defaultStroke()] }))}>
+            <Icon name="plus" />
+          </IconButton>
+        </>
       }
     >
       {strokes.map((s, i) => (
@@ -618,6 +644,46 @@ function ExportSection({ n }: { n: SceneNode }) {
   );
 }
 
+const TRIGGERS: { value: PrototypeLink['trigger']; label: string }[] = [
+  { value: 'click', label: 'On click' },
+  { value: 'hover', label: 'While hovering' },
+  { value: 'press', label: 'While pressing' },
+  { value: 'mouse-enter', label: 'Mouse enter' },
+  { value: 'mouse-leave', label: 'Mouse leave' },
+  { value: 'after-delay', label: 'After delay' },
+  { value: 'key', label: 'Key press' },
+];
+const ACTIONS: { value: NonNullable<PrototypeLink['action']>; label: string }[] = [
+  { value: 'navigate', label: 'Navigate to' },
+  { value: 'overlay', label: 'Open overlay' },
+  { value: 'swap-overlay', label: 'Swap overlay' },
+  { value: 'close-overlay', label: 'Close overlay' },
+  { value: 'scroll-to', label: 'Scroll to' },
+  { value: 'back', label: 'Back' },
+  { value: 'url', label: 'Open link' },
+];
+const ANIMS: { value: PrototypeLink['animation']; label: string }[] = [
+  { value: 'instant', label: 'Instant' },
+  { value: 'dissolve', label: 'Dissolve' },
+  { value: 'smart-animate', label: 'Smart animate' },
+  { value: 'move-in', label: 'Move in' },
+  { value: 'move-out', label: 'Move out' },
+  { value: 'push', label: 'Push' },
+  { value: 'slide-in', label: 'Slide in' },
+  { value: 'slide-out', label: 'Slide out' },
+];
+const EASES: { value: NonNullable<PrototypeLink['easing']>; label: string }[] = [
+  { value: 'linear', label: 'Linear' },
+  { value: 'ease-in', label: 'Ease in' },
+  { value: 'ease-out', label: 'Ease out' },
+  { value: 'ease-in-out', label: 'Ease in and out' },
+  { value: 'ease-in-back', label: 'Ease in back' },
+  { value: 'ease-out-back', label: 'Ease out back' },
+  { value: 'gentle', label: 'Gentle (spring)' },
+  { value: 'spring', label: 'Quick (spring)' },
+  { value: 'bouncy', label: 'Bouncy (spring)' },
+];
+
 function PrototypeProps({ sel }: { sel: SceneNode[] }) {
   const st = useEditor();
   const page = st.page();
@@ -632,7 +698,7 @@ function PrototypeProps({ sel }: { sel: SceneNode[] }) {
           options={[{ value: '', label: 'First frame' }, ...frames.map((f) => ({ value: f.id, label: f.name }))]}
           onChange={(v) => st.mutate((d) => (d.pages.find((p) => p.id === page.id)!.startFrameId = v || undefined))}
         />
-        <p className="muted">Select a layer, then drag the ⊕ handle on its right edge onto a frame to create a click interaction.</p>
+        <p className="muted">Select a layer, then drag the ⊕ handle on its right edge onto a frame to create a click interaction. Use Smart animate between frames whose layers share names.</p>
         <button className="btn primary" onClick={() => st.set({ presenting: true })}>
           <Icon name="play" size={12} /> Present
         </button>
@@ -641,35 +707,95 @@ function PrototypeProps({ sel }: { sel: SceneNode[] }) {
   const n = sel[0];
   const links = n.prototype ?? [];
   const upd = (list: PrototypeLink[]) => st.updateNodes([n.id], { prototype: list });
+  const set = (i: number, patch: Partial<PrototypeLink>) => upd(links.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const allNodes = Object.values(st.doc.nodes).filter((x) => x.id !== n.id);
+  const parent = n.parentId ? st.doc.nodes[n.parentId] : null;
   return (
-    <Section
-      title="Interactions"
-      actions={
-        <IconButton title="Add interaction" onClick={() => upd([...links, { trigger: 'click', targetId: frames[0]?.id ?? 'back', animation: 'dissolve', duration: 300 }])}>
-          <Icon name="plus" />
-        </IconButton>
-      }
-    >
-      {links.length === 0 && <div className="muted">No interactions. Drag the ⊕ handle to a frame or click +.</div>}
-      {links.map((l, i) => (
-        <div className="paint" key={i}>
-          <div className="grid2">
-            <Select value={l.trigger} options={[{ value: 'click', label: 'On click' }, { value: 'hover', label: 'While hovering' }, { value: 'after-delay', label: 'After delay' }]} onChange={(v) => upd(links.map((x, j) => (j === i ? { ...x, trigger: v } : x)))} />
-            <Select value={l.targetId} options={[{ value: 'back', label: '← Back' }, ...frames.map((f) => ({ value: f.id, label: f.name }))]} onChange={(v) => upd(links.map((x, j) => (j === i ? { ...x, targetId: v } : x)))} />
-            <Select
-              value={l.animation}
-              options={['instant', 'dissolve', 'slide-left', 'slide-right', 'slide-up', 'push'].map((a) => ({ value: a as 'instant', label: cap(a) }))}
-              onChange={(v) => upd(links.map((x, j) => (j === i ? { ...x, animation: v } : x)))}
-            />
-            <NumberField label="ms" value={l.duration} min={0} step={50} onChange={(v) => upd(links.map((x, j) => (j === i ? { ...x, duration: v } : x)))} />
-            {l.trigger === 'after-delay' && <NumberField label="Delay" value={l.delay ?? 800} min={0} step={100} onChange={(v) => upd(links.map((x, j) => (j === i ? { ...x, delay: v } : x)))} />}
-          </div>
-          <button className="btn small danger" onClick={() => upd(links.filter((_, j) => j !== i))}>
-            Remove
-          </button>
-        </div>
-      ))}
-    </Section>
+    <>
+      <Section
+        title="Interactions"
+        actions={
+          <IconButton title="Add interaction" onClick={() => upd([...links, { trigger: 'click', action: 'navigate', targetId: frames.find((f) => f.id !== n.id)?.id ?? 'back', animation: 'dissolve', easing: 'ease-out', duration: 300 }])}>
+            <Icon name="plus" />
+          </IconButton>
+        }
+      >
+        {links.length === 0 && <div className="muted">No interactions. Drag the ⊕ handle to a frame or click +.</div>}
+        {links.map((l, i) => {
+          const action = l.action ?? (l.targetId === 'back' ? 'back' : 'navigate');
+          const needsTarget = action === 'navigate' || action === 'overlay' || action === 'swap-overlay' || action === 'scroll-to';
+          const targets = action === 'scroll-to' ? allNodes : frames.filter((f) => f.id !== n.id);
+          const animated = action !== 'back' && action !== 'url' && action !== 'scroll-to' && action !== 'close-overlay';
+          return (
+            <div className="paint interaction" key={i}>
+              <div className="grid2">
+                <Select value={l.trigger} options={TRIGGERS} onChange={(v) => set(i, { trigger: v })} />
+                <Select value={action} options={ACTIONS} onChange={(v) => set(i, { action: v, targetId: v === 'back' || v === 'close-overlay' || v === 'url' ? 'back' : l.targetId === 'back' ? targets[0]?.id ?? 'back' : l.targetId, overlay: v === 'overlay' || v === 'swap-overlay' ? l.overlay ?? { position: 'center', closeOnOutside: true, background: 'rgba(0,0,0,0.4)' } : l.overlay })} />
+                {l.trigger === 'after-delay' && <NumberField label="Delay" suffix="ms" value={l.delay ?? 800} min={0} step={100} onChange={(v) => set(i, { delay: v })} />}
+                {l.trigger === 'key' && <input className="text-input" placeholder="Key (e.g. Enter, a)" value={l.key ?? ''} onChange={(e) => set(i, { key: e.target.value })} onKeyDown={(e) => { e.stopPropagation(); if (e.key.length === 1 || ['Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) { e.preventDefault(); set(i, { key: e.key }); } }} />}
+              </div>
+              {needsTarget && (
+                <Select value={l.targetId} width="100%" options={targets.map((f) => ({ value: f.id, label: f.name }))} onChange={(v) => set(i, { targetId: v })} />
+              )}
+              {action === 'url' && <input className="text-input" placeholder="https://…" value={l.url ?? ''} onChange={(e) => set(i, { url: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />}
+              {(action === 'overlay' || action === 'swap-overlay') && (
+                <div className="grid2">
+                  <Select value={l.overlay?.position ?? 'center'} options={['center', 'top', 'bottom', 'left', 'right'].map((p) => ({ value: p as 'center', label: cap(p) }))} onChange={(v) => set(i, { overlay: { ...(l.overlay ?? { closeOnOutside: true, background: 'rgba(0,0,0,0.4)' }), position: v } })} />
+                  <label className="check"><input type="checkbox" checked={l.overlay?.closeOnOutside ?? true} onChange={(e) => set(i, { overlay: { ...(l.overlay ?? { position: 'center', background: 'rgba(0,0,0,0.4)' }), closeOnOutside: e.target.checked } })} /> Close on outside click</label>
+                </div>
+              )}
+              {animated && (
+                <>
+                  <div className="grid2">
+                    <Select value={l.animation} options={ANIMS} onChange={(v) => set(i, { animation: v })} />
+                    {['move-in', 'move-out', 'push', 'slide-in', 'slide-out'].includes(l.animation) ? (
+                      <Select value={l.direction ?? 'left'} options={[{ value: 'left', label: '← Left' }, { value: 'right', label: '→ Right' }, { value: 'up', label: '↑ Up' }, { value: 'down', label: '↓ Down' }]} onChange={(v) => set(i, { direction: v })} />
+                    ) : (
+                      <span />
+                    )}
+                    <Select value={l.easing ?? 'ease-out'} options={EASES} onChange={(v) => set(i, { easing: v })} />
+                    <NumberField label="ms" value={l.duration} min={0} step={50} onChange={(v) => set(i, { duration: v })} />
+                  </div>
+                  <EasingPreview easing={l.easing ?? 'ease-out'} />
+                </>
+              )}
+              <button className="btn small danger" onClick={() => upd(links.filter((_, j) => j !== i))}>Remove</button>
+            </div>
+          );
+        })}
+      </Section>
+      {(n.type === 'frame' || n.type === 'component') && (
+        <Section title="Scroll behaviour">
+          <Select
+            value={n.overflow ?? 'none'}
+            width="100%"
+            options={[{ value: 'none', label: 'No scrolling' }, { value: 'vertical', label: 'Vertical scrolling' }, { value: 'horizontal', label: 'Horizontal scrolling' }, { value: 'both', label: 'Horizontal & vertical' }]}
+            onChange={(v) => st.updateNodes([n.id], { overflow: v })}
+          />
+          <p className="muted">Content outside the frame bounds scrolls in presentation mode.</p>
+        </Section>
+      )}
+      {parent && (parent.overflow ?? 'none') !== 'none' && (
+        <Section title="Position">
+          <label className="check"><input type="checkbox" checked={!!n.fixed} onChange={(e) => st.updateNodes([n.id], { fixed: e.target.checked })} /> Fix position when scrolling</label>
+        </Section>
+      )}
+    </>
+  );
+}
+
+function EasingPreview({ easing }: { easing: NonNullable<PrototypeLink['easing']> }) {
+  const f = EASINGS[easing];
+  const pts = Array.from({ length: 41 }, (_, i) => {
+    const t = i / 40;
+    return `${4 + t * 92},${44 - f(t) * 36}`;
+  }).join(' ');
+  return (
+    <svg className="easing-preview" viewBox="0 0 100 50" width="100%" height={50}>
+      <line x1={4} y1={44} x2={96} y2={44} stroke="currentColor" opacity={0.2} />
+      <line x1={4} y1={8} x2={96} y2={8} stroke="currentColor" opacity={0.2} strokeDasharray="2 2" />
+      <polyline points={pts} fill="none" stroke="var(--proto)" strokeWidth={1.5} />
+    </svg>
   );
 }
 
@@ -704,5 +830,20 @@ function DevProps({ sel }: { sel: SceneNode[] }) {
       </Section>
       <ExportSection n={n} />
     </>
+  );
+}
+
+function BoolIcon({ op }: { op: 'union' | 'subtract' | 'intersect' | 'exclude' }) {
+  const a = 'M2 2h7v7H2z',
+    b = 'M6 6h7v7H6z';
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.2}>
+      {op === 'union' && <path d="M2 2h7v4h4v7H6V9H2z" fill="currentColor" fillOpacity={0.35} />}
+      {op === 'subtract' && <path d="M2 2h7v4H6v3H2z" fill="currentColor" fillOpacity={0.35} />}
+      {op === 'intersect' && <path d="M6 6h3v3H6z" fill="currentColor" fillOpacity={0.6} />}
+      {op === 'exclude' && <path d="M2 2h7v4H6v3H2zM9 6h4v7H6V9h3z" fill="currentColor" fillOpacity={0.35} />}
+      <path d={a} fill="none" />
+      <path d={b} fill="none" />
+    </svg>
   );
 }

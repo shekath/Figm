@@ -49,6 +49,11 @@ export function Home({ onOpen }: { onOpen: () => void }) {
             <b>Open file…</b>
             <small>Open a .vectura file from disk</small>
           </button>
+          <button className="home-card-action" onClick={() => window.dispatchEvent(new Event('vectura:figma-import'))}>
+            <span className="big">◈</span>
+            <b>Import from Figma</b>
+            <small>Via file link + access token</small>
+          </button>
           <button className="home-card-action" onClick={() => { st.setDoc(sampleDocument()); onOpen(); setTimeout(() => useEditor.getState().zoomToFit(), 0); }}>
             <span className="big">✦</span>
             <b>Sample file</b>

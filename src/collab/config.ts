@@ -1,0 +1,60 @@
+/** Locates the Vectura server (collaboration + MCP + Figma proxy). */
+import { desktop } from '../lib/platform';
+
+const KEY = 'vectura:server';
+let cached: string | null | undefined;
+
+export function storedServer(): string | null {
+  try {
+    return localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+export function setStoredServer(url: string | null) {
+  try {
+    if (url) localStorage.setItem(KEY, url.replace(/\/$/, ''));
+    else localStorage.removeItem(KEY);
+  } catch {
+    /* ignore */
+  }
+  cached = undefined;
+}
+
+/** http(s) base URL of the server, or null when no server is reachable. */
+export async function serverBase(): Promise<string | null> {
+  if (cached !== undefined) return cached;
+  const params = new URLSearchParams(location.search);
+  const candidates = [
+    params.get('server'),
+    storedServer(),
+    desktop ? await desktop.serverUrl?.() : null,
+    location.protocol.startsWith('http') ? location.origin : null,
+  ].filter((x): x is string => !!x);
+  for (const c of candidates) {
+    const base = c.replace(/\/$/, '').replace(/^ws/, 'http');
+    try {
+      const r = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(1500) });
+      if (r.ok && (await r.json()).app === 'vectura') {
+        cached = base;
+        return base;
+      }
+    } catch {
+      /* try next */
+    }
+  }
+  cached = null;
+  return null;
+}
+
+export function resetServerCache() {
+  cached = undefined;
+}
+
+export function authToken(): string | null {
+  try {
+    return new URLSearchParams(location.search).get('token') ?? localStorage.getItem('vectura:token');
+  } catch {
+    return null;
+  }
+}

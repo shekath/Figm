@@ -1,10 +1,18 @@
 import { create } from 'zustand';
+import { produce, setAutoFreeze, current, isDraft } from 'immer';
+import { applyPatch, diffDocs, repairDocument, type DocPatch } from '../lib/docops';
 import type { DocumentData, Mode, Page, SceneNode, Tool, AutoLayout, Comment } from '../types';
 import { createNode, sampleDocument, uid } from '../lib/factory';
-import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, translateTree, resizeTree } from '../lib/layout';
+import { applyAutoLayout, descendants, fitGroup, isAncestor, relayoutAncestors, translateTree, resizeTree, scalePoints } from '../lib/layout';
+import { applyBoolean, type BooleanOp } from '../lib/boolean';
+import { applyAllBindings, defaultValue, newCollection } from '../lib/variables';
+import type { BindableProp, Variable } from '../types';
 import { unionRects, visualBounds, type Rect } from '../lib/geometry';
 
-const clone = <T,>(v: T): T => structuredClone(v);
+setAutoFreeze(false);
+/** Deep copy that also works on immer drafts. */
+export const deepCopy = <T,>(v: T): T => structuredClone(isDraft(v) ? (current(v as never) as T) : v);
+const clone = deepCopy;
 const HISTORY_LIMIT = 200;
 
 export interface Guide {
@@ -47,6 +55,8 @@ export interface EditorState {
 
   // core
   setDoc: (doc: DocumentData, meta?: { fileId?: string; filePath?: string | null }) => void;
+  /** apply a patch received from a collaborator (not recorded in local undo history) */
+  applyRemote: (patch: DocPatch) => void;
   mutate: (fn: (d: DocumentData) => void, record?: boolean) => void;
   checkpoint: () => void;
   undo: () => void;
@@ -86,6 +96,22 @@ export interface EditorState {
   toggleAutoLayout: () => void;
   setAutoLayout: (id: string, patch: Partial<AutoLayout>) => void;
   useAsMask: () => void;
+  booleanOp: (op: BooleanOp) => void;
+
+  // variables
+  addCollection: (name?: string) => string;
+  renameCollection: (id: string, name: string) => void;
+  deleteCollection: (id: string) => void;
+  addMode: (colId: string, name?: string) => void;
+  renameMode: (colId: string, modeId: string, name: string) => void;
+  deleteMode: (colId: string, modeId: string) => void;
+  addVariable: (colId: string, type: Variable['type'], name?: string) => string;
+  updateVariable: (colId: string, varId: string, patch: Partial<Pick<Variable, 'name' | 'description'>>) => void;
+  setVariableValue: (colId: string, varId: string, modeId: string, value: string | number | boolean) => void;
+  deleteVariable: (colId: string, varId: string) => void;
+  bindVariable: (ids: string[], prop: BindableProp, varId: string | null) => void;
+  setActiveMode: (colId: string, modeId: string) => void;
+  setNodeMode: (ids: string[], colId: string, modeId: string | null) => void;
   toggleVisible: (ids?: string[]) => void;
   toggleLocked: (ids?: string[]) => void;
   rename: (id: string, name: string) => void;
@@ -239,12 +265,29 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   mutate: (fn, record = true) => {
     const { doc, past } = get();
-    const next = clone(doc);
-    fn(next);
+    const next = produce(doc, (d) => {
+      fn(d);
+    });
+    if (next === doc) return;
     set({
       doc: next,
       dirty: true,
       ...(record ? { past: [...past, doc].slice(-HISTORY_LIMIT), future: [] } : {}),
+    });
+  },
+  applyRemote: (patch) => {
+    const { doc, past, future, selection, pageId, editingTextId } = get();
+    const fix = (d: DocumentData) => repairDocument(applyPatch(d, patch));
+    const next = fix(doc);
+    remoteDoc = next;
+    set({
+      doc: next,
+      // rebase history so local undo never reverts collaborators' edits
+      past: past.map(fix),
+      future: future.map(fix),
+      selection: selection.filter((id) => next.nodes[id]),
+      pageId: next.pages.some((p) => p.id === pageId) ? pageId : next.pages[0].id,
+      editingTextId: editingTextId && next.nodes[editingTextId] ? editingTextId : null,
     });
   },
   checkpoint: () => {
@@ -314,11 +357,7 @@ export const useEditor = create<EditorState>((set, get) => ({
             nw = p.w ?? n.w,
             nh = p.h ?? n.h;
           if (nw !== n.w || nh !== n.h) {
-            if (n.type === 'path' && n.points) {
-              const sx = nw / (n.w || 1),
-                sy = nh / (n.h || 1);
-              n.points = n.points.map((pt) => ({ x: pt.x * sx, y: pt.y * sy, cin: pt.cin && { x: pt.cin.x * sx, y: pt.cin.y * sy }, cout: pt.cout && { x: pt.cout.x * sx, y: pt.cout.y * sy } }));
-            }
+            if (n.type === 'path') scalePoints(n, nw / (n.w || 1), nh / (n.h || 1));
             resizeTree(d.nodes, id, nx, ny, nw, nh);
           } else translateTree(d.nodes, id, nx - n.x, ny - n.y);
           const { x, y, w, h, ...rest } = p;
@@ -349,11 +388,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     get().mutate((d) => {
       const n = d.nodes[id];
       if (!n) return;
-      if (n.type === 'path' && n.points) {
-        const sx = r.w / (n.w || 1),
-          sy = r.h / (n.h || 1);
-        n.points = n.points.map((pt) => ({ x: pt.x * sx, y: pt.y * sy, cin: pt.cin && { x: pt.cin.x * sx, y: pt.cin.y * sy }, cout: pt.cout && { x: pt.cout.x * sx, y: pt.cout.y * sy } }));
-      }
+      if (n.type === 'path') scalePoints(n, r.w / (n.w || 1), r.h / (n.h || 1));
       if (n.type === 'text' && n.text && n.text.autoResize === 'width' && r.w !== n.w) n.text = { ...n.text, autoResize: 'fixed' };
       resizeTree(d.nodes, id, r.x, r.y, r.w, r.h);
       if (n.autoLayout) {
@@ -728,6 +763,122 @@ export const useEditor = create<EditorState>((set, get) => ({
     }, false);
   },
 
+  booleanOp: (op) => {
+    const { selection, pageId } = get();
+    const ids = orderedInTree(get().doc, pageId, topLevel(get().doc, selection));
+    if (!ids.length || (op !== 'flatten' && ids.length < 2)) return get().notify(op === 'flatten' ? 'Select a layer to flatten' : 'Select two or more layers');
+    let id: string | null = null;
+    get().mutate((d) => {
+      const parent = d.nodes[ids[0]].parentId;
+      id = applyBoolean(d, pageId, ids, op);
+      relayoutAncestors(d.nodes, parent);
+    });
+    if (id) set({ selection: [id] });
+  },
+
+  addCollection: (name) => {
+    const c = newCollection(name ?? `Collection ${get().doc.variables.length + 1}`);
+    get().mutate((d) => {
+      d.variables.push(c);
+    });
+    return c.id;
+  },
+  renameCollection: (id, name) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === id);
+      if (c) c.name = name;
+    }),
+  deleteCollection: (id) =>
+    get().mutate((d) => {
+      const col = d.variables.find((x) => x.id === id);
+      if (!col) return;
+      const ids = new Set(col.variables.map((v) => v.id));
+      d.variables = d.variables.filter((x) => x.id !== id);
+      for (const n of Object.values(d.nodes)) {
+        if (n.bindings) for (const [k, v] of Object.entries(n.bindings)) if (v && ids.has(v)) delete n.bindings[k as BindableProp];
+        if (n.modeOverrides?.[id]) delete n.modeOverrides[id];
+      }
+    }),
+  addMode: (colId, name) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c) return;
+      const src = c.modes[c.modes.length - 1]?.id;
+      const m = { id: uid(), name: name ?? `Mode ${c.modes.length + 1}` };
+      c.modes.push(m);
+      for (const v of c.variables) v.values[m.id] = src ? v.values[src] : defaultValue(v.type);
+    }),
+  renameMode: (colId, modeId, name) =>
+    get().mutate((d) => {
+      const m = d.variables.find((x) => x.id === colId)?.modes.find((x) => x.id === modeId);
+      if (m) m.name = name;
+    }),
+  deleteMode: (colId, modeId) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c || c.modes.length <= 1) return;
+      c.modes = c.modes.filter((m) => m.id !== modeId);
+      for (const v of c.variables) delete v.values[modeId];
+      if (d.activeModes?.[colId] === modeId) delete d.activeModes[colId];
+      applyAllBindings(d);
+    }),
+  addVariable: (colId, type, name) => {
+    const id = uid();
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c) return;
+      const base = name ?? `${type}-${c.variables.filter((v) => v.type === type).length + 1}`;
+      c.variables.push({ id, name: base, type, values: Object.fromEntries(c.modes.map((m) => [m.id, defaultValue(type)])) });
+    });
+    return id;
+  },
+  updateVariable: (colId, varId, patch) =>
+    get().mutate((d) => {
+      const v = d.variables.find((x) => x.id === colId)?.variables.find((x) => x.id === varId);
+      if (v) Object.assign(v, patch);
+    }),
+  setVariableValue: (colId, varId, modeId, value) =>
+    get().mutate((d) => {
+      const v = d.variables.find((x) => x.id === colId)?.variables.find((x) => x.id === varId);
+      if (!v) return;
+      v.values[modeId] = value;
+      applyAllBindings(d);
+    }),
+  deleteVariable: (colId, varId) =>
+    get().mutate((d) => {
+      const c = d.variables.find((x) => x.id === colId);
+      if (!c) return;
+      c.variables = c.variables.filter((v) => v.id !== varId);
+      for (const n of Object.values(d.nodes)) if (n.bindings) for (const [k, v] of Object.entries(n.bindings)) if (v === varId) delete n.bindings[k as BindableProp];
+    }),
+  bindVariable: (ids, prop, varId) =>
+    get().mutate((d) => {
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (!n) continue;
+        n.bindings = { ...(n.bindings ?? {}) };
+        if (varId) n.bindings[prop] = varId;
+        else delete n.bindings[prop];
+      }
+      applyAllBindings(d);
+    }),
+  setActiveMode: (colId, modeId) =>
+    get().mutate((d) => {
+      d.activeModes = { ...(d.activeModes ?? {}), [colId]: modeId };
+      applyAllBindings(d);
+    }),
+  setNodeMode: (ids, colId, modeId) =>
+    get().mutate((d) => {
+      for (const id of ids) {
+        const n = d.nodes[id];
+        if (!n) continue;
+        n.modeOverrides = { ...(n.modeOverrides ?? {}) };
+        if (modeId) n.modeOverrides[colId] = modeId;
+        else delete n.modeOverrides[colId];
+      }
+      applyAllBindings(d);
+    }),
+
   toggleVisible: (ids) => {
     const list = ids ?? get().selection;
     get().updateNodes(list, (n) => ({ visible: !n.visible }));
@@ -924,3 +1075,22 @@ export const useEditor = create<EditorState>((set, get) => ({
 }));
 
 let clipboardMemory: string | null = null;
+
+/* ---------- local change feed for collaboration ---------- */
+
+let remoteDoc: DocumentData | null = null;
+type Listener = (patch: DocPatch) => void;
+const listeners = new Set<Listener>();
+/** Subscribe to local document changes as patches (remote patches are excluded). */
+export function onLocalPatch(fn: Listener) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+useEditor.subscribe((state, prev) => {
+  if (state.doc === prev.doc || !listeners.size) return;
+  if (state.doc === remoteDoc) return; // change came from a collaborator
+  // a file switch is not a patch
+  if (state.fileId !== prev.fileId) return;
+  const patch = diffDocs(prev.doc, state.doc);
+  if (patch) listeners.forEach((l) => l(patch));
+});

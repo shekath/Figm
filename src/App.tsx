@@ -7,6 +7,9 @@ import { RightPanel } from './panels/RightPanel';
 import { Presenter } from './Presenter';
 import { ContextMenu, ShortcutsDialog, Toast } from './Overlays';
 import { Home } from './Home';
+import { VariablesModal } from './panels/Variables';
+import { FigmaImportDialog } from './panels/FigmaImport';
+import { ExportDialog } from './panels/ExportDialog';
 import { useShortcuts } from './useShortcuts';
 import { actions, saveToLibrary } from './actions';
 import { desktop, parseDocument } from './lib/platform';
@@ -40,8 +43,13 @@ export function App() {
   // home navigation
   useEffect(() => {
     const h = () => setView('home');
+    const e = () => setView('editor');
     window.addEventListener('vectura:home', h);
-    return () => window.removeEventListener('vectura:home', h);
+    window.addEventListener('vectura:open-editor', e);
+    return () => {
+      window.removeEventListener('vectura:home', h);
+      window.removeEventListener('vectura:open-editor', e);
+    };
   }, []);
 
   // window title
@@ -102,6 +110,7 @@ export function App() {
     return (
       <>
         <Home onOpen={() => setView('editor')} />
+        <FigmaImportDialog />
         <Toast />
       </>
     );
@@ -117,6 +126,9 @@ export function App() {
       {presenting && <Presenter />}
       <ContextMenu />
       <ShortcutsDialog />
+      <VariablesModal />
+      <FigmaImportDialog />
+      <ExportDialog />
       <Toast />
     </div>
   );

@@ -359,66 +359,34 @@ function Assets() {
 
 function Variables() {
   const st = useEditor();
-  const col = st.doc.variables[0];
-  const [mode, setMode] = useState(0);
-  const addCollection = () =>
-    st.mutate((d) => d.variables.push({ id: uid(), name: 'Tokens', modes: [{ id: uid(), name: 'Light' }, { id: uid(), name: 'Dark' }], variables: [] }));
+  const cols = st.doc.variables;
   return (
     <div className="asset-section">
       <header>
         <span>Variables</span>
-        <button
-          className="icon-btn"
-          title="Add colour variable"
-          onClick={() => {
-            if (!col) return addCollection();
-            const name = prompt('Variable name', 'color/primary');
-            if (!name) return;
-            st.mutate((d) => {
-              const c = d.variables[0];
-              c.variables.push({ id: uid(), name, type: 'color', values: Object.fromEntries(c.modes.map((m, i) => [m.id, i ? '#ffffff' : '#000000'])) });
-            });
-          }}
-        >
-          <Icon name="plus" />
+        <button className="icon-btn" title="Open variables editor" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>
+          <Icon name="variable" />
         </button>
       </header>
-      {!col && <div className="empty">Create a variable collection with light/dark modes.</div>}
-      {col && (
-        <>
-          <div className="row gap">
-            {col.modes.map((m, i) => (
-              <button key={m.id} className={`chip ${mode === i ? 'active' : ''}`} onClick={() => setMode(i)}>
-                {m.name}
-              </button>
-            ))}
-          </div>
-          {col.variables.map((v) => {
-            const modeId = col.modes[mode]?.id;
-            const val = String(v.values[modeId] ?? '#000000');
-            return (
-              <div key={v.id} className="style-row">
-                <input
-                  type="color"
-                  value={val}
-                  onChange={(e) =>
-                    st.mutate((d) => {
-                      const vv = d.variables[0].variables.find((x) => x.id === v.id)!;
-                      vv.values[modeId] = e.target.value;
-                    })
-                  }
-                />
-                <span className="grow" title="Click to apply as fill" onClick={() => st.updateNodes(st.selection, () => ({ fills: [solid(val)] }))}>
-                  {v.name}
-                </span>
-                <button className="icon-btn ghost" title="Delete variable" onClick={() => st.mutate((d) => (d.variables[0].variables = d.variables[0].variables.filter((x) => x.id !== v.id)))}>
-                  <Icon name="trash" size={12} />
-                </button>
-              </div>
-            );
-          })}
-        </>
+      {cols.length === 0 && (
+        <div className="empty">
+          Design tokens with modes (e.g. Light / Dark).{' '}
+          <a className="clickable" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>Open the editor</a>
+        </div>
       )}
+      {cols.map((c) => (
+        <div key={c.id} className="style-row" onClick={() => window.dispatchEvent(new Event('vectura:variables'))}>
+          <Icon name="variable" size={12} />
+          <span className="grow">{c.name} <small className="muted">· {c.variables.length}</small></span>
+          {c.modes.length > 1 && (
+            <select className="select" value={st.doc.activeModes?.[c.id] ?? c.modes[0].id} onClick={(e) => e.stopPropagation()} onChange={(e) => st.setActiveMode(c.id, e.target.value)} onKeyDown={(e) => e.stopPropagation()}>
+              {c.modes.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

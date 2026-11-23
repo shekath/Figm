@@ -6,10 +6,10 @@ import type { Tool } from '../types';
 import { isDesktop } from '../lib/platform';
 
 const MENU: { title: string; items: (string | '-')[] }[] = [
-  { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
+  { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'figmaImport', 'export', 'exportHtml', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
   { title: 'Edit', items: ['undo', 'redo', '-', 'copy', 'cut', 'paste', 'duplicate', 'delete', '-', 'selectAll'] },
-  { title: 'View', items: ['zoomIn', 'zoomOut', 'zoom100', 'zoomFit', 'zoomSel', '-', 'toggleGrid', 'toggleRulers', 'toggleOutlines', 'toggleUI'] },
-  { title: 'Object', items: ['group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'detach', 'mask', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock'] },
+  { title: 'View', items: ['zoomIn', 'zoomOut', 'zoom100', 'zoomFit', 'zoomSel', '-', 'toggleGrid', 'toggleRulers', 'toggleOutlines', 'toggleUI', '-', 'variables'] },
+  { title: 'Object', items: ['group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock'] },
   { title: 'Arrange', items: ['alignLeft', 'alignHCenter', 'alignRight', 'alignTop', 'alignVCenter', 'alignBottom', '-', 'distributeH', 'distributeV', 'tidy'] },
   { title: 'Help', items: ['shortcuts'] },
 ];
