@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Untitled</title>
+  <meta name="generator" content="Figmy">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { background: #7a7575; font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .vx-stage { position: relative; margin: 0 auto; transform-origin: top center; }
+    .vx-stage > section { position: absolute !important; left: 0; top: 0; display: none; }
+    .vx-stage > section.vx-active { display: block; }
+    body { display: flex; justify-content: center; padding-top: 16px; overflow-x: hidden; }
+    .vx-overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; }
+    .vx-overlay[data-pos=top] { align-items: flex-start; } .vx-overlay[data-pos=bottom] { align-items: flex-end; }
+    .vx-overlay[data-pos=left] { justify-content: flex-start; } .vx-overlay[data-pos=right] { justify-content: flex-end; }
+    .vx-overlay > section { position: relative !important; left: auto !important; top: auto !important; display: block; }
+  
+.vx-stage > section.vx-active[data-flex] { display: flex; }
+.login-desktop-0 { position: relative; width: 1440px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); overflow: hidden; }
+.brand-panel-1 { position: relative; flex-shrink: 0; width: 640px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 56px 64px 64px 64px; align-items: flex-start; justify-content: space-between; box-sizing: border-box; background: linear-gradient(150deg, #6d5cff 0%, #4b38c9 55%, #1f1a5c 100%); }
+.logo-2 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.mark-3 { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 11px; }
+.text-4 { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 800; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.text-5 { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.pitch-6 { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-7 { position: relative; flex-shrink: 0; width: 512px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 52px; font-weight: 700; line-height: 1.1; text-align: left; white-space: pre-wrap; margin: 0; letter-spacing: -1px; color: #ffffff; }
+.text-8 { position: relative; flex-shrink: 0; width: 460px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #d9d5ff; }
+.testimonial-9 { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding: 24px 24px 24px 24px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.text-a { position: relative; flex-shrink: 0; width: 464px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #14141f; }
+.author-b { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.avatar-c { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; background: linear-gradient(135deg, #f472b6 0%, #7c5cff 100%); border-radius: 50%; }
+.name-d { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-e { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-f { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.form-panel-g { position: relative; flex-shrink: 0; width: 800px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); }
+.sign-in-card-h { position: relative; flex-shrink: 0; width: 440px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 40px 40px 40px 40px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 20px; box-shadow: 0px 24px 60px 0px rgba(31, 26, 92, 0.08); }
+.heading-i { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-j { position: relative; flex-shrink: 0; width: max-content; min-height: 42px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.text-k { position: relative; flex-shrink: 0; width: max-content; min-height: 21px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.button-continue-with-goo-l { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.google-mark-m { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(135deg, #ea4335 0%, #fbbc05 35%, #34a853 65%, #4285f4 100%); border-radius: 50%; }
+.text-n { position: relative; flex-shrink: 0; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.divider-o { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; }
+.line-p { position: relative; flex-shrink: 0; width: 150px; height: 1px; flex-shrink: 0; background: linear-gradient(#e3e3ec, #e3e3ec); }
+.text-q { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.line-r { position: relative; flex-shrink: 0; width: 150px; height: 1px; flex-shrink: 0; background: linear-gradient(#e3e3ec, #e3e3ec); }
+.field-email-s { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-t { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-u { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 16px 0px 16px; align-items: center; justify-content: space-between; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-v { position: relative; flex-shrink: 0; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.field-password-w { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-x { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-y { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 16px 0px 16px; align-items: center; justify-content: space-between; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-z { position: relative; flex-shrink: 0; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.text-10 { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.row-remember-11 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 0px 0px 0px; align-items: center; justify-content: space-between; box-sizing: border-box; }
+.remember-me-12 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.checkbox-13 { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 5px; }
+.text-14 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-15 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; cursor: pointer; }
+.button-sign-in-16 { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 10px; box-shadow: 0px 6px 16px 0px rgba(91, 75, 219, 0.28); cursor: pointer; }
+.text-17 { position: relative; flex-shrink: 0; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.sign-up-18 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 6px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; }
+.text-19 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.text-1a { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; cursor: pointer; }
+.sign-up-desktop-1b { position: relative; width: 1440px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); overflow: hidden; }
+.brand-panel-1c { position: relative; flex-shrink: 0; width: 640px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 56px 64px 64px 64px; align-items: flex-start; justify-content: space-between; box-sizing: border-box; background: linear-gradient(150deg, #6d5cff 0%, #4b38c9 55%, #1f1a5c 100%); }
+.logo-1d { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.mark-1e { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 11px; }
+.text-1f { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 800; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.text-1g { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.pitch-1h { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-1i { position: relative; flex-shrink: 0; width: 512px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 52px; font-weight: 700; line-height: 1.1; text-align: left; white-space: pre-wrap; margin: 0; letter-spacing: -1px; color: #ffffff; }
+.text-1j { position: relative; flex-shrink: 0; width: 460px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #d9d5ff; }
+.testimonial-1k { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding: 24px 24px 24px 24px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.text-1l { position: relative; flex-shrink: 0; width: 464px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #14141f; }
+.author-1m { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.avatar-1n { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; background: linear-gradient(135deg, #f472b6 0%, #7c5cff 100%); border-radius: 50%; }
+.name-1o { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-1p { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-1q { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.form-panel-1r { position: relative; flex-shrink: 0; width: 800px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); }
+.card-1s { position: relative; flex-shrink: 0; width: 440px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 40px 40px 40px 40px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 20px; box-shadow: 0px 24px 60px 0px rgba(31, 26, 92, 0.08); }
+.heading-1t { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-1u { position: relative; flex-shrink: 0; width: max-content; min-height: 42px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.text-1v { position: relative; flex-shrink: 0; width: 360px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.social-sign-up-with-goog-1w { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.social-sign-up-with-goog-1w-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.google-mark-1x { position: absolute; left: 83.5px; top: 15px; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(135deg, #ea4335 0%, #fbbc05 35%, #34a853 65%, #4285f4 100%); border-radius: 50%; }
+.label-1y { position: absolute; left: 111.5px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; cursor: pointer; }
+.social-sign-up-with-goog-1w-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#f4f3ff, #f4f3ff); border-radius: 10px; box-shadow: inset 0 0 0 1px #c9c2ff; display: none; }
+.google-mark-1z { position: absolute; left: 83.5px; top: 15px; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(135deg, #ea4335 0%, #fbbc05 35%, #34a853 65%, #4285f4 100%); border-radius: 50%; }
+.label-20 { position: absolute; left: 111.5px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; cursor: pointer; }
+.divider-21 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; }
+.line-22 { position: relative; flex-shrink: 0; width: 150px; height: 1px; flex-shrink: 0; background: linear-gradient(#e3e3ec, #e3e3ec); }
+.text-23 { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.line-24 { position: relative; flex-shrink: 0; width: 150px; height: 1px; flex-shrink: 0; background: linear-gradient(#e3e3ec, #e3e3ec); }
+.name-row-25 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 16px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.field-first-name-26 { position: relative; flex-shrink: 0; width: 172px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-27 { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-priya-28 { position: relative; flex-shrink: 0; width: 172px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.input-priya-28-v0 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.value-29 { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; cursor: pointer; }
+.input-priya-28-v1 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 2px #5b4bdb, 0px 0px 0px 4px rgba(91, 75, 219, 0.18); display: none; }
+.value-2a { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.input-priya-28-v2 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; display: none; }
+.value-2b { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.field-last-name-2c { position: relative; flex-shrink: 0; width: 172px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-2d { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-sharma-2e { position: relative; flex-shrink: 0; width: 172px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.input-sharma-2e-v0 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.value-2f { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; cursor: pointer; }
+.input-sharma-2e-v1 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 2px #5b4bdb, 0px 0px 0px 4px rgba(91, 75, 219, 0.18); display: none; }
+.value-2g { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.input-sharma-2e-v2 { position: absolute; left: 0; top: 0; width: 172px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; display: none; }
+.value-2h { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.field-work-email-2i { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-2j { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-you-company-com-2k { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.input-you-company-com-2k-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.value-2l { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; cursor: pointer; }
+.input-you-company-com-2k-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 2px #5b4bdb, 0px 0px 0px 4px rgba(91, 75, 219, 0.18); display: none; }
+.value-2m { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.input-you-company-com-2k-v2 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; display: none; }
+.value-2n { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.field-password-2o { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-2p { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-at-least-8-charact-2q { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.input-at-least-8-charact-2q-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.value-2r { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; cursor: pointer; }
+.input-at-least-8-charact-2q-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 2px #5b4bdb, 0px 0px 0px 4px rgba(91, 75, 219, 0.18); display: none; }
+.value-2s { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.input-at-least-8-charact-2q-v2 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; display: none; }
+.value-2t { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-2u { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.terms-2v { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.checkbox-2w { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 5px; }
+.text-2x { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.primary-create-account-2y { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; cursor: pointer; }
+.primary-create-account-2y-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 10px; box-shadow: 0px 6px 16px 0px rgba(91, 75, 219, 0.28); }
+.label-2z { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.primary-create-account-2y-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#4a3bc4, #4a3bc4); border-radius: 10px; box-shadow: 0px 10px 24px 0px rgba(91, 75, 219, 0.38); display: none; }
+.label-30 { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.primary-create-account-2y-v2 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#3b2fa0, #3b2fa0); border-radius: 10px; box-shadow: 0px 2px 6px 0px rgba(91, 75, 219, 0.25); display: none; }
+.label-31 { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.link-row-32 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 6px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; }
+.text-33 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.link-sign-in-34 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; cursor: pointer; }
+.forgot-password-desktop-35 { position: relative; width: 1440px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); overflow: hidden; }
+.brand-panel-36 { position: relative; flex-shrink: 0; width: 640px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 56px 64px 64px 64px; align-items: flex-start; justify-content: space-between; box-sizing: border-box; background: linear-gradient(150deg, #6d5cff 0%, #4b38c9 55%, #1f1a5c 100%); }
+.logo-37 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.mark-38 { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 11px; }
+.text-39 { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 800; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.text-3a { position: relative; flex-shrink: 0; width: max-content; min-height: 29px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.pitch-3b { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-3c { position: relative; flex-shrink: 0; width: 512px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 52px; font-weight: 700; line-height: 1.1; text-align: left; white-space: pre-wrap; margin: 0; letter-spacing: -1px; color: #ffffff; }
+.text-3d { position: relative; flex-shrink: 0; width: 460px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #d9d5ff; }
+.testimonial-3e { position: relative; flex-shrink: 0; width: 512px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding: 24px 24px 24px 24px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.text-3f { position: relative; flex-shrink: 0; width: 464px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #14141f; }
+.author-3g { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.avatar-3h { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; background: linear-gradient(135deg, #f472b6 0%, #7c5cff 100%); border-radius: 50%; }
+.name-3i { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-3j { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-3k { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.form-panel-3l { position: relative; flex-shrink: 0; width: 800px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); }
+.card-3m { position: relative; flex-shrink: 0; width: 440px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; padding: 40px 40px 40px 40px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 20px; box-shadow: 0px 24px 60px 0px rgba(31, 26, 92, 0.08); }
+.icon-3n { position: relative; flex-shrink: 0; width: 56px; height: 56px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#efedff, #efedff); border-radius: 16px; }
+.text-3o { position: relative; flex-shrink: 0; width: max-content; min-height: 34px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 26px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.heading-3p { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-3q { position: relative; flex-shrink: 0; width: max-content; min-height: 42px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.text-3r { position: relative; flex-shrink: 0; width: 360px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.field-email-3s { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-3t { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.input-you-company-com-3u { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; }
+.input-you-company-com-3u-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.value-3v { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; cursor: pointer; }
+.input-you-company-com-3u-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 2px #5b4bdb, 0px 0px 0px 4px rgba(91, 75, 219, 0.18); display: none; }
+.value-3w { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.input-you-company-com-3u-v2 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 16px 0px 16px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; display: none; }
+.value-3x { position: absolute; left: 16px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.primary-send-reset-link-3y { position: relative; flex-shrink: 0; width: 360px; height: 48px; flex-shrink: 0; border-radius: 10px; cursor: pointer; }
+.primary-send-reset-link-3y-v0 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 10px; box-shadow: 0px 6px 16px 0px rgba(91, 75, 219, 0.28); }
+.label-3z { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.primary-send-reset-link-3y-v1 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#4a3bc4, #4a3bc4); border-radius: 10px; box-shadow: 0px 10px 24px 0px rgba(91, 75, 219, 0.38); display: none; }
+.label-40 { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.primary-send-reset-link-3y-v2 { position: absolute; left: 0; top: 0; width: 360px; height: 48px; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#3b2fa0, #3b2fa0); border-radius: 10px; box-shadow: 0px 2px 6px 0px rgba(91, 75, 219, 0.25); display: none; }
+.label-41 { position: absolute; left: 151px; top: 14px; width: max-content; min-height: 20px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; cursor: pointer; }
+.back-42 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 8px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.text-43 { position: relative; flex-shrink: 0; width: max-content; min-height: 21px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.link-back-to-sign-in-44 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; cursor: pointer; }
+.note-45 { position: relative; flex-shrink: 0; width: 360px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 16px 16px 16px 16px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); border-radius: 10px; }
+.text-46 { position: relative; flex-shrink: 0; width: 328px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.dashboard-desktop-47 { position: relative; width: 1440px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); overflow: hidden; }
+.sidebar-48 { position: relative; flex-shrink: 0; width: 248px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 20px 20px 20px 20px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); box-shadow: inset 0 0 0 1px #e3e3ec; }
+.logo-49 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 16px 8px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.mark-4a { position: relative; flex-shrink: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 9px; }
+.text-4b { position: relative; flex-shrink: 0; width: max-content; min-height: 24px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 18px; font-weight: 800; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.text-4c { position: relative; flex-shrink: 0; width: max-content; min-height: 24px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 18px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.nav-dashboard-4d { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#efedff, #efedff); border-radius: 8px; }
+.icon-4e { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 5px; }
+.text-4f { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #5b4bdb; }
+.nav-files-4g { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; border-radius: 8px; }
+.icon-4h { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#c9c9d6, #c9c9d6); border-radius: 5px; }
+.text-4i { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.nav-design-systems-4j { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; border-radius: 8px; }
+.icon-4k { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#c9c9d6, #c9c9d6); border-radius: 5px; }
+.text-4l { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.nav-prototypes-4m { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; border-radius: 8px; }
+.icon-4n { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#c9c9d6, #c9c9d6); border-radius: 5px; }
+.text-4o { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.nav-team-4p { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; border-radius: 8px; }
+.icon-4q { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#c9c9d6, #c9c9d6); border-radius: 5px; }
+.text-4r { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.nav-settings-4s { position: relative; flex-shrink: 0; width: 208px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 12px 10px 12px; align-items: center; justify-content: flex-start; box-sizing: border-box; border-radius: 8px; }
+.icon-4t { position: relative; flex-shrink: 0; width: 18px; height: 18px; flex-shrink: 0; background: linear-gradient(#c9c9d6, #c9c9d6); border-radius: 5px; }
+.text-4u { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.main-4v { position: relative; flex-shrink: 0; width: 1192px; height: 1024px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px; padding: 32px 32px 32px 32px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f7f7fb, #f7f7fb); }
+.header-4w { position: relative; flex-shrink: 0; width: 1128px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 0px 0px 0px; align-items: center; justify-content: space-between; box-sizing: border-box; }
+.greeting-4x { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.text-4y { position: relative; flex-shrink: 0; width: max-content; min-height: 34px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.text-4z { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.actions-50 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.search-51 { position: relative; flex-shrink: 0; width: 240px; height: 40px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 14px 0px 14px; align-items: center; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 10px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-52 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #9a9aae; }
+.new-file-53 { position: relative; flex-shrink: 0; width: max-content; height: 40px; flex-shrink: 0; display: flex; flex-direction: row; gap: 0px; padding: 0px 16px 0px 16px; align-items: center; justify-content: center; box-sizing: border-box; background: linear-gradient(#5b4bdb, #5b4bdb); border-radius: 10px; }
+.text-54 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #ffffff; }
+.avatar-55 { position: relative; flex-shrink: 0; width: 40px; height: 40px; flex-shrink: 0; background: linear-gradient(135deg, #f472b6 0%, #7c5cff 100%); border-radius: 50%; }
+.stats-56 { position: relative; flex-shrink: 0; width: 1128px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 26px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.stat-active-files-57 { position: relative; flex-shrink: 0; width: 262px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 20px 20px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-58 { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.text-59 { position: relative; flex-shrink: 0; width: max-content; min-height: 37px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.delta-5a { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 8px 3px 8px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#e8f7ee, #e8f7ee); border-radius: 6px; }
+.text-5b { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #16a34a; }
+.stat-comments-5c { position: relative; flex-shrink: 0; width: 262px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 20px 20px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-5d { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.text-5e { position: relative; flex-shrink: 0; width: max-content; min-height: 37px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.delta-5f { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 8px 3px 8px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#e8f7ee, #e8f7ee); border-radius: 6px; }
+.text-5g { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #16a34a; }
+.stat-prototype-views-5h { position: relative; flex-shrink: 0; width: 262px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 20px 20px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-5i { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.text-5j { position: relative; flex-shrink: 0; width: max-content; min-height: 37px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.delta-5k { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 8px 3px 8px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#e8f7ee, #e8f7ee); border-radius: 6px; }
+.text-5l { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #16a34a; }
+.stat-open-reviews-5m { position: relative; flex-shrink: 0; width: 262px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 20px 20px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-5n { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.text-5o { position: relative; flex-shrink: 0; width: max-content; min-height: 37px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; letter-spacing: -0.5px; color: #14141f; }
+.delta-5p { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 8px 3px 8px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#fdecec, #fdecec); border-radius: 6px; }
+.text-5q { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #e5484d; }
+.panels-5r { position: relative; flex-shrink: 0; width: 1128px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 24px; padding: 0px 0px 0px 0px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; }
+.chart-5s { position: relative; flex-shrink: 0; width: 600px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding: 22px 22px 22px 22px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-5t { position: relative; flex-shrink: 0; width: max-content; min-height: 21px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-5u { position: relative; flex-shrink: 0; width: max-content; min-height: 17px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.bars-5v { position: relative; flex-shrink: 0; width: 556px; height: 190px; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 0px 0px 0px 0px; align-items: flex-end; justify-content: flex-start; box-sizing: border-box; }
+.bar-1-5w { position: relative; flex-shrink: 0; width: 32px; height: 73.6px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-2-5x { position: relative; flex-shrink: 0; width: 32px; height: 99.2px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-3-5y { position: relative; flex-shrink: 0; width: 32px; height: 60.8px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-4-5z { position: relative; flex-shrink: 0; width: 32px; height: 118.4px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-5-60 { position: relative; flex-shrink: 0; width: 32px; height: 92.8px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-6-61 { position: relative; flex-shrink: 0; width: 32px; height: 144px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-7-62 { position: relative; flex-shrink: 0; width: 32px; height: 105.6px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-8-63 { position: relative; flex-shrink: 0; width: 32px; height: 131.2px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-9-64 { position: relative; flex-shrink: 0; width: 32px; height: 112px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-10-65 { position: relative; flex-shrink: 0; width: 32px; height: 153.6px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-11-66 { position: relative; flex-shrink: 0; width: 32px; height: 134.4px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.bar-12-67 { position: relative; flex-shrink: 0; width: 32px; height: 176px; flex-shrink: 0; background: linear-gradient(180deg, #7c6cff 0%, #5b4bdb 100%); border-radius: 6px; }
+.recent-files-68 { position: relative; flex-shrink: 0; width: 504px; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 22px 22px 22px 22px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#ffffff, #ffffff); border-radius: 14px; box-shadow: inset 0 0 0 1px #e3e3ec; }
+.text-69 { position: relative; flex-shrink: 0; width: max-content; min-height: 21px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16px; font-weight: 700; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.row-checkout-flow-6a { position: relative; flex-shrink: 0; width: 460px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 0px 10px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.file-6b { position: relative; flex-shrink: 0; width: 160px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.thumb-6c { position: relative; flex-shrink: 0; width: 36px; height: 28px; flex-shrink: 0; background: linear-gradient(#efedff, #efedff); border-radius: 6px; }
+.text-6d { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-6e { position: relative; flex-shrink: 0; width: 90px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.text-6f { position: relative; flex-shrink: 0; width: 70px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.status-6g { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 10px 3px 10px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f2f2f7, #f2f2f7); border-radius: 10px; }
+.text-6h { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #b45309; }
+.row-design-system-6i { position: relative; flex-shrink: 0; width: 460px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 0px 10px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.file-6j { position: relative; flex-shrink: 0; width: 160px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.thumb-6k { position: relative; flex-shrink: 0; width: 36px; height: 28px; flex-shrink: 0; background: linear-gradient(#efedff, #efedff); border-radius: 6px; }
+.text-6l { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-6m { position: relative; flex-shrink: 0; width: 90px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.text-6n { position: relative; flex-shrink: 0; width: 70px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.status-6o { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 10px 3px 10px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f2f2f7, #f2f2f7); border-radius: 10px; }
+.text-6p { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #16a34a; }
+.row-onboarding-v2-6q { position: relative; flex-shrink: 0; width: 460px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 0px 10px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.file-6r { position: relative; flex-shrink: 0; width: 160px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.thumb-6s { position: relative; flex-shrink: 0; width: 36px; height: 28px; flex-shrink: 0; background: linear-gradient(#efedff, #efedff); border-radius: 6px; }
+.text-6t { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-6u { position: relative; flex-shrink: 0; width: 90px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.text-6v { position: relative; flex-shrink: 0; width: 70px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.status-6w { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 10px 3px 10px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f2f2f7, #f2f2f7); border-radius: 10px; }
+.text-6x { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #6b6b80; }
+.row-marketing-site-6y { position: relative; flex-shrink: 0; width: 460px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 12px; padding: 10px 0px 10px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.file-6z { position: relative; flex-shrink: 0; width: 160px; height: max-content; flex-shrink: 0; display: flex; flex-direction: row; gap: 10px; padding: 0px 0px 0px 0px; align-items: center; justify-content: flex-start; box-sizing: border-box; }
+.thumb-70 { position: relative; flex-shrink: 0; width: 36px; height: 28px; flex-shrink: 0; background: linear-gradient(#efedff, #efedff); border-radius: 6px; }
+.text-71 { position: relative; flex-shrink: 0; width: max-content; min-height: 19px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #14141f; }
+.text-72 { position: relative; flex-shrink: 0; width: 90px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.text-73 { position: relative; flex-shrink: 0; width: 70px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; text-align: left; white-space: pre-wrap; margin: 0; color: #6b6b80; }
+.status-74 { position: relative; flex-shrink: 0; width: max-content; height: max-content; flex-shrink: 0; display: flex; flex-direction: column; gap: 0px; padding: 3px 10px 3px 10px; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; background: linear-gradient(#f2f2f7, #f2f2f7); border-radius: 10px; }
+.text-75 { position: relative; flex-shrink: 0; width: max-content; min-height: 16px; flex-shrink: 0; font-family: 'Inter', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; text-align: left; white-space: pre; margin: 0; color: #16a34a; }
+  </style>
+</head>
+<body>
+  <main class="vx-stage" data-start="s-F6YyAtUgUi" data-fit>
+    <section class="login-desktop-0" id="s-F6YyAtUgUi" data-flex>
+      <div class="brand-panel-1">
+        <div class="logo-2">
+          <div class="mark-3">
+            <p class="text-4">F</p>
+          </div>
+          <p class="text-5">Figmy</p>
+        </div>
+        <div class="pitch-6">
+          <h2 class="text-7">Design together,
+ship faster.</h2>
+          <p class="text-8">Real-time collaboration, prototyping and design systems in one place.</p>
+        </div>
+        <div class="testimonial-9">
+          <p class="text-a">“We moved our whole design team to Figmy in a week. Handoff has never been this smooth.”</p>
+          <div class="author-b">
+            <div class="avatar-c">
+            </div>
+            <div class="name-d">
+              <p class="text-e">Priya Sharma</p>
+              <p class="text-f">Head of Design, Northwind</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-panel-g">
+        <div class="sign-in-card-h">
+          <div class="heading-i">
+            <h2 class="text-j">Welcome back</h2>
+            <p class="text-k">Sign in to continue to your workspace.</p>
+          </div>
+          <div class="button-continue-with-goo-l">
+            <div class="google-mark-m">
+            </div>
+            <p class="text-n">Continue with Google</p>
+          </div>
+          <div class="divider-o">
+            <div class="line-p">
+            </div>
+            <p class="text-q">or</p>
+            <div class="line-r">
+            </div>
+          </div>
+          <div class="field-email-s">
+            <p class="text-t">Email</p>
+            <div class="input-u">
+              <p class="text-v">you@company.com</p>
+            </div>
+          </div>
+          <div class="field-password-w">
+            <p class="text-x">Password</p>
+            <div class="input-y">
+              <p class="text-z">••••••••••</p>
+              <p class="text-10">Show</p>
+            </div>
+          </div>
+          <div class="row-remember-11">
+            <div class="remember-me-12">
+              <div class="checkbox-13">
+              </div>
+              <p class="text-14">Remember me</p>
+            </div>
+            <p class="text-15" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-_tAosSODFR&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Forgot password?</p>
+          </div>
+          <div class="button-sign-in-16" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-F6YyAtUgUi&quot;,&quot;anim&quot;:&quot;dissolve&quot;,&quot;d&quot;:300},{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-QHcA9-KPP3&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>
+            <p class="text-17">Sign in</p>
+          </div>
+          <div class="sign-up-18">
+            <p class="text-19">New here?</p>
+            <p class="text-1a" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-IMOtD08x1T&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Create an account</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sign-up-desktop-1b" id="s-IMOtD08x1T" data-flex>
+      <div class="brand-panel-1c">
+        <div class="logo-1d">
+          <div class="mark-1e">
+            <p class="text-1f">F</p>
+          </div>
+          <p class="text-1g">Figmy</p>
+        </div>
+        <div class="pitch-1h">
+          <h2 class="text-1i">Design together,
+ship faster.</h2>
+          <p class="text-1j">Real-time collaboration, prototyping and design systems in one place.</p>
+        </div>
+        <div class="testimonial-1k">
+          <p class="text-1l">“We moved our whole design team to Figmy in a week. Handoff has never been this smooth.”</p>
+          <div class="author-1m">
+            <div class="avatar-1n">
+            </div>
+            <div class="name-1o">
+              <p class="text-1p">Priya Sharma</p>
+              <p class="text-1q">Head of Design, Northwind</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-panel-1r">
+        <div class="card-1s">
+          <div class="heading-1t">
+            <h2 class="text-1u">Create your account</h2>
+            <p class="text-1v">Start designing with your team in minutes. Free for up to 3 editors.</p>
+          </div>
+          <div class="social-sign-up-with-goog-1w" data-instance data-follow>
+            <div class="social-sign-up-with-goog-1w-v0 vx-on" data-variant="v-HYBl4dpGFa" data-w="360" data-h="48">
+              <div class="google-mark-1x">
+              </div>
+              <p class="label-1y" data-links='[{&quot;t&quot;:&quot;mouse-enter&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-Zw3SoJa-8D&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign up with Google</p>
+            </div>
+            <div class="social-sign-up-with-goog-1w-v1" data-variant="v-Zw3SoJa-8D" data-w="360" data-h="48">
+              <div class="google-mark-1z">
+              </div>
+              <p class="label-20" data-links='[{&quot;t&quot;:&quot;mouse-leave&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-HYBl4dpGFa&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Continue with Google</p>
+            </div>
+          </div>
+          <div class="divider-21">
+            <div class="line-22">
+            </div>
+            <p class="text-23">or</p>
+            <div class="line-24">
+            </div>
+          </div>
+          <div class="name-row-25">
+            <div class="field-first-name-26">
+              <p class="text-27">First name</p>
+              <div class="input-priya-28" data-instance>
+                <div class="input-priya-28-v0 vx-on" data-variant="v-bSmagCH9Pa" data-w="172" data-h="48">
+                  <p class="value-29" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-TzHB_EuTct&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Priya</p>
+                </div>
+                <div class="input-priya-28-v1" data-variant="v-TzHB_EuTct" data-w="172" data-h="48">
+                  <p class="value-2a">you@company.com</p>
+                </div>
+                <div class="input-priya-28-v2" data-variant="v-YYXTo330AX" data-w="172" data-h="48">
+                  <p class="value-2b">priya@northwind.com</p>
+                </div>
+              </div>
+            </div>
+            <div class="field-last-name-2c">
+              <p class="text-2d">Last name</p>
+              <div class="input-sharma-2e" data-instance>
+                <div class="input-sharma-2e-v0 vx-on" data-variant="v-bSmagCH9Pa" data-w="172" data-h="48">
+                  <p class="value-2f" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-TzHB_EuTct&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sharma</p>
+                </div>
+                <div class="input-sharma-2e-v1" data-variant="v-TzHB_EuTct" data-w="172" data-h="48">
+                  <p class="value-2g">you@company.com</p>
+                </div>
+                <div class="input-sharma-2e-v2" data-variant="v-YYXTo330AX" data-w="172" data-h="48">
+                  <p class="value-2h">priya@northwind.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field-work-email-2i">
+            <p class="text-2j">Work email</p>
+            <div class="input-you-company-com-2k" data-instance data-follow>
+              <div class="input-you-company-com-2k-v0 vx-on" data-variant="v-bSmagCH9Pa" data-w="360" data-h="48">
+                <p class="value-2l" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-TzHB_EuTct&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>you@company.com</p>
+              </div>
+              <div class="input-you-company-com-2k-v1" data-variant="v-TzHB_EuTct" data-w="360" data-h="48">
+                <p class="value-2m">you@company.com</p>
+              </div>
+              <div class="input-you-company-com-2k-v2" data-variant="v-YYXTo330AX" data-w="360" data-h="48">
+                <p class="value-2n">priya@northwind.com</p>
+              </div>
+            </div>
+          </div>
+          <div class="field-password-2o">
+            <p class="text-2p">Password</p>
+            <div class="input-at-least-8-charact-2q" data-instance data-follow>
+              <div class="input-at-least-8-charact-2q-v0 vx-on" data-variant="v-bSmagCH9Pa" data-w="360" data-h="48">
+                <p class="value-2r" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-TzHB_EuTct&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>At least 8 characters</p>
+              </div>
+              <div class="input-at-least-8-charact-2q-v1" data-variant="v-TzHB_EuTct" data-w="360" data-h="48">
+                <p class="value-2s">you@company.com</p>
+              </div>
+              <div class="input-at-least-8-charact-2q-v2" data-variant="v-YYXTo330AX" data-w="360" data-h="48">
+                <p class="value-2t">priya@northwind.com</p>
+              </div>
+            </div>
+            <p class="text-2u">Use 8+ characters with a number and a symbol.</p>
+          </div>
+          <div class="terms-2v">
+            <div class="checkbox-2w">
+            </div>
+            <p class="text-2x">I agree to the Terms and Privacy Policy</p>
+          </div>
+          <div class="primary-create-account-2y" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-QHcA9-KPP3&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]' data-instance data-follow>
+            <div class="primary-create-account-2y-v0 vx-on" data-variant="v-EthT4OUTq0" data-w="360" data-h="48">
+              <p class="label-2z" data-links='[{&quot;t&quot;:&quot;mouse-enter&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-q_Q_H0VFfp&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Create account</p>
+            </div>
+            <div class="primary-create-account-2y-v1" data-variant="v-q_Q_H0VFfp" data-w="360" data-h="48">
+              <p class="label-30" data-links='[{&quot;t&quot;:&quot;mouse-leave&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-EthT4OUTq0&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300},{&quot;t&quot;:&quot;press&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-KfVF_Zqc60&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign in</p>
+            </div>
+            <div class="primary-create-account-2y-v2" data-variant="v-KfVF_Zqc60" data-w="360" data-h="48">
+              <p class="label-31" data-links='[{&quot;t&quot;:&quot;mouse-leave&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-EthT4OUTq0&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign in</p>
+            </div>
+          </div>
+          <div class="link-row-32">
+            <p class="text-33">Already have an account?</p>
+            <p class="link-sign-in-34" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-F6YyAtUgUi&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign in</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="forgot-password-desktop-35" id="s-_tAosSODFR" data-flex>
+      <div class="brand-panel-36">
+        <div class="logo-37">
+          <div class="mark-38">
+            <p class="text-39">F</p>
+          </div>
+          <p class="text-3a">Figmy</p>
+        </div>
+        <div class="pitch-3b">
+          <h2 class="text-3c">Design together,
+ship faster.</h2>
+          <p class="text-3d">Real-time collaboration, prototyping and design systems in one place.</p>
+        </div>
+        <div class="testimonial-3e">
+          <p class="text-3f">“We moved our whole design team to Figmy in a week. Handoff has never been this smooth.”</p>
+          <div class="author-3g">
+            <div class="avatar-3h">
+            </div>
+            <div class="name-3i">
+              <p class="text-3j">Priya Sharma</p>
+              <p class="text-3k">Head of Design, Northwind</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-panel-3l">
+        <div class="card-3m">
+          <div class="icon-3n">
+            <p class="text-3o">🔑</p>
+          </div>
+          <div class="heading-3p">
+            <h2 class="text-3q">Forgot your password?</h2>
+            <p class="text-3r">Enter the email you signed up with and we’ll send you a link to reset it.</p>
+          </div>
+          <div class="field-email-3s">
+            <p class="text-3t">Email</p>
+            <div class="input-you-company-com-3u" data-instance data-follow>
+              <div class="input-you-company-com-3u-v0 vx-on" data-variant="v-bSmagCH9Pa" data-w="360" data-h="48">
+                <p class="value-3v" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-TzHB_EuTct&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>you@company.com</p>
+              </div>
+              <div class="input-you-company-com-3u-v1" data-variant="v-TzHB_EuTct" data-w="360" data-h="48">
+                <p class="value-3w">you@company.com</p>
+              </div>
+              <div class="input-you-company-com-3u-v2" data-variant="v-YYXTo330AX" data-w="360" data-h="48">
+                <p class="value-3x">priya@northwind.com</p>
+              </div>
+            </div>
+          </div>
+          <div class="primary-send-reset-link-3y" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-F6YyAtUgUi&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]' data-instance data-follow>
+            <div class="primary-send-reset-link-3y-v0 vx-on" data-variant="v-EthT4OUTq0" data-w="360" data-h="48">
+              <p class="label-3z" data-links='[{&quot;t&quot;:&quot;mouse-enter&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-q_Q_H0VFfp&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Send reset link</p>
+            </div>
+            <div class="primary-send-reset-link-3y-v1" data-variant="v-q_Q_H0VFfp" data-w="360" data-h="48">
+              <p class="label-40" data-links='[{&quot;t&quot;:&quot;mouse-leave&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-EthT4OUTq0&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300},{&quot;t&quot;:&quot;press&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-KfVF_Zqc60&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign in</p>
+            </div>
+            <div class="primary-send-reset-link-3y-v2" data-variant="v-KfVF_Zqc60" data-w="360" data-h="48">
+              <p class="label-41" data-links='[{&quot;t&quot;:&quot;mouse-leave&quot;,&quot;a&quot;:&quot;change-to&quot;,&quot;to&quot;:&quot;v-EthT4OUTq0&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Sign in</p>
+            </div>
+          </div>
+          <div class="back-42">
+            <p class="text-43">←</p>
+            <p class="link-back-to-sign-in-44" data-links='[{&quot;t&quot;:&quot;click&quot;,&quot;a&quot;:&quot;navigate&quot;,&quot;to&quot;:&quot;s-F6YyAtUgUi&quot;,&quot;anim&quot;:&quot;smart-animate&quot;,&quot;e&quot;:&quot;ease-out&quot;,&quot;d&quot;:300}]'>Back to sign in</p>
+          </div>
+          <div class="note-45">
+            <p class="text-46">Didn’t get the email? Check your spam folder or try again in a few minutes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-desktop-47" id="s-QHcA9-KPP3" data-flex>
+      <div class="sidebar-48">
+        <div class="logo-49">
+          <div class="mark-4a">
+            <p class="text-4b">F</p>
+          </div>
+          <p class="text-4c">Figmy</p>
+        </div>
+        <div class="nav-dashboard-4d">
+          <div class="icon-4e">
+          </div>
+          <p class="text-4f">Dashboard</p>
+        </div>
+        <div class="nav-files-4g">
+          <div class="icon-4h">
+          </div>
+          <p class="text-4i">Files</p>
+        </div>
+        <div class="nav-design-systems-4j">
+          <div class="icon-4k">
+          </div>
+          <p class="text-4l">Design systems</p>
+        </div>
+        <div class="nav-prototypes-4m">
+          <div class="icon-4n">
+          </div>
+          <p class="text-4o">Prototypes</p>
+        </div>
+        <div class="nav-team-4p">
+          <div class="icon-4q">
+          </div>
+          <p class="text-4r">Team</p>
+        </div>
+        <div class="nav-settings-4s">
+          <div class="icon-4t">
+          </div>
+          <p class="text-4u">Settings</p>
+        </div>
+      </div>
+      <div class="main-4v">
+        <div class="header-4w">
+          <div class="greeting-4x">
+            <p class="text-4y">Good morning, Priya 👋</p>
+            <p class="text-4z">Here’s what’s happening across your workspace.</p>
+          </div>
+          <div class="actions-50">
+            <div class="search-51">
+              <p class="text-52">⌕  Search files…</p>
+            </div>
+            <div class="new-file-53">
+              <p class="text-54">+ New file</p>
+            </div>
+            <div class="avatar-55">
+            </div>
+          </div>
+        </div>
+        <div class="stats-56">
+          <div class="stat-active-files-57">
+            <p class="text-58">Active files</p>
+            <h2 class="text-59">128</h2>
+            <div class="delta-5a">
+              <p class="text-5b">▲ 12% this week</p>
+            </div>
+          </div>
+          <div class="stat-comments-5c">
+            <p class="text-5d">Comments</p>
+            <h2 class="text-5e">342</h2>
+            <div class="delta-5f">
+              <p class="text-5g">▲ 8% this week</p>
+            </div>
+          </div>
+          <div class="stat-prototype-views-5h">
+            <p class="text-5i">Prototype views</p>
+            <h2 class="text-5j">2,914</h2>
+            <div class="delta-5k">
+              <p class="text-5l">▲ 21% this week</p>
+            </div>
+          </div>
+          <div class="stat-open-reviews-5m">
+            <p class="text-5n">Open reviews</p>
+            <h2 class="text-5o">7</h2>
+            <div class="delta-5p">
+              <p class="text-5q">▼ 3 since Monday</p>
+            </div>
+          </div>
+        </div>
+        <div class="panels-5r">
+          <div class="chart-5s">
+            <p class="text-5t">Design activity</p>
+            <p class="text-5u">Edits per week across all files</p>
+            <div class="bars-5v">
+              <div class="bar-1-5w">
+              </div>
+              <div class="bar-2-5x">
+              </div>
+              <div class="bar-3-5y">
+              </div>
+              <div class="bar-4-5z">
+              </div>
+              <div class="bar-5-60">
+              </div>
+              <div class="bar-6-61">
+              </div>
+              <div class="bar-7-62">
+              </div>
+              <div class="bar-8-63">
+              </div>
+              <div class="bar-9-64">
+              </div>
+              <div class="bar-10-65">
+              </div>
+              <div class="bar-11-66">
+              </div>
+              <div class="bar-12-67">
+              </div>
+            </div>
+          </div>
+          <div class="recent-files-68">
+            <p class="text-69">Recent files</p>
+            <div class="row-checkout-flow-6a">
+              <div class="file-6b">
+                <div class="thumb-6c">
+                </div>
+                <p class="text-6d">Checkout flow</p>
+              </div>
+              <p class="text-6e">Priya S.</p>
+              <p class="text-6f">2h ago</p>
+              <div class="status-6g">
+                <p class="text-6h">In review</p>
+              </div>
+            </div>
+            <div class="row-design-system-6i">
+              <div class="file-6j">
+                <div class="thumb-6k">
+                </div>
+                <p class="text-6l">Design system</p>
+              </div>
+              <p class="text-6m">Omar H.</p>
+              <p class="text-6n">Yesterday</p>
+              <div class="status-6o">
+                <p class="text-6p">Published</p>
+              </div>
+            </div>
+            <div class="row-onboarding-v2-6q">
+              <div class="file-6r">
+                <div class="thumb-6s">
+                </div>
+                <p class="text-6t">Onboarding v2</p>
+              </div>
+              <p class="text-6u">Mei C.</p>
+              <p class="text-6v">Mon</p>
+              <div class="status-6w">
+                <p class="text-6x">Draft</p>
+              </div>
+            </div>
+            <div class="row-marketing-site-6y">
+              <div class="file-6z">
+                <div class="thumb-70">
+                </div>
+                <p class="text-71">Marketing site</p>
+              </div>
+              <p class="text-72">Leo D.</p>
+              <p class="text-73">Sep 12</p>
+              <div class="status-74">
+                <p class="text-75">Published</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+(function () {
+  var EASE = {"linear":"linear","ease-in":"cubic-bezier(.42,0,1,1)","ease-out":"cubic-bezier(0,0,.58,1)","ease-in-out":"cubic-bezier(.42,0,.58,1)","ease-in-back":"cubic-bezier(.36,0,.66,-.56)","ease-out-back":"cubic-bezier(.34,1.56,.64,1)","spring":"cubic-bezier(.3,1.35,.5,1)","gentle":"cubic-bezier(.25,1.15,.5,1)","bouncy":"cubic-bezier(.3,1.7,.45,.9)"};
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.vx-stage > section'));
+  if (!screens.length) return;
+  var stage = document.querySelector('.vx-stage');
+  var history = [], overlays = [], timers = [];
+  var start = document.getElementById(stage.getAttribute('data-start')) || screens[0];
+  function show(el) { screens.forEach(function (s) { s.classList.toggle('vx-active', s === el); s.style.transform = ''; s.style.opacity = ''; }); fit(); arm(el); }
+  function fit() {
+    var cur = current(); if (!cur || !stage.hasAttribute('data-fit')) return;
+    var k = Math.min(1, (window.innerWidth - 32) / cur.offsetWidth, (window.innerHeight - 32) / cur.offsetHeight);
+    stage.style.transform = 'scale(' + k + ')';
+    stage.style.width = cur.offsetWidth + 'px'; stage.style.height = cur.offsetHeight + 'px';
+  }
+  function current() { return history.length ? history[history.length - 1].el : null; }
+  function offset(dir, amt, el) {
+    var w = el.offsetWidth, h = el.offsetHeight; dir = dir || 'left';
+    return dir === 'left' ? 'translate(' + amt * w + 'px,0)' : dir === 'right' ? 'translate(' + -amt * w + 'px,0)' : dir === 'up' ? 'translate(0,' + amt * h + 'px)' : 'translate(0,' + -amt * h + 'px)';
+  }
+  function transition(from, to, l, reverse) {
+    var anim = l.anim || 'instant', d = l.d || 0, ease = EASE[l.e] || EASE['ease-out'];
+    if (anim === 'slide-left') { anim = 'move-in'; l.dir = 'left'; } else if (anim === 'slide-right') { anim = 'move-in'; l.dir = 'right'; } else if (anim === 'slide-up') { anim = 'move-in'; l.dir = 'up'; }
+    if (!from || anim === 'instant' || !d) { show(to); return; }
+    to.classList.add('vx-active'); from.classList.add('vx-active');
+    var a = reverse ? to : from, b = reverse ? from : to;
+    var set = function (el, tf, op) { el.style.transform = tf; el.style.opacity = op; };
+    var aStart = ['none', 1], aEnd = ['none', 1], bStart = ['none', 1], bEnd = ['none', 1];
+    if (anim === 'dissolve' || anim === 'smart-animate') { bStart = ['none', 0]; }
+    else if (anim === 'move-in') { bStart = [offset(l.dir, 1, b), 1]; }
+    else if (anim === 'move-out') { aEnd = [offset(l.dir, -1, a), 1]; }
+    else if (anim === 'push') { aEnd = [offset(l.dir, -1, a), 1]; bStart = [offset(l.dir, 1, b), 1]; }
+    else if (anim === 'slide-in') { aEnd = [offset(l.dir, -0.3, a), 0.7]; bStart = [offset(l.dir, 1, b), 1]; }
+    else if (anim === 'slide-out') { aEnd = [offset(l.dir, -1, a), 1]; bStart = [offset(l.dir, -0.3, b), 0.7]; }
+    var top = (anim === 'move-out' || anim === 'slide-out') ? a : b;
+    top.style.zIndex = 2; (top === a ? b : a).style.zIndex = 1;
+    var s1 = reverse ? [aEnd, bEnd] : [aStart, bStart], s2 = reverse ? [aStart, bStart] : [aEnd, bEnd];
+    [a, b].forEach(function (el) { el.style.transition = 'none'; });
+    set(a, s1[0][0], s1[0][1]); set(b, s1[1][0], s1[1][1]);
+    void a.offsetWidth;
+    [a, b].forEach(function (el) { el.style.transition = 'transform ' + d + 'ms ' + ease + ', opacity ' + d + 'ms ' + ease; });
+    set(a, s2[0][0], s2[0][1]); set(b, s2[1][0], s2[1][1]);
+    setTimeout(function () { [a, b].forEach(function (el) { el.style.transition = ''; el.style.zIndex = ''; }); show(to); }, d + 20);
+  }
+  function go(id, l, temp) {
+    var to = document.getElementById(id); var from = current();
+    if (!to || to === from) return;
+    closeAll();
+    history.push({ el: to, l: l, temp: temp }); transition(from, to, l, false);
+  }
+  function back() {
+    if (overlays.length) return closeOverlay();
+    if (history.length < 2) return;
+    var top = history.pop(); transition(top.el, current(), top.l, true);
+  }
+  function openOverlay(id, l, temp, swap) {
+    var src = document.getElementById(id); if (!src) return;
+    if (swap) closeOverlay(true);
+    var wrap = document.createElement('div'); wrap.className = 'vx-overlay';
+    var ov = l.ov || { position: 'center', closeOnOutside: true, background: 'rgba(0,0,0,.4)' };
+    wrap.style.background = ov.background; wrap.setAttribute('data-pos', ov.position || 'center');
+    var clone = src.cloneNode(true); clone.removeAttribute('id'); clone.classList.add('vx-active');
+    wrap.appendChild(clone); stage.appendChild(wrap);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap && ov.closeOnOutside !== false) closeOverlay(); });
+    bind(clone);
+    overlays.push({ el: wrap, temp: temp });
+    var d = l.d || 0, ease = EASE[l.e] || EASE['ease-out'];
+    wrap.style.opacity = 0; clone.style.transform = (l.anim && l.anim.indexOf('move') === 0) ? offset(l.dir || 'up', 1, clone) : 'none';
+    void wrap.offsetWidth;
+    wrap.style.transition = 'opacity ' + d + 'ms ' + ease; clone.style.transition = 'transform ' + d + 'ms ' + ease;
+    wrap.style.opacity = 1; clone.style.transform = 'none';
+    arm(clone);
+  }
+  function closeOverlay(now) { var o = overlays.pop(); if (!o) return; if (now) return o.el.remove(); o.el.style.opacity = 0; setTimeout(function () { o.el.remove(); }, 200); }
+  function closeAll() { while (overlays.length) closeOverlay(true); }
+  function changeVariant(el, to, l, temp) {
+    var inst = el.closest('[data-instance]'); if (!inst) return;
+    var kids = Array.prototype.slice.call(inst.children).filter(function (c) { return c.hasAttribute('data-variant'); });
+    var target = kids.filter(function (c) { return c.getAttribute('data-variant') === to; })[0];
+    var cur = kids.filter(function (c) { return c.classList.contains('vx-on'); })[0];
+    if (!target || target === cur) return;
+    if (temp && !inst.__prev) { inst.__prev = cur; inst.__temp = temp; inst.__link = l; }
+    var d = (l.anim && l.anim !== 'instant') ? (l.d || 0) : 0, ease = EASE[l.e] || EASE['ease-out'];
+    target.style.display = 'block'; target.classList.add('vx-on');
+    if (cur) cur.classList.remove('vx-on');
+    if (d) {
+      target.style.transition = 'none'; target.style.opacity = 0; void target.offsetWidth;
+      target.style.transition = 'opacity ' + d + 'ms ' + ease; target.style.opacity = 1;
+      if (cur) { cur.style.transition = 'opacity ' + d + 'ms ' + ease; cur.style.opacity = 0; }
+      setTimeout(function () { if (cur && !cur.classList.contains('vx-on')) { cur.style.display = 'none'; cur.style.opacity = ''; } }, d);
+    } else if (cur) cur.style.display = 'none';
+    if (inst.hasAttribute('data-follow')) {
+      inst.style.transition = d ? 'width ' + d + 'ms ' + ease + ', height ' + d + 'ms ' + ease : '';
+      inst.style.width = target.getAttribute('data-w') + 'px'; inst.style.height = target.getAttribute('data-h') + 'px';
+    }
+    armVariant(inst, target);
+  }
+  function revertVariant(inst, kind) {
+    if (!inst.__prev || (kind && inst.__temp !== kind)) return;
+    var prev = inst.__prev, l = inst.__link; inst.__prev = null;
+    changeVariant(prev, prev.getAttribute('data-variant'), l, null);
+  }
+  function armVariant(inst, variant) {
+    (inst.__timers || []).forEach(clearTimeout); inst.__timers = [];
+    [variant].concat(Array.prototype.slice.call(variant.querySelectorAll('[data-links]'))).forEach(function (el) {
+      linksOf(el).forEach(function (l) { if (l.t === 'after-delay') inst.__timers.push(setTimeout(function () { follow(l, el); }, l.dl || 800)); });
+    });
+  }
+  function follow(l, el, temp) {
+    if (l.a === 'change-to') return changeVariant(el, l.to, l, temp ? (l.t === 'press' ? 'press' : 'hover') : null);
+    if (l.a === 'back') return back();
+    if (l.a === 'close-overlay') return closeOverlay();
+    if (l.a === 'url') { if (/^https?:\/\//.test(l.url || '')) window.open(l.url, '_blank', 'noopener'); return; }
+    if (l.a === 'scroll-to') { var t = document.getElementById(l.to) || document.querySelector('[data-node="' + l.to + '"]'); if (t) t.scrollIntoView({ behavior: 'smooth' }); return; }
+    if (l.a === 'overlay' || l.a === 'swap-overlay') return openOverlay(l.to, l, temp ? el : null, l.a === 'swap-overlay');
+    if (l.to) go(l.to, l, temp ? el : null);
+  }
+  function linksOf(el) { try { return JSON.parse(el.getAttribute('data-links')) || []; } catch (e) { return []; } }
+  function bind(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-links]'), function (el) {
+      linksOf(el).forEach(function (l) {
+        if (l.t === 'click') el.addEventListener('click', function (e) { e.stopPropagation(); follow(l, el); });
+        if (l.t === 'mouse-enter') el.addEventListener('mouseenter', function () { follow(l, el); });
+        if (l.t === 'mouse-leave') el.addEventListener('mouseleave', function () { follow(l, el); });
+        if (l.t === 'hover' && l.a === 'change-to') {
+          el.addEventListener('mouseenter', function () { follow(l, el, true); });
+          var hi = el.closest('[data-instance]'); if (hi && !hi.__hoverBound) { hi.__hoverBound = true; hi.addEventListener('mouseleave', function () { revertVariant(hi, 'hover'); }); }
+        } else if (l.t === 'hover') { el.addEventListener('mouseenter', function () { follow(l, el, true); }); el.addEventListener('mouseleave', function () { undoTemp(el); }); }
+        if (l.t === 'press') { el.addEventListener('pointerdown', function () { follow(l, el, true); }); el.addEventListener('pointerup', function () { undoTemp(el); }); }
+      });
+    });
+  }
+  function undoTemp(el) {
+    var o = overlays[overlays.length - 1]; if (o && o.temp === el) return closeOverlay();
+    var h = history[history.length - 1]; if (h && h.temp === el) back();
+  }
+  document.addEventListener('pointerup', function () { Array.prototype.forEach.call(document.querySelectorAll('[data-instance]'), function (i) { revertVariant(i, 'press'); }); });
+  function arm(screen) {
+    timers.forEach(clearTimeout); timers = [];
+    Array.prototype.forEach.call(screen.querySelectorAll('[data-instance] > .vx-on'), function (v) { armVariant(v.parentNode, v); });
+    var all = [screen].concat(Array.prototype.slice.call(screen.querySelectorAll('[data-links]'))).filter(function (el) { return !el.closest('[data-variant]'); });
+    all.forEach(function (el) { linksOf(el).forEach(function (l) { if (l.t === 'after-delay') timers.push(setTimeout(function () { follow(l, el); }, l.dl || 800)); }); });
+  }
+  document.addEventListener('keydown', function (e) {
+    var scope = overlays.length ? overlays[overlays.length - 1].el : current();
+    if (!scope) return;
+    var hit = false;
+    Array.prototype.forEach.call(scope.querySelectorAll('[data-links]'), function (el) {
+      linksOf(el).forEach(function (l) { if (!hit && l.t === 'key' && l.k && l.k.toLowerCase() === e.key.toLowerCase()) { hit = true; follow(l, el); } });
+    });
+    if (!hit && (e.key === 'Escape' || e.key === 'Backspace')) back();
+  });
+  bind(document);
+  history.push({ el: start, l: { anim: 'instant' } }); show(start);
+  window.addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>

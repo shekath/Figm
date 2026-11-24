@@ -59,6 +59,18 @@ function backgroundCss(fills: Paint[]): string | null {
   return layers.join(', ');
 }
 
+function flexBoxCss(al: NonNullable<SceneNode['autoLayout']>): string[] {
+  return [
+    'display: flex',
+    `flex-direction: ${al.direction === 'horizontal' ? 'row' : 'column'}`,
+    `gap: ${px(al.gap)}`,
+    `padding: ${px(al.padding.t)} ${px(al.padding.r)} ${px(al.padding.b)} ${px(al.padding.l)}`,
+    `align-items: ${al.align === 'start' ? 'flex-start' : al.align === 'end' ? 'flex-end' : 'center'}`,
+    `justify-content: ${al.justify === 'start' ? 'flex-start' : al.justify === 'end' ? 'flex-end' : al.justify}`,
+    'box-sizing: border-box',
+  ];
+}
+
 /** Pure CSS declarations for a node (no positioning). */
 function visualCss(n: SceneNode): string[] {
   const css: string[] = [];
@@ -218,15 +230,7 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
     if (n.maxH) css.push(`max-height: ${px(n.maxH)}`);
   }
   if (flexSelf) {
-    css.push(
-      'display: flex',
-      `flex-direction: ${al!.direction === 'horizontal' ? 'row' : 'column'}`,
-      `gap: ${px(al!.gap)}`,
-      `padding: ${px(al!.padding.t)} ${px(al!.padding.r)} ${px(al!.padding.b)} ${px(al!.padding.l)}`,
-      `align-items: ${al!.align === 'start' ? 'flex-start' : al!.align === 'end' ? 'flex-end' : 'center'}`,
-      `justify-content: ${al!.justify === 'start' ? 'flex-start' : al!.justify === 'end' ? 'flex-end' : al!.justify}`,
-      'box-sizing: border-box',
-    );
+    css.push(...flexBoxCss(al!));
     if (al!.wrap) css.push('flex-wrap: wrap', `row-gap: ${px(al!.counterGap ?? al!.gap)}`);
     if (n.children.some((c) => ctx.nodes[c]?.layoutAbsolute)) css.push('position: relative');
   }
@@ -266,12 +270,15 @@ function emit(id: string, ctx: Ctx, parent: SceneNode | null, inFlow: boolean, d
       .map((v, i) => {
         const vw = follows ? v.w : n.w,
           vh = follows ? v.h : n.h;
-        const sx = vw / (v.w || 1),
-          sy = vh / (v.h || 1);
+        // auto-layout components reflow at the instance size (flex) instead of being stretched
+        const reflow = !!v.autoLayout && ctx.opts.layout === 'flex';
+        const sx = reflow ? 1 : vw / (v.w || 1),
+          sy = reflow ? 1 : vh / (v.h || 1);
         const innerCls = `${cls}-v${i}`;
-        const bg = backgroundCss(v.fills);
+        const box = reflow ? `width: ${px(vw)}; height: ${px(vh)}; ${flexBoxCss(v.autoLayout!).join('; ')};` : `width: ${px(v.w)}; height: ${px(v.h)}; transform-origin: 0 0; transform: scale(${Math.round(sx * 1000) / 1000}, ${Math.round(sy * 1000) / 1000});`;
+        const look = visualCss({ ...v, type: 'frame', opacity: 1, rotation: 0, flipX: false, flipY: false, text: undefined } as SceneNode);
         ctx.rules.push(
-          `.${innerCls} { position: absolute; left: 0; top: 0; width: ${px(v.w)}; height: ${px(v.h)}; transform-origin: 0 0; transform: scale(${Math.round(sx * 1000) / 1000}, ${Math.round(sy * 1000) / 1000});${bg ? ` background: ${bg};` : ''}${v.radius ? ` border-radius: ${px(v.radius)};` : ''}${v.clip ? ' overflow: hidden;' : ''}${interactive && v.id !== comp.id ? ' display: none;' : ''} }`,
+          `.${innerCls} { position: absolute; left: 0; top: 0; ${box} ${look.join('; ')}${look.length ? ';' : ''}${interactive && v.id !== comp.id ? ' display: none;' : ''} }`,
         );
         const vAttrs = [`class="${innerCls}${interactive && v.id === comp.id ? ' vx-on' : ''}"`];
         if (interactive) vAttrs.push(`data-variant="v-${v.id}"`, `data-w="${Math.round(vw * 100) / 100}"`, `data-h="${Math.round(vh * 100) / 100}"`);
