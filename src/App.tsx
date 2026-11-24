@@ -7,6 +7,7 @@ import { LeftPanel } from './panels/LeftPanel';
 import { RightPanel } from './panels/RightPanel';
 import { Timeline } from './panels/Timeline';
 import { ResearchKit } from './panels/ResearchKit';
+import { PluginEditor, PluginHost } from './plugins/PluginsUI';
 import { Presenter } from './Presenter';
 import { ContextMenu, ShortcutsDialog, Toast } from './Overlays';
 import { Home } from './Home';
@@ -222,6 +223,8 @@ export function App() {
       <CommandPalette />
       <VariablesModal />
       <ResearchKit />
+      <PluginHost />
+      <PluginEditor />
       <FigmaImportDialog />
       <ExportDialog />
       <ShareDialog />

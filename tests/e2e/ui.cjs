@@ -120,6 +120,19 @@ const assert = (c, m) => {
   await p.click('button:has-text("Place on canvas")');
   assert(await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]]?.name.startsWith('Persona'); }), 'research kit (built-in engine) places a persona on the canvas');
 
+  // plugins: a plugin (Figma-compatible API) runs in a sandbox and creates layers as one undo step
+  await p.evaluate(() => {
+    const code = "const r = figma.createRectangle(); r.name = 'From plugin'; r.resize(80, 40); r.fills = [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }]; figma.currentPage.selection = [r]; figma.closePlugin();";
+    const list = JSON.parse(localStorage.getItem('figmy:plugins') || '[]');
+    list.unshift({ id: 'test:p', name: 'E2E plugin', source: 'editor', updatedAt: 0, manifest: { name: 'E2E plugin', main: 'code.js' }, code, ui: '' });
+    localStorage.setItem('figmy:plugins', JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('figmy:run-plugin', { detail: { id: 'test:p' } }));
+  });
+  await p.waitForFunction(() => Object.values(window.figmy.store.getState().doc.nodes).some((n) => n.name === 'From plugin'));
+  assert(await p.evaluate(() => { const n = Object.values(window.figmy.store.getState().doc.nodes).find((x) => x.name === 'From plugin'); return n.w === 80 && n.fills[0].color === '#ff0000'; }), 'plugin creates a layer through the Figma-compatible API');
+  await p.keyboard.press('Control+z');
+  assert(await p.evaluate(() => !Object.values(window.figmy.store.getState().doc.nodes).some((n) => n.name === 'From plugin')), 'undo removes what the plugin did');
+
   // motion mode: drag at the playhead records a position keyframe; presets add tracks
   await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
   await p.click('.mode-btn[title^="Motion"]');

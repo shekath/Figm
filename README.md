@@ -266,3 +266,23 @@ Everything placed on the canvas is ordinary auto-layout frames and text, so you 
 **Runs on its own by default.** The Research Kit's built-in engine works entirely inside Figmy, with no internet, account or API key, and your data never leaves your device. It uses built-in UX knowledge packs and templates tailored to your input, plus local text analysis for Summarize, Affinity mapping and Document chat. The built-in engine reads .txt, .md and .csv documents.
 
 **Optional: Claude.** For richer, more tailored results and PDF reading, switch the engine to Claude under **Research Kit → Settings**. Then either set `ANTHROPIC_API_KEY` on your Figmy server (in `.env`) so every user can use it, or add your own key in Settings. A key added there is stored only in that browser and sent only to Anthropic.
+
+## Plugins
+
+Open **Plugins & widgets** from the dock (or **Plugins** in the menu).
+
+- **New plugin…** creates a working starter plugin and opens it in the built-in editor (`code.js`, `ui.html`, `manifest.json`). Ctrl+Enter saves and runs it.
+- **Import from manifest…** loads a plugin folder that has a Figma-style `manifest.json` (`name`, `main`, optional `ui`).
+- Each installed plugin's ••• menu has Run, Edit code…, Reload from folder…, Download and Remove.
+
+**Figma-compatible API.** Plugins use the familiar `figma` global, so many simple Figma plugins run unchanged. It covers a common subset:
+- **Creating layers:** `createRectangle` / `createEllipse` / `createFrame` / `createText` / `createLine` / `createPolygon` / `createStar` / `createComponent` and `group`.
+- **Layer properties:** position, size, fills, strokes, effects, corner radius, opacity, rotation and visibility; text (`characters`, `fontSize`, `fontName`, alignment); auto layout (`layoutMode`, `itemSpacing`, padding, alignment, sizing).
+- **The page:** children, `appendChild`, `remove`, `clone`, `findAll`, selection and `getNodeById`.
+- **Plugin UI and environment:** `figma.showUI` plus `figma.ui.postMessage` / `onmessage` (the UI talks back with `parent.postMessage({ pluginMessage }, '*')`), `notify`, `closePlugin`, `viewport.scrollAndZoomIntoView` and `clientStorage`.
+
+APIs Figmy doesn't have yet include variables, component properties, prototyping, images, Dev Mode and FigJam. Calling them raises an error that is shown as a notification.
+
+**Security.** Plugin code runs in a sandboxed iframe with no access to Figmy, your files, cookies or storage. It can only send changes through the API. Network access is blocked unless the manifest lists domains in `networkAccess.allowedDomains`. Everything a plugin changes in one go is a single undo step.
+
+Widgets (interactive objects that live on the canvas) are not supported yet.

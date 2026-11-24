@@ -6,6 +6,7 @@ import type { Mode, Tool } from '../types';
 import { CollabBar } from '../collab/CollabUI';
 import { AccountBadge } from '../auth/LoginUI';
 import { DrawBar, DrawToolButtons, PathEditBar } from './DrawTools';
+import { PluginsPanel } from '../plugins/PluginsUI';
 
 const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'File', items: ['home', 'new', 'open', 'save', 'saveAs', 'newFromTemplate', '-', 'importFiles', 'figmaImport', 'export', 'exportHtml', 'exportSelection', 'exportSvg', 'exportPdf', '-', 'saveVersion'] },
@@ -14,7 +15,7 @@ const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'Object', items: ['group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'combineVariants', 'addVariant', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock'] },
   { title: 'Arrange', items: ['alignLeft', 'alignHCenter', 'alignRight', 'alignTop', 'alignVCenter', 'alignBottom', '-', 'distributeH', 'distributeV', 'tidy'] },
   { title: 'Share', items: ['share', 'connectAI'] },
-  { title: 'Plugins', items: ['researchKit'] },
+  { title: 'Plugins', items: ['pluginsPanel', 'researchKit'] },
   { title: 'Help', items: ['shortcuts'] },
 ];
 
@@ -195,11 +196,13 @@ export function ToolDock() {
     { mode: 'motion', icon: 'motion', label: 'Motion — keyframe animation', key: 'Shift+M' },
     { mode: 'dev', icon: 'code', label: 'Dev mode', key: 'Shift+D' },
   ];
+  const [pluginsOpen, setPluginsOpen] = useState(false);
   const setMode = (mode: Mode) => st.set({ mode, tool: 'move', motionPlaying: false, editingPathId: null });
   return (
     <>
     <DrawBar />
     <PathEditBar />
+    {pluginsOpen && <PluginsPanel onClose={() => setPluginsOpen(false)} />}
     <div className={`tool-dock ${st.mode === 'draw' ? 'draw' : ''}`} ref={ref} onPointerDown={(e) => e.stopPropagation()}>
         {st.mode !== 'dev' && TOOLS.map((g, gi) => {
             if (st.mode === 'draw' && g.group.some((t) => t.tool === 'pen')) return <DrawToolButtons key={gi} />;
@@ -236,8 +239,13 @@ export function ToolDock() {
             );
           })}
       {st.mode !== 'dev' && (
-        <button className="tool" title="Research Kit — AI personas, journeys, sitemaps (Shift+I)" onClick={() => window.dispatchEvent(new CustomEvent('figmy:research'))}>
+        <button className="tool" title="Research Kit — personas, journeys, sitemaps (Shift+I)" onClick={() => window.dispatchEvent(new CustomEvent('figmy:research'))}>
           <span className="rk-dock">✦</span>
+        </button>
+      )}
+      {st.mode !== 'dev' && (
+        <button className={`tool ${pluginsOpen ? 'active' : ''}`} title="Plugins & widgets" onClick={() => setPluginsOpen(!pluginsOpen)}>
+          <Icon name="plugins" />
         </button>
       )}
       {st.mode !== 'dev' && (

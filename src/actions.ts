@@ -146,6 +146,7 @@ export const actions: Record<string, { label: string; shortcut?: string; run: ()
   group: { label: 'Group selection', shortcut: 'Ctrl+G', run: () => S().group() },
   ungroup: { label: 'Ungroup', shortcut: 'Ctrl+Shift+G', run: () => S().ungroup() },
   frameSelection: { label: 'Frame selection', shortcut: 'Ctrl+Alt+G', run: () => S().frameSelection() },
+  pluginsPanel: { label: 'Plugins & widgets…', run: () => { (document.querySelector('.tool-dock button[title="Plugins & widgets"]') as HTMLButtonElement | null)?.click(); } },
   researchKit: { label: 'Research Kit (AI personas, journeys, sitemaps…)', shortcut: 'Shift+I', run: () => { window.dispatchEvent(new CustomEvent('figmy:research')); } },
   modeDraw: { label: 'Draw mode (pen, brush, pencil)', shortcut: 'Shift+B', run: () => S().set({ mode: S().mode === 'draw' ? 'design' : 'draw', tool: S().mode === 'draw' ? 'move' : 'brush', motionPlaying: false }) },
   modeDesign: { label: 'Design mode', shortcut: 'Shift+W', run: () => S().set({ mode: 'design', motionPlaying: false }) },
