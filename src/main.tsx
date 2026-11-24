@@ -38,4 +38,4 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 // Scripting / test hook: window.figmy.store is the editor store (zustand)
 import { useEditor } from './store/store';
 import { actions as figmyActions } from './actions';
-(window as unknown as { figmy: unknown }).figmy = { store: useEditor, actions: figmyActions };
+(window as unknown as { figmy: unknown }).figmy = { store: useEditor, actions: figmyActions, research: () => import('./lib/researchCanvas') };

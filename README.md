@@ -242,3 +242,25 @@ The plugin rebuilds these as native Figma layers:
 - prototype links and variables
 
 Anything it can't convert is listed when the import finishes.
+
+## Research Kit (AI)
+
+**Plugins → Research Kit** (or the ✦ button in the dock, or Shift+I) opens twelve AI research tools powered by Claude:
+
+| Tool | What you get on the canvas |
+|---|---|
+| User persona | Persona card: bio, quote, goals, frustrations, motivations, behaviours, tools, tech savviness |
+| User journey map | Stage-by-stage grid of actions, thoughts, emotions, pain points and opportunities |
+| Information architecture | Sitemap tree |
+| How might we | "How might we…" statement cards with ideas |
+| Affinity mapping | Notes clustered into themes, as sticky notes |
+| UX copywriting | Copy variants with CTAs, microcopy and tips |
+| Summarize | Summary, themes with evidence, insights, recommendations and quotes |
+| User interviews | Interview guide with follow-up probes |
+| Design brief | Goals, audience, scope, deliverables, milestones, metrics and risks |
+| Discovery questionnaire | Client questionnaire with answer fields |
+| Chat assistant / Document chat | Chat about UX or an attached document (.txt, .md, .csv or .pdf); answers can be added to the canvas |
+
+Everything placed on the canvas is ordinary auto-layout frames and text, so you can edit it freely.
+
+**Connecting to Claude:** set `ANTHROPIC_API_KEY` on your Figmy server (in `.env`) so every user can use it, or have each user add their own key under **Research Kit → Settings**. A key added in Settings is stored only in that browser and sent only to Anthropic.

@@ -97,6 +97,7 @@
     }
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.13.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "fflate": "^0.8.3",
     "fzstd": "^0.1.1",

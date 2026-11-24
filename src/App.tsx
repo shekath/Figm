@@ -6,6 +6,7 @@ import { ContextBar, CommandPalette } from './panels/QuickUI';
 import { LeftPanel } from './panels/LeftPanel';
 import { RightPanel } from './panels/RightPanel';
 import { Timeline } from './panels/Timeline';
+import { ResearchKit } from './panels/ResearchKit';
 import { Presenter } from './Presenter';
 import { ContextMenu, ShortcutsDialog, Toast } from './Overlays';
 import { Home } from './Home';
@@ -220,6 +221,7 @@ export function App() {
       <ShortcutsDialog />
       <CommandPalette />
       <VariablesModal />
+      <ResearchKit />
       <FigmaImportDialog />
       <ExportDialog />
       <ShareDialog />

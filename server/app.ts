@@ -10,6 +10,8 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { RoomManager, send, validRoomId, type Peer, type Presence } from './rooms';
 import { callTool, toolList, type ToolContext } from './tools';
 import { handleMcpHttp } from './mcp';
+import Anthropic from '@anthropic-ai/sdk';
+import { runResearch, type ResearchRequest } from '../src/lib/research';
 import { Auth, authConfigFromEnv, loginPage, type AuthConfig, type User } from './auth';
 import type { DocPatch } from '../src/lib/docops';
 import type { DocumentData } from '../src/types';
@@ -48,6 +50,8 @@ const MIME: Record<string, string> = {
 };
 
 const MAX_BODY = 50 * 1024 * 1024;
+
+let aiClient: Anthropic | null = null;
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -169,6 +173,20 @@ export function startServer(opts: ServerOptions = {}): Promise<RunningServer> {
           return json(res, 400, { jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null });
         }
         return await handleMcpHttp(req, res, body, ctx);
+      }
+
+      // Research Kit (AI): uses the server's ANTHROPIC_API_KEY so browser users don't need their own key
+      if (url.pathname === '/api/ai/status' && req.method === 'GET') return json(res, 200, { enabled: !!process.env.ANTHROPIC_API_KEY });
+      if (url.pathname === '/api/ai/research' && req.method === 'POST') {
+        if (!process.env.ANTHROPIC_API_KEY) return json(res, 503, { error: 'AI is not configured on this server (set ANTHROPIC_API_KEY).' });
+        try {
+          const body = JSON.parse(await readBody(req)) as ResearchRequest;
+          aiClient ??= new Anthropic();
+          return json(res, 200, await runResearch(aiClient, body));
+        } catch (e) {
+          if (e instanceof Anthropic.APIError) return json(res, e.status && e.status < 500 ? 400 : 502, { error: `AI error (${e.status ?? 'network'}): ${e.message}` });
+          return json(res, 400, { error: (e as Error).message });
+        }
       }
 
       if (url.pathname === '/api/rooms' && req.method === 'GET') return json(res, 200, { rooms: rooms.list() });

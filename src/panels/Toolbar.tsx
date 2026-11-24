@@ -14,6 +14,7 @@ const MENU: { title: string; items: (string | '-')[] }[] = [
   { title: 'Object', items: ['group', 'ungroup', 'frameSelection', 'autoLayout', '-', 'component', 'combineVariants', 'addVariant', 'detach', 'mask', '-', 'union', 'subtract', 'intersect', 'exclude', 'flatten', '-', 'bringFront', 'bringForward', 'sendBackward', 'sendBack', '-', 'flipH', 'flipV', 'toggleVisible', 'toggleLock'] },
   { title: 'Arrange', items: ['alignLeft', 'alignHCenter', 'alignRight', 'alignTop', 'alignVCenter', 'alignBottom', '-', 'distributeH', 'distributeV', 'tidy'] },
   { title: 'Share', items: ['share', 'connectAI'] },
+  { title: 'Plugins', items: ['researchKit'] },
   { title: 'Help', items: ['shortcuts'] },
 ];
 
@@ -234,6 +235,11 @@ export function ToolDock() {
               </div>
             );
           })}
+      {st.mode !== 'dev' && (
+        <button className="tool" title="Research Kit — AI personas, journeys, sitemaps (Shift+I)" onClick={() => window.dispatchEvent(new CustomEvent('figmy:research'))}>
+          <span className="rk-dock">✦</span>
+        </button>
+      )}
       {st.mode !== 'dev' && (
         <button className="tool" title="Quick actions (Ctrl+K)" onClick={() => window.dispatchEvent(new Event('figmy:palette'))}>
           <Icon name="search" />
