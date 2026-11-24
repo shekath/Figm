@@ -112,6 +112,14 @@ const assert = (c, m) => {
   await p.keyboard.press('Escape');
   assert((await p.locator('.modal-backdrop').count()) === 0, 'Escape closes dialogs');
 
+  // research kit: built-in engine generates and places a persona with no network or API key
+  await p.keyboard.press('Shift+i');
+  await p.fill('.rk-body input >> nth=0', '35 years old payroll manager');
+  await p.click('.rk-body button.primary');
+  await p.waitForSelector('.rk-preview');
+  await p.click('button:has-text("Place on canvas")');
+  assert(await p.evaluate(() => { const s = window.figmy.store.getState(); return s.doc.nodes[s.selection[0]]?.name.startsWith('Persona'); }), 'research kit (built-in engine) places a persona on the canvas');
+
   // motion mode: drag at the playhead records a position keyframe; presets add tracks
   await p.evaluate(() => { const s = window.figmy.store.getState(); const id = Object.values(s.doc.nodes).find((n) => n.type === 'rect' || n.type === 'ellipse')?.id; s.select([id]); });
   await p.click('.mode-btn[title^="Motion"]');

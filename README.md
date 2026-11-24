@@ -263,4 +263,6 @@ Anything it can't convert is listed when the import finishes.
 
 Everything placed on the canvas is ordinary auto-layout frames and text, so you can edit it freely.
 
-**Connecting to Claude:** set `ANTHROPIC_API_KEY` on your Figmy server (in `.env`) so every user can use it, or have each user add their own key under **Research Kit → Settings**. A key added in Settings is stored only in that browser and sent only to Anthropic.
+**Runs on its own by default.** The Research Kit's built-in engine works entirely inside Figmy, with no internet, account or API key, and your data never leaves your device. It uses built-in UX knowledge packs and templates tailored to your input, plus local text analysis for Summarize, Affinity mapping and Document chat. The built-in engine reads .txt, .md and .csv documents.
+
+**Optional: Claude.** For richer, more tailored results and PDF reading, switch the engine to Claude under **Research Kit → Settings**. Then either set `ANTHROPIC_API_KEY` on your Figmy server (in `.env`) so every user can use it, or add your own key in Settings. A key added there is stored only in that browser and sent only to Anthropic.

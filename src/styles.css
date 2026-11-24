@@ -870,3 +870,10 @@ table.inspect td:first-child { color: var(--fg3); width: 90px; }
 .rk-compose { display: flex; gap: 8px; align-items: flex-end; }
 .rk-compose textarea { flex: 1; }
 @media (max-width: 760px) { .rk-side { width: 64px; } .rk-tool span:not(.rk-ico), .rk-brand { display: none; } }
+.rk-engines { display: flex; flex-direction: column; gap: 10px; }
+.rk-engine { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.rk-engine.on { border-color: var(--select); background: var(--select-bg); }
+.rk-engine input { margin-top: 3px; }
+.rk-engine p { margin: 4px 0 0; font-size: 12px; line-height: 1.45; }
+.rk-badge { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: rgba(34,197,94,.14); color: #16a34a; margin-left: 6px; font-weight: 600; }
+.rk-badge.alt { background: var(--bg3); color: var(--fg2); }
