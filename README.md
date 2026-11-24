@@ -286,3 +286,9 @@ APIs Figmy doesn't have yet include variables, component properties, prototyping
 **Security.** Plugin code runs in a sandboxed iframe with no access to Figmy, your files, cookies or storage. It can only send changes through the API. Network access is blocked unless the manifest lists domains in `networkAccess.allowedDomains`. Everything a plugin changes in one go is a single undo step.
 
 Widgets (interactive objects that live on the canvas) are not supported yet.
+
+### Exposing the server (tunnel) safely
+
+The standalone server (`npm start`) reads a `.env` file from the folder you start it in, so `FIGMY_TOKEN=...` there is picked up. You can also pass `--token <value>` or set the `FIGMY_TOKEN` environment variable. `/api/health` reports `"auth":true` once a token is active, and the startup log says whether one is set.
+
+For a Cloudflare Tunnel or any public URL, run the standalone server or Docker with a token. Don't use the desktop app's built-in server: it has no token and is meant for local use only.

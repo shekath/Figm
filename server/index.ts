@@ -19,7 +19,22 @@ function arg(name: string, fallback?: string): string | undefined {
   return eq ? eq.split('=').slice(1).join('=') : fallback;
 }
 
+/** Load KEY=value lines from a .env file in the working directory (variables already set win). */
+function loadDotEnv(file = path.resolve(process.cwd(), '.env')) {
+  let text: string;
+  try { text = fs.readFileSync(file, 'utf8'); } catch { return; }
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (!m || m[1] in process.env) continue;
+    let v = m[2];
+    if (/^(['"]).*\1$/.test(v)) v = v.slice(1, -1);
+    else v = v.replace(/\s+#.*$/, '');
+    process.env[m[1]] = v;
+  }
+}
+
 async function main() {
+  loadDotEnv();
   const port = Number(arg('port', process.env.PORT ?? '4317'));
   const host = arg('host', process.env.HOST ?? '127.0.0.1')!;
   const dataDir = arg('data', process.env.FIGMY_DATA ?? path.join(os.homedir(), '.figmy'))!;
@@ -58,6 +73,7 @@ async function main() {
   console.error(`[figmy]   editor:        ${s.url}${staticDir ? '' : '  (web app not bundled: run "npm run build" first)'}`);
   console.error(`[figmy]   MCP endpoint:  ${s.url}/mcp${token ? '  (Authorization: Bearer <token>)' : ''}`);
   console.error(`[figmy]   files stored in ${dataDir}`);
+  console.error(token ? '[figmy]   access token:  required (FIGMY_TOKEN is set)' : '[figmy]   access token:  NOT set — do not expose this server through a tunnel without FIGMY_TOKEN');
   const stop = async () => {
     await s.close();
     await backup?.flush();
