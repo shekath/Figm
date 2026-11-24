@@ -83,7 +83,12 @@ async function main() {
   process.on('SIGTERM', stop);
 }
 
-main().catch((e) => {
-  console.error('[figmy] failed to start:', e);
+main().catch((e: NodeJS.ErrnoException) => {
+  if (e?.code === 'EADDRINUSE') {
+    const port = arg('port', process.env.PORT ?? '4317');
+    console.error(`\n[figmy] Port ${port} is already in use, probably by the Figmy desktop app or another Figmy server.`);
+    console.error('[figmy] Close the desktop app (also check the system tray), or start on another port:  npm start -- --port 4318');
+    console.error('[figmy] (If you change the port, update the Cloudflare tunnel service to http://localhost:<new port>.)\n');
+  } else console.error('[figmy] failed to start:', e);
   process.exit(1);
 });
