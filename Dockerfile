@@ -14,4 +14,5 @@ COPY --from=build /app/server-dist ./server-dist
 VOLUME /data
 EXPOSE 4317
 # Set FIGMY_TOKEN to require "Authorization: Bearer <token>" for the API, MCP and collaboration.
-CMD ["node", "server-dist/server.cjs", "--host", "0.0.0.0", "--port", "4317", "--static", "dist", "--data", "/data"]
+ENV PORT=4317
+CMD ["sh", "-c", "exec node server-dist/server.cjs --host 0.0.0.0 --port ${PORT} --static dist --data ${FIGMY_DATA:-/data}"]
