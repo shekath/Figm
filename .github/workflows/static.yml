@@ -1,0 +1,49 @@
+# Builds the Figmy web app and deploys the built files (dist/) to GitHub Pages.
+# Build and deploy are separate jobs so the uploaded artifact is registered before deploy-pages looks it up.
+name: Deploy static content to Pages
+
+on:
+  push:
+    branches: ["claude/intelligent-ramanujan-osj4vb"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build web app
+        run: npm run build
+        env:
+          # optional: OAuth Web client ID for 'Sign in with Google' (Settings → Secrets and variables → Actions → Variables)
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_REQUIRE_LOGIN: ${{ vars.REQUIRE_LOGIN }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

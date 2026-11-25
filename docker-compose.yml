@@ -1,0 +1,33 @@
+# Full Figmy server (web app + real-time collaboration + AI/MCP connector + Google sign-in)
+# published on your own domain through a Cloudflare Tunnel — no open ports needed.
+#
+#   1. Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create tunnel (Cloudflared)
+#      and copy its token.
+#   2. In the tunnel, add a Public Hostname: figmy.your-domain.com → Service HTTP → figmy:4317
+#   3. cp .env.example .env, fill it in, then:  docker compose up -d
+services:
+  figmy:
+    build: .
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+      FIGMY_TOKEN: ${FIGMY_TOKEN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      FIGMY_GOOGLE_CLIENT_ID: ${FIGMY_GOOGLE_CLIENT_ID:-}
+      FIGMY_REQUIRE_LOGIN: ${FIGMY_REQUIRE_LOGIN:-0}
+      FIGMY_ALLOWED_DOMAINS: ${FIGMY_ALLOWED_DOMAINS:-}
+      FIGMY_ALLOWED_EMAILS: ${FIGMY_ALLOWED_EMAILS:-}
+    volumes:
+      - figmy-data:/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.6
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - figmy
+
+volumes:
+  figmy-data:

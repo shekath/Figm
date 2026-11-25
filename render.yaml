@@ -1,0 +1,18 @@
+# Render Blueprint: New → Blueprint → pick this repo. Set FIGMY_TOKEN when prompted.
+services:
+  - type: web
+    name: figmy
+    runtime: docker
+    plan: starter            # a persistent disk needs a paid plan
+    healthCheckPath: /api/health
+    envVars:
+      - key: FIGMY_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FIGMY_DATA
+        value: /data
+    disk:
+      name: figmy-data
+      mountPath: /data
+      sizeGB: 1

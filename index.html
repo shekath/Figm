@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./icon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#5b5bf7" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap" />
+    <title>Figmy</title>
+  </head>
+  <body>
+    <div id="root">
+      <!-- shown until the app mounts; replaced by React -->
+      <div id="boot" style="font: 14px Inter, system-ui, sans-serif; color: #6b6b78; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 10px; text-align: center; padding: 16px">
+        <img src="./icon.svg" width="40" height="40" alt="" />
+        <div>Loading Figmy…</div>
+        <div id="boot-error" style="color: #e5484d; max-width: 520px; white-space: pre-wrap"></div>
+      </div>
+    </div>
+    <script>
+      // Make start-up failures visible instead of a blank page.
+      (function () {
+        var shown = false;
+        function show(msg) {
+          var el = document.getElementById('boot-error');
+          if (!el || shown) return;
+          shown = true;
+          el.textContent = msg + '\n\nTry a hard refresh (Ctrl+Shift+R / Cmd+Shift+R).';
+        }
+        window.addEventListener('error', function (e) {
+          if (e && e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) show('Could not load ' + (e.target.src || e.target.href));
+          else if (e && e.message) show('Figmy failed to start: ' + e.message);
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) { show('Figmy failed to start: ' + ((e.reason && e.reason.message) || e.reason)); });
+        setTimeout(function () { if (document.getElementById('boot')) show('Figmy is taking too long to load. Your browser may be using an old cached copy.'); }, 10000);
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
